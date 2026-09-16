@@ -1,0 +1,74 @@
+# KRATOS — Monorepo .gitignore
+# Version: 1.0.0
+
+# ── Dart / Flutter ──────────────────────────────────────
+.dart_tool/
+.packages
+build/
+pubspec.lock
+*.iml
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+
+# ── iOS / Android (deferred platforms) ──────────────────
+app/ios/Pods/
+app/ios/.symlinks/
+app/ios/Flutter/Flutter.framework
+app/ios/Flutter/Flutter.podspec
+app/ios/Runner/GeneratedPluginRegistrant.*
+app/android/.gradle/
+app/android/app/build/
+app/android/local.properties
+app/android/.flutter-plugins
+
+# ── Environment / Secrets ──────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+
+# ── Supabase ───────────────────────────────────────────
+server/.env
+server/supabase/.env
+server/supabase/config.toml
+
+# ── Node (server tooling) ─────────────────────────────
+server/node_modules/
+server/.cache/
+*.log
+
+# ── Build tools ────────────────────────────────────────
+tools/*.tmp
+tools/*.bak
+
+# ── OS artifacts ───────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── IDE ────────────────────────────────────────────────
+*.code-workspace
+
+# ── Test coverage ──────────────────────────────────────
+coverage/
+*.lcov
+
+# ── Drift codegen ─────────────────────────────────────
+*.drift.dart
+*.drift.preparation.dart
+app/lib/src/data/**/*.g.dart
+app/lib/src/data/**/*.drift.dart
+app/lib/src/data/**/*.freeze.dart
+
+# ── Code generation ────────────────────────────────────
+*.freezed.dart
+*.g.dart
