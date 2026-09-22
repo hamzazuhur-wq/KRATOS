@@ -4,9 +4,11 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'aux_tables.dart';
 import 'core_tables.dart';
 import 'ledger_tables.dart';
+import 'progression_tables.dart';
 import '../../features/tasks/data/tasks_dao.dart';
 import '../../features/tasks/data/junctions_dao.dart';
 import '../../features/xp/data/xp_ledger_dao.dart';
+import '../../features/progression/data/progression_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -51,6 +53,10 @@ part 'app_database.g.dart';
     Tools,
     SkillTools,
     TaskToolLinks,
+    // Progression (0007 + Wave 6)
+    LevelCurves,
+    TierDefinitions,
+    LevelObjectives,
   ],
   daos: [
     TasksDao,
@@ -59,6 +65,7 @@ part 'app_database.g.dart';
     TaskToolLinksDao,
     AttachmentLinksDao,
     XpLedgerDao,
+    ProgressionDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {

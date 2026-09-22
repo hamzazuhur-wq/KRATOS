@@ -13,7 +13,9 @@
 | Wave 3 — Core Domain Foundation | ✅ COMPLETE | 2026-09-22 |
 | Wave 4 — Junction Tables + Indexes | ✅ COMPLETE | 2026-09-23 |
 | Wave 5 — XP Ledger + Idempotency | ✅ COMPLETE | 2026-09-23 |
-| Wave 6 | 🔵 NEXT | — |
+| Wave 6 — Levels / Tiers Engine | ✅ COMPLETE | 2026-09-23 |
+| Wave 7 | 🔵 NEXT | — |
+
 
 
 ## Wave 1 — Foundation ✅ VERIFIED
@@ -195,7 +197,38 @@
      - `reverse()` creates compensating events with negative points, preserving immutable append-only chain (Invariant #1).
 
 5. **Automated Tests (`app/test/features/xp/`)**:
-   - `xp_allocation_math_test.dart`: Exhaustive verification of Hamilton-Hare rounding across 100/3, 10/3, 100%, and negative reversals; verification of late penalty calculation and cancelled item exclusion.
    - `xp_ledger_writer_test.dart`: Entity invariant enforcement (allocation sum mismatch rejection, zero-point rejection, net arithmetic, and RPC payload serialization).
    - `python tools/verify_schema.py`: PASSED (30 tables, 26 indexes, RLS enabled).
+
+## Wave 6 — Levels / Tiers Engine ✅ COMPLETE
+
+**Location:** `server/migrations/0007_init_progression.sql`, `app/lib/features/progression/`, `app/test/features/progression/`
+
+### Deliverables
+
+1. **PostgreSQL Migration (`0007_init_progression.sql`)**:
+   - `level_curves` table with 100 levels pre-seeded using gentle exponential formula $\lfloor 100 \times 1.085^{\text{level}} \rfloor$ capped at 14M XP (ADR-011).
+   - `tier_definitions` table with 6 tiers pre-seeded (Bronze 1k $\rightarrow$ Silver 3k $\rightarrow$ Gold 7k $\rightarrow$ Crystal 15k $\rightarrow$ Diamond 30k $\rightarrow$ Mythic 60k).
+   - `level_objectives` table for compound promotion gates (ADR-010).
+   - RLS enabled on all three tables with permissive SELECT read policies.
+   - `calculate_life_area_progression(p_user_id, p_life_area_id)` plpgsql RPC: aggregates total XP for a specific LifeArea and returns level, tier, XP in level, XP to next, and progress percentage (Invariant #3).
+
+2. **Drift Schema & DAOs (`app/lib/data/drift/` & `app/lib/features/progression/data/`)**:
+   - `LevelCurves`, `TierDefinitions`, `LevelObjectives` tables in `progression_tables.dart`.
+   - `ProgressionDao`: manages queries for curves, tiers, and objectives; includes auto-seeding for local offline operation.
+   - Registered in `@DriftDatabase` in `app_database.dart`.
+
+3. **Core Domain Models & Calculator (`app/lib/features/progression/domain/`)**:
+   - `ProgressionInfo`, `LevelCurveSnapshot`, `TierDefinitionSnapshot`, `LevelObjectiveSnapshot`.
+   - `ProgressionCalculator`: pure Dart algorithm computing real-time Level, Tier, XP to next level, and progress percentage.
+   - Compound gate evaluator: level promotion requires mandatory objectives to be completed unless bypassed via test-out (ADR-010).
+   - `LifeAreaProgressionService`: aggregates `xp_allocation_lines` for a LifeArea and computes real-time progression state.
+
+4. **Presentation Screen (`app/lib/features/progression/presentation/`)**:
+   - `ProgressionSettingsScreen`: Liquid Glass / Acid Lime UI with interactive progression card, XP simulator slider, and Tier Definitions ladder.
+
+5. **Automated Tests (`app/test/features/progression/`)**:
+   - `progression_service_test.dart`: Exhaustive test suite verifying level curves (1-100), tier thresholds (Bronze through Mythic), and compound gate promotion rules.
+   - `python tools/verify_schema.py`: PASSED (30 tables, 33 CREATE TABLE statements, 29 indexes, RLS enabled).
+
 
