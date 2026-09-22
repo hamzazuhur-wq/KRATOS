@@ -8,6 +8,7 @@ import 'progression_tables.dart';
 import '../../features/tasks/data/tasks_dao.dart';
 import '../../features/tasks/data/junctions_dao.dart';
 import '../../features/xp/data/xp_ledger_dao.dart';
+import '../../features/xp/data/xp_analytics_dao.dart';
 import '../../features/progression/data/progression_dao.dart';
 import '../../features/streaks/data/streaks_dao.dart';
 import '../../features/categories/data/categories_dao.dart';
@@ -73,6 +74,7 @@ part 'app_database.g.dart';
     TaskToolLinksDao,
     AttachmentLinksDao,
     XpLedgerDao,
+    XpAnalyticsDao,
     ProgressionDao,
     StreaksDao,
     CategoriesDao,
