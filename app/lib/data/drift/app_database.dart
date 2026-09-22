@@ -17,6 +17,8 @@ import '../../features/tools/data/tools_dao.dart';
 import '../../features/sessions/data/sessions_dao.dart';
 import '../../features/activities/data/activities_dao.dart';
 import '../../features/projects/data/projects_dao.dart';
+import '../../features/notes/data/notes_dao.dart';
+import '../../features/notes/data/audio_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -83,6 +85,8 @@ part 'app_database.g.dart';
     SessionsDao,
     ActivitiesDao,
     ProjectsDao,
+    NotesDao,
+    AudioDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
