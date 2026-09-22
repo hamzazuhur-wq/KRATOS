@@ -1,6 +1,6 @@
 # KRATOS — Implementation Status (Live)
 
-> Updated: Wave 2 commit.
+> Updated: Wave 4 complete.
 
 ## Wave Status
 
@@ -10,7 +10,9 @@
 | Wave 0.5 — Doc Rewrite + Lints | ⏭️ Skipped | — |
 | Wave 1 — Foundation | ✅ COMPLETE | 2026-09-16 |
 | Wave 2 — Database + Drift | ✅ COMPLETE | 2026-09-17 |
-| Wave 3 | 🔵 NEXT | — |
+| Wave 3 — Core Domain Foundation | ✅ COMPLETE | 2026-09-22 |
+| Wave 4 — Junction Tables + Indexes | ✅ COMPLETE | 2026-09-23 |
+| Wave 5 | 🔵 NEXT | — |
 
 ## Wave 1 — Foundation ✅ VERIFIED
 
@@ -98,3 +100,60 @@
    - `goal_path_test.dart`: Root, child, and grandchild path validations.
    - `ids_test.dart`: UUIDv7 format and monotonic uniqueness tests.
    - `python tools/verify_schema.py`: PASSED (30 tables, 26 indexes, RLS enabled).
+
+## Wave 4 — Junction Tables + Indexes ✅ COMPLETE
+
+**Location:** `app/lib/domain/entities/task.dart`, `app/lib/features/tasks/`, `app/test/domain/wave4_junctions_test.dart`
+
+### Deliverables
+
+1. **Domain Entity — Task**:
+   - `task.dart` — immutable `Task` entity with `create()`, `rename()`, `complete()`, `cancel()`, `delete()` — all invariants enforced
+   - `TaskStatus` enum (`pending`, `inProgress`, `completed`, `cancelled`)
+   - `TaskGoalRole` enum (`contributesTo`, `blocks`, `inspiredBy`, `tracks`) with JSON serialization
+   - `TaskGoalLink`, `SkillToolLink`, `AttachmentLink` junction value objects
+   - `AttachmentLink` guards `entityKind` ∈ `kValidEntityKinds` and `attachmentKind` ∈ `kValidAttachmentKinds`
+   - `Task.fromData()` public factory for repository reconstruction
+
+2. **Domain Value Objects (enhancements)**:
+   - `Hlc.parse(String)` — reconstruct Hlc from stored string representation (graceful fallback)
+
+3. **Repository Interfaces** (`app/lib/domain/repositories/junction_repositories.dart`):
+   - `TaskRepository` — CRUD for tasks
+   - `TaskGoalLinkRepository` — link/unlink tasks to goals with role
+   - `SkillToolLinkRepository` — link/unlink skills to tools
+   - `AttachmentLinkRepository` — polymorphic attach/detach
+
+4. **Drift DAOs** (`app/lib/features/tasks/data/`):
+   - `TasksDao` — minimal stub (allTasks, findById, upsert, softDelete)
+   - `TaskGoalLinksDao` — forTask, forGoal, upsert, remove
+   - `SkillToolsDao` — forSkill, forTool, upsert, remove
+   - `TaskToolLinksDao` — forTask, upsert, remove
+   - `AttachmentLinksDao` — forEntity, upsert, remove
+   - All DAOs registered in `@DriftDatabase` annotation
+
+5. **Repository Implementation**:
+   - `DriftTaskRepository` — Drift ↔ domain bridge; outbox enqueue in same transaction
+
+6. **Placeholder UI** (`app/lib/features/tasks/presentation/`):
+   - `TasksPlaceholderScreen` — dark/acid-lime stub screen (full UX in Wave 9)
+   - `AttachmentPickerPlaceholder` — file + URL attachment widget (full impl in Wave 13)
+
+7. **Tests** (`app/test/domain/wave4_junctions_test.dart`):
+   - Task invariants: empty title, priority range, complete/cancel/delete rules
+   - Invariant #8: cancelled tasks cannot be completed; completed tasks cannot be cancelled
+   - `TaskGoalRole` round-trip JSON serialization
+   - `AttachmentLink` kind guard: rejects unknown `entityKind` and `attachmentKind`
+   - `TaskGoalLink` equality via composite PK `(taskId, goalId)`
+
+### Skills Installed (Global)
+| Skill | Path |
+|-------|------|
+| `token-optimizer` | `C:\Users\hamza\.gemini\config\skills\token-optimizer\` |
+| `flutter-riverpod-drift` | `C:\Users\hamza\.gemini\config\skills\flutter-riverpod-drift\` |
+| `supabase-auth-sync` | `C:\Users\hamza\.gemini\config\skills\supabase-auth-sync\` |
+| `kratos-ui-liquid-glass` | `C:\Users\hamza\.gemini\config\skills\kratos-ui-liquid-glass\` |
+| `kratos-backend-rpc` | `C:\Users\hamza\.gemini\config\skills\kratos-backend-rpc\` |
+| `kratos-feature-architecture` | `C:\Users\hamza\.gemini\config\skills\kratos-feature-architecture\` |
+| `kratos-wave-planner` | `C:\Users\hamza\.gemini\config\skills\kratos-wave-planner\` |
+| `kratos-domain-logic` | `C:\Users\hamza\.gemini\config\skills\kratos-domain-logic\` |

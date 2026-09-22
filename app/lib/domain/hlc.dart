@@ -25,6 +25,27 @@ class Hlc {
     return Hlc(wallMs: now, counter: 0, nodeId: nodeId);
   }
 
+  /// Parse from stored string format `Hlc(wall=..., c=..., node=...)`.
+  /// Falls back to a zero clock if the format is unrecognized (graceful degradation).
+  factory Hlc.parse(String s) {
+    try {
+      final wallMatch = RegExp(r'wall=(\d+)').firstMatch(s);
+      final counterMatch = RegExp(r'c=(\d+)').firstMatch(s);
+      final nodeMatch = RegExp(r'node=([0-9a-fA-F-]+)').firstMatch(s);
+      if (wallMatch == null || counterMatch == null || nodeMatch == null) {
+        throw const FormatException('bad hlc format');
+      }
+      return Hlc(
+        wallMs: int.parse(wallMatch.group(1)!),
+        counter: int.parse(counterMatch.group(1)!),
+        nodeId: Id(nodeMatch.group(1)!),
+      );
+    } catch (_) {
+      // Graceful fallback — treat as epoch zero
+      return Hlc(wallMs: 0, counter: 0, nodeId: const Id('00000000-0000-7000-8000-000000000000'));
+    }
+  }
+
   static Hlc merge(Hlc a, Hlc b, {int? nowMs, Id? nodeId}) {
     final now = nowMs ?? DateTime.now().toUtc().millisecondsSinceEpoch;
     final maxWall = [a.wallMs, b.wallMs, now].reduce((x, y) => x > y ? x : y);

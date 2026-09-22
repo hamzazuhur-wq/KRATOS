@@ -4,6 +4,8 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'aux_tables.dart';
 import 'core_tables.dart';
 import 'ledger_tables.dart';
+import '../../features/tasks/data/tasks_dao.dart';
+import '../../features/tasks/data/junctions_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -47,6 +49,13 @@ part 'app_database.g.dart';
     Tools,
     SkillTools,
     TaskToolLinks,
+  ],
+  daos: [
+    TasksDao,
+    TaskGoalLinksDao,
+    SkillToolsDao,
+    TaskToolLinksDao,
+    AttachmentLinksDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
