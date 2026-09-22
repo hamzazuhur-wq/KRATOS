@@ -13,6 +13,9 @@ import '../../features/streaks/data/streaks_dao.dart';
 import '../../features/categories/data/categories_dao.dart';
 import '../../features/skills/data/skills_dao.dart';
 import '../../features/tools/data/tools_dao.dart';
+import '../../features/sessions/data/sessions_dao.dart';
+import '../../features/activities/data/activities_dao.dart';
+import '../../features/projects/data/projects_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -75,6 +78,9 @@ part 'app_database.g.dart';
     CategoriesDao,
     SkillsDao,
     ToolsDao,
+    SessionsDao,
+    ActivitiesDao,
+    ProjectsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
