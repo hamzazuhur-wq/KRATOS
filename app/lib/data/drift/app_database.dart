@@ -1,7 +1,5 @@
-// ignore_for_file: public_member_api_docs
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
+import 'package:drift_flutter/drift_flutter.dart';
 
 import 'aux_tables.dart';
 import 'core_tables.dart';
@@ -12,15 +10,7 @@ part 'app_database.g.dart';
 /// KRATOS local offline-first database.
 ///
 /// Mirrors the 30-table PostgreSQL schema from server/migrations/0001-0004.
-/// Schema is intentionally Drift-native (no SQL native mirrors yet); the
-/// application layer is responsible for emitting to/from the sync_outbox
-/// so the server-side Postgres stays in lockstep.
-///
-/// Schema docs:
-/// - server/migrations/0001_init_core.sql
-/// - server/migrations/0002_init_xp_ledger.sql
-/// - server/migrations/0003_init_sync.sql
-/// - server/migrations/0004_init_ai_notes_skills.sql
+/// Platform-aware: uses Native SQLite on Android/iOS/Desktop and Wasm/IndexedDB on Web.
 @DriftDatabase(
   tables: [
     // Core (0001)
@@ -78,6 +68,6 @@ class AppDatabase extends _$AppDatabase {
 }
 
 QueryExecutor _openConnection() {
-  // Desktop + tests: native SQLite (offline-first storage).
-  return LazyDatabase(() => NativeDatabase.memory());
+  // Uses drift_flutter: Native SQLite on Mobile/Desktop, WASM/IndexedDB on Web
+  return driftDatabase(name: 'kratos_db');
 }

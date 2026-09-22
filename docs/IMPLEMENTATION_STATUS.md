@@ -68,46 +68,33 @@
 - `flutter analyze`: ✅ **No issues**
 - `flutter test`: ✅ **22/22 PASS** (HLC 20 + Drift smoke 2 + widget 1)
 - `flutter build web`: ✅ **√ Built build/web**
-- `python tools/verify_schema.py`: ✅ **30 tables, 24 indexes, RLS enabled**
+- `python tools/verify_schema.py`: ✅ **30 tables, 26 indexes, RLS enabled**
+- **Level 2 Remediation**:
+  - `user_streaks` updated to composite PK `(user_id, life_area_id)` for independent streaks per Life Area.
+  - `streak_pauses` updated with `life_area_id`.
+  - `sync_outbox`, `sync_cursors`, `sync_tombstones` updated with `user_id` for multi-tenant RLS isolation.
+  - Drift tables (`core_tables.dart`, `ledger_tables.dart`, `aux_tables.dart`) updated with explicit `primaryKey` and correct `.nullable()` modifiers.
+  - `app_database.dart` upgraded with `drift_flutter` for seamless Native (Android/iOS) and WASM/IndexedDB (Web/PWA) support.
 
-### Gaps / Deferred
+## Wave 3 — Core Domain Foundation ✅ COMPLETE
 
-- **pgTAP database tests (T2.16)**: Cannot run — no PostgreSQL/pgTAP install available in current environment. Schema is verified via `tools/verify_schema.py` instead.
-- **Drift native DBs**: Currently `NativeDatabase.memory()` (in-memory). Real desktop/mobile SQLite wired in Wave 4.
-- **Migrations runner**: No automated `diesel`-equivalent applied in app yet — `server/migrations/*.sql` are the source of truth, applied by Supabase CLI externally.
+**Location:** `app/lib/domain/`, `app/test/domain/`
 
-### Files Touched (Wave 2)
-
-```
-server/
-├── migrations/
-│   ├── 0001_init_core.sql            (10,082 bytes)
-│   ├── 0002_init_xp_ledger.sql        (3,954 bytes)
-│   ├── 0003_init_sync.sql             (3,050 bytes)
-│   ├── 0004_init_ai_notes_skills.sql  (8,282 bytes)
-│   └── 0005_enable_rls.sql            (4,932 bytes)
-└── seed/
-    └── 001_seed_sample_user.sql
-
-app/lib/data/drift/
-├── app_database.dart                 (1,984 bytes, schemaVersion=1)
-├── app_database.g.dart               (codegen, gitignored)
-├── core_tables.dart                  (6,092 bytes, 11 tables)
-├── ledger_tables.dart                (4,571 bytes, 7 tables)
-└── aux_tables.dart                   (6,222 bytes, 12 tables)
-
-app/test/data/drift/
-└── app_database_test.dart            (smoke test)
-
-tools/
-└── verify_schema.py                  (verification tool)
-
-docs/
-└── SCHEMA.md                         (table reference)
-```
-
-## Wave 3 — NEXT
-
-Readiness: Wave 2 complete. Wave 3 target from `09-IMPLEMENTATION-ROADMAP.md`:
-- Core domain entities (entities + value objects + identity + invariants)
-- Domain layer with no Flutter / no Drift / no Supabase imports
+### Deliverables
+1. **Pure Domain Entities (No Flutter / No Drift / No Supabase imports)**:
+   - `User` (`app/lib/domain/entities/user.dart`)
+   - `LifeArea` (`app/lib/domain/entities/life_area.dart`)
+   - `Goal` (`app/lib/domain/entities/goal.dart`) — recursive tree, path maintenance, progress validation, derived `xpEarned`
+2. **Value Objects & Utilities**:
+   - `Id` (`app/lib/domain/ids.dart`) — UUIDv7 value object
+   - `Hlc` (`app/lib/domain/hlc.dart`) — Hybrid Logical Clock value object & tiebreaking
+   - `Iso8601Timestamp` (`app/lib/domain/timestamps.dart`)
+   - `GoalPath` (`app/lib/domain/invariants.dart`) — tree path validation consistent with Postgres constraints
+   - `DomainError` (`app/lib/domain/errors.dart`)
+3. **Repository Interfaces**:
+   - `UserRepository`, `LifeAreaRepository`, `GoalRepository`, `OutboxEnqueuer`
+4. **Verification**:
+   - `entities_test.dart`: User, LifeArea, and Goal invariants, child hierarchy, and progress checks.
+   - `goal_path_test.dart`: Root, child, and grandchild path validations.
+   - `ids_test.dart`: UUIDv7 format and monotonic uniqueness tests.
+   - `python tools/verify_schema.py`: PASSED (30 tables, 26 indexes, RLS enabled).

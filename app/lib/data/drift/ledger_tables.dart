@@ -43,6 +43,7 @@ class XpAllocationLines extends Table {
 /// Streak projection mirror of server user_streaks (migration 0002).
 class UserStreaks extends Table {
   TextColumn get userId => text()();
+  TextColumn get lifeAreaId => text()();
   IntColumn get currentStreak => integer().withDefault(const Constant(0))();
   IntColumn get longestStreak => integer().withDefault(const Constant(0))();
   DateTimeColumn get lastActiveDate => dateTime().nullable()();
@@ -51,13 +52,14 @@ class UserStreaks extends Table {
       dateTime().clientDefault(() => DateTime.now().toUtc())();
 
   @override
-  Set<Column> get primaryKey => {userId};
+  Set<Column> get primaryKey => {userId, lifeAreaId};
 }
 
 /// Streak pauses mirror of server streak_pauses (migration 0002).
 class StreakPauses extends Table {
   TextColumn get id => text()();
   TextColumn get userId => text()();
+  TextColumn get lifeAreaId => text().nullable()();
   TextColumn get reason => text().nullable()();
   DateTimeColumn get startedAt => dateTime()();
   DateTimeColumn get endedAt => dateTime().nullable()();
@@ -72,6 +74,7 @@ class StreakPauses extends Table {
 /// Transactional outbox mirror of server sync_outbox (migration 0003).
 class SyncOutbox extends Table {
   IntColumn get seq => integer().autoIncrement()();
+  TextColumn get userId => text()();
   TextColumn get op => text()();
   TextColumn get entity => text()();
   TextColumn get entityId => text()();
@@ -91,6 +94,7 @@ class SyncOutbox extends Table {
 
 /// Sync cursor watermark mirror of server sync_cursors (migration 0003).
 class SyncCursors extends Table {
+  TextColumn get userId => text()();
   TextColumn get peerId => text()();
   TextColumn get entityKind => text()();
   TextColumn get lastAppliedHlc => text()();
@@ -98,13 +102,13 @@ class SyncCursors extends Table {
       dateTime().clientDefault(() => DateTime.now().toUtc())();
 
   @override
-  Set<Column> get primaryKey => {peerId, entityKind};
+  Set<Column> get primaryKey => {userId, peerId, entityKind};
 }
 
 /// Tombstone mirror of server sync_tombstones (migration 0003).
-/// UNIQUE (entity, entity_id) is intentionally not enforced locally.
 class SyncTombstones extends Table {
   TextColumn get id => text()();
+  TextColumn get userId => text()();
   TextColumn get entity => text()();
   TextColumn get entityId => text()();
   DateTimeColumn get deletedAt => dateTime()();

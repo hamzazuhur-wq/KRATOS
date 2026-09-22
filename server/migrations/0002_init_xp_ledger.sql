@@ -47,20 +47,25 @@ CREATE TABLE IF NOT EXISTS xp_allocation_lines (
 CREATE INDEX IF NOT EXISTS idx_xp_allocation_ledger ON xp_allocation_lines (ledger_id);
 CREATE INDEX IF NOT EXISTS idx_xp_allocation_area ON xp_allocation_lines (life_area_id);
 
--- ── user_streaks (projection — invariant 8) ────────────────────────────
+-- ── user_streaks (projection — per Life Area) ───────────────────────────
 CREATE TABLE IF NOT EXISTS user_streaks (
-  user_id           uuid PRIMARY KEY REFERENCES users(id),
+  user_id           uuid NOT NULL REFERENCES users(id),
+  life_area_id      uuid NOT NULL REFERENCES life_areas(id),
   current_streak    integer NOT NULL DEFAULT 0,
   longest_streak    integer NOT NULL DEFAULT 0,
   last_active_date  date,
   last_active_hlc   text,
-  updated_at        timestamptz NOT NULL DEFAULT now()
+  updated_at        timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, life_area_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_user_streaks_area ON user_streaks (life_area_id);
 
 -- ── streak_pauses (only streak table with direct writes) ───────────────
 CREATE TABLE IF NOT EXISTS streak_pauses (
   id            uuid PRIMARY KEY,
   user_id       uuid NOT NULL REFERENCES users(id),
+  life_area_id  uuid REFERENCES life_areas(id),
   reason        text,
   started_at    timestamptz NOT NULL,
   ended_at      timestamptz,
@@ -68,5 +73,7 @@ CREATE TABLE IF NOT EXISTS streak_pauses (
   created_at    timestamptz NOT NULL DEFAULT now(),
   CHECK (started_at < COALESCE(ended_at, started_at + interval '1 day'))
 );
+
+CREATE INDEX IF NOT EXISTS idx_streak_pauses_user_area ON streak_pauses (user_id, life_area_id);
 
 COMMIT;

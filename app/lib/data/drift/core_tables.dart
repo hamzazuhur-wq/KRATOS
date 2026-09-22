@@ -5,27 +5,33 @@ import 'package:drift/drift.dart';
 class Users extends Table {
   TextColumn get id => text()();
   TextColumn get deviceId => text()();
-  TextColumn get displayName => text()();
+  TextColumn get displayName => text().nullable()();
   TextColumn get timezone => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class LifeAreas extends Table {
   TextColumn get id => text()();
   TextColumn get ownerId => text()();
   TextColumn get name => text()();
-  TextColumn get description => text()();
-  TextColumn get color => text()();
-  TextColumn get icon => text()();
+  TextColumn get description => text().nullable()();
+  TextColumn get color => text().nullable()();
+  TextColumn get icon => text().nullable()();
   IntColumn get sortOrder => integer()();
-  DateTimeColumn get archivedAt => dateTime()();
-  DateTimeColumn get deletedAt => dateTime()();
-  TextColumn get deletedBy => text()();
-  TextColumn get deletedReason => text()();
+  DateTimeColumn get archivedAt => dateTime().nullable()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
+  TextColumn get deletedReason => text().nullable()();
   TextColumn get versionHlc => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class Categories extends Table {
@@ -34,11 +40,14 @@ class Categories extends Table {
   TextColumn get name => text()();
   IntColumn get baseXp => integer()();
   BoolColumn get isImmutable => boolean()();
-  DateTimeColumn get archivedAt => dateTime()();
+  DateTimeColumn get archivedAt => dateTime().nullable()();
   IntColumn get sortOrder => integer()();
   TextColumn get versionHlc => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class CategoryActions extends Table {
@@ -47,8 +56,11 @@ class CategoryActions extends Table {
   TextColumn get actionName => text()();
   RealColumn get modifierPercent => real()();
   DateTimeColumn get effectiveFrom => dateTime()();
-  DateTimeColumn get effectiveUntil => dateTime()();
+  DateTimeColumn get effectiveUntil => dateTime().nullable()();
   IntColumn get version => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class CategoryXpRuleVersions extends Table {
@@ -56,73 +68,85 @@ class CategoryXpRuleVersions extends Table {
   TextColumn get categoryId => text()();
   TextColumn get snapshot => text()();
   DateTimeColumn get effectiveFrom => dateTime()();
-  DateTimeColumn get effectiveUntil => dateTime()();
+  DateTimeColumn get effectiveUntil => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class Goals extends Table {
   TextColumn get id => text()();
   TextColumn get ownerId => text()();
-  TextColumn get parentId => text()();
+  TextColumn get parentId => text().nullable()();
   TextColumn get rootId => text()();
   TextColumn get path => text()();
   IntColumn get depth => integer()();
   TextColumn get title => text()();
-  TextColumn get description => text()();
-  TextColumn get lifeAreaId => text()();
+  TextColumn get description => text().nullable()();
+  TextColumn get lifeAreaId => text().nullable()();
   TextColumn get status => text()();
-  IntColumn get xpTarget => integer()();
+  IntColumn get xpTarget => integer().nullable()();
   RealColumn get progress => real()();
-  TextColumn get progressHlc => text()();
-  DateTimeColumn get dueDate => dateTime()();
-  DateTimeColumn get completedAt => dateTime()();
-  DateTimeColumn get deletedAt => dateTime()();
-  TextColumn get deletedBy => text()();
-  TextColumn get deletedReason => text()();
+  TextColumn get progressHlc => text().nullable()();
+  DateTimeColumn get dueDate => dateTime().nullable()();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
+  TextColumn get deletedReason => text().nullable()();
   TextColumn get versionHlc => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class Projects extends Table {
   TextColumn get id => text()();
   TextColumn get ownerId => text()();
-  TextColumn get goalId => text()();
-  TextColumn get lifeAreaId => text()();
+  TextColumn get goalId => text().nullable()();
+  TextColumn get lifeAreaId => text().nullable()();
   TextColumn get title => text()();
-  TextColumn get description => text()();
+  TextColumn get description => text().nullable()();
   TextColumn get status => text()();
-  DateTimeColumn get dueDate => dateTime()();
+  DateTimeColumn get dueDate => dateTime().nullable()();
   TextColumn get memberIds => text()();
-  DateTimeColumn get deletedAt => dateTime()();
-  TextColumn get deletedBy => text()();
-  TextColumn get deletedReason => text()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
+  TextColumn get deletedReason => text().nullable()();
   TextColumn get versionHlc => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class Tasks extends Table {
   TextColumn get id => text()();
   TextColumn get ownerId => text()();
-  TextColumn get projectId => text()();
-  TextColumn get primaryGoalId => text()();
+  TextColumn get projectId => text().nullable()();
+  TextColumn get primaryGoalId => text().nullable()();
   TextColumn get title => text()();
-  TextColumn get notes => text()();
-  DateTimeColumn get dueDate => dateTime()();
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get dueDate => dateTime().nullable()();
   IntColumn get priority => integer()();
   TextColumn get status => text()();
   IntColumn get sortOrder => integer()();
-  IntColumn get xpReward => integer()();
-  TextColumn get recurringRule => text()();
-  DateTimeColumn get completedAt => dateTime()();
-  TextColumn get completedHlc => text()();
-  DateTimeColumn get deletedAt => dateTime()();
-  TextColumn get deletedBy => text()();
-  TextColumn get deletedReason => text()();
+  IntColumn get xpReward => integer().nullable()();
+  TextColumn get recurringRule => text().nullable()();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+  TextColumn get completedHlc => text().nullable()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
+  TextColumn get deletedReason => text().nullable()();
   TextColumn get versionHlc => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class TaskGoalLinks extends Table {
@@ -140,33 +164,39 @@ class TaskGoalLinks extends Table {
 class Activities extends Table {
   TextColumn get id => text()();
   TextColumn get ownerId => text()();
-  TextColumn get lifeAreaId => text()();
+  TextColumn get lifeAreaId => text().nullable()();
   TextColumn get name => text()();
-  TextColumn get description => text()();
-  TextColumn get xpRule => text()();
-  DateTimeColumn get archivedAt => dateTime()();
-  DateTimeColumn get deletedAt => dateTime()();
-  TextColumn get deletedBy => text()();
-  TextColumn get deletedReason => text()();
+  TextColumn get description => text().nullable()();
+  TextColumn get xpRule => text().nullable()();
+  DateTimeColumn get archivedAt => dateTime().nullable()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
+  TextColumn get deletedReason => text().nullable()();
   TextColumn get versionHlc => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class Sessions extends Table {
   TextColumn get id => text()();
   TextColumn get ownerId => text()();
-  TextColumn get taskId => text()();
-  TextColumn get activityId => text()();
+  TextColumn get taskId => text().nullable()();
+  TextColumn get activityId => text().nullable()();
   DateTimeColumn get startedAt => dateTime()();
-  DateTimeColumn get endedAt => dateTime()();
-  IntColumn get durationMs => integer()();
-  TextColumn get note => text()();
-  TextColumn get lifeAreaId => text()();
-  DateTimeColumn get deletedAt => dateTime()();
-  TextColumn get deletedBy => text()();
-  TextColumn get deletedReason => text()();
+  DateTimeColumn get endedAt => dateTime().nullable()();
+  IntColumn get durationMs => integer().nullable()();
+  TextColumn get note => text().nullable()();
+  TextColumn get lifeAreaId => text().nullable()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
+  TextColumn get deletedReason => text().nullable()();
   TextColumn get versionHlc => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }

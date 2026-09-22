@@ -8,6 +8,7 @@ BEGIN;
 -- ── sync_outbox ────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS sync_outbox (
   seq               bigserial PRIMARY KEY,          -- FIFO drain order
+  user_id           uuid NOT NULL REFERENCES users(id),
   op                text NOT NULL CHECK (op IN ('insert','update','delete','upsert','xp_event','restore')),
   entity            text NOT NULL,                  -- 'tasks','goals','xp_ledger','tombstones',...
   entity_id         text NOT NULL,                  -- UUID v7 of the affected row
@@ -24,20 +25,22 @@ CREATE TABLE IF NOT EXISTS sync_outbox (
 );
 
 CREATE INDEX IF NOT EXISTS idx_outbox_pending
-  ON sync_outbox (seq) WHERE status = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= now());
+  ON sync_outbox (user_id, seq) WHERE status = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= now());
 
 -- ── sync_cursors ───────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS sync_cursors (
+  user_id       uuid NOT NULL REFERENCES users(id),
   peer_id       uuid NOT NULL,                      -- device id of peer
   entity_kind   text NOT NULL,                      -- 'tasks','goals','xp_ledger',...
   last_applied_hlc text NOT NULL,                   -- HLC watermark
   updated_at    timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY (peer_id, entity_kind)
+  PRIMARY KEY (user_id, peer_id, entity_kind)
 );
 
 -- ── sync_tombstones ────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS sync_tombstones (
   id            uuid PRIMARY KEY,                   -- tombstone id (== entity_id)
+  user_id       uuid NOT NULL REFERENCES users(id),
   entity        text NOT NULL,
   entity_id     uuid NOT NULL,                      -- deleted row id
   deleted_at    timestamptz NOT NULL,
@@ -45,9 +48,9 @@ CREATE TABLE IF NOT EXISTS sync_tombstones (
   deleted_by    uuid,
   reason        text,
   created_at    timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (entity, entity_id)
+  UNIQUE (user_id, entity, entity_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tombstones_entity ON sync_tombstones (entity, entity_id);
+CREATE INDEX IF NOT EXISTS idx_tombstones_entity ON sync_tombstones (user_id, entity, entity_id);
 
 COMMIT;
