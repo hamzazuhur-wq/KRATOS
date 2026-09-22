@@ -121,3 +121,14 @@ class SyncTombstones extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Local 7-day TTL idempotency key cache for client replay protection (Wave 5).
+class ProcessedIdempotencyKeys extends Table {
+  TextColumn get idempotencyKey => text()();
+  TextColumn get userId => text()();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(() => DateTime.now().toUtc())();
+
+  @override
+  Set<Column> get primaryKey => {idempotencyKey};
+}

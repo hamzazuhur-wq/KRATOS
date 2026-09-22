@@ -1,6 +1,6 @@
 # KRATOS — Implementation Status (Live)
 
-> Updated: Wave 4 complete.
+> Updated: Wave 5 complete.
 
 ## Wave Status
 
@@ -12,7 +12,9 @@
 | Wave 2 — Database + Drift | ✅ COMPLETE | 2026-09-17 |
 | Wave 3 — Core Domain Foundation | ✅ COMPLETE | 2026-09-22 |
 | Wave 4 — Junction Tables + Indexes | ✅ COMPLETE | 2026-09-23 |
-| Wave 5 | 🔵 NEXT | — |
+| Wave 5 — XP Ledger + Idempotency | ✅ COMPLETE | 2026-09-23 |
+| Wave 6 | 🔵 NEXT | — |
+
 
 ## Wave 1 — Foundation ✅ VERIFIED
 
@@ -157,3 +159,43 @@
 | `kratos-feature-architecture` | `C:\Users\hamza\.gemini\config\skills\kratos-feature-architecture\` |
 | `kratos-wave-planner` | `C:\Users\hamza\.gemini\config\skills\kratos-wave-planner\` |
 | `kratos-domain-logic` | `C:\Users\hamza\.gemini\config\skills\kratos-domain-logic\` |
+
+## Wave 5 — XP Ledger + Idempotency ✅ COMPLETE
+
+**Location:** `server/migrations/0006_init_xp_ledger_rpc.sql`, `app/lib/features/xp/`, `app/test/features/xp/`
+
+### Deliverables
+
+1. **PostgreSQL Migration (`0006_init_xp_ledger_rpc.sql`)**:
+   - `tg_xp_allocation_sum_check()` trigger function and `trg_xp_allocation_sum_check` `CONSTRAINT TRIGGER ... DEFERRABLE INITIALLY DEFERRED` on `xp_allocation_lines`. Enforces that at commit time, `SUM(allocated_points) = xp_ledger.points` (Invariant #2).
+   - `record_xp_event(payload jsonb)` RPC:
+     - `SECURITY DEFINER` function with `search_path = public`.
+     - Validates caller authentication (`auth.uid()`).
+     - Idempotency check: if `idempotency_key` exists, returns existing row (idempotent 200).
+     - Validates `points != 0`, `points = base_points + bonus_points - late_penalty + streak_bonus`.
+     - Validates allocation line sum in payload.
+     - Atomically inserts into `xp_ledger`, `xp_allocation_lines`, and enqueues into `sync_outbox`.
+
+2. **Drift Schema & DAOs (`app/lib/data/drift/` & `app/lib/features/xp/data/`)**:
+   - `ProcessedIdempotencyKeys` table added to `ledger_tables.dart` with 7-day TTL support.
+   - `XpLedgerDao`: accessor for `xp_ledger`, `xp_allocation_lines`, and `processed_idempotency_keys`.
+   - Registered in `@DriftDatabase` in `app_database.dart`.
+
+3. **Core Domain Math & Entities (`app/lib/features/xp/domain/`)**:
+   - `HamiltonHareAllocator`: Implements Largest-Remainder method for proportional allocation without round-off drift. Supports both positive allocations and negative reversals.
+   - `LatePenaltyCalculator`: Enforces Invariant #7 (-30% penalty if overdue) and Invariant #8 (0 penalty and 0 XP for cancelled items).
+   - `XpLedgerEvent` & `XpAllocationLineEntity`: Immutable pure domain entities validating non-zero points, net arithmetic, and allocation sum.
+   - `XpLedgerWriter` interface.
+
+4. **Service Implementation (`app/lib/features/xp/data/xp_ledger_writer_impl.dart`)**:
+   - `DriftXpLedgerWriter`:
+     - Checks idempotency before execution.
+     - Performs Hamilton-Hare proportional allocation.
+     - Executes writes in a single Drift transaction (`xp_ledger` + `xp_allocation_lines` + `sync_outbox` + `processed_idempotency_keys`).
+     - `reverse()` creates compensating events with negative points, preserving immutable append-only chain (Invariant #1).
+
+5. **Automated Tests (`app/test/features/xp/`)**:
+   - `xp_allocation_math_test.dart`: Exhaustive verification of Hamilton-Hare rounding across 100/3, 10/3, 100%, and negative reversals; verification of late penalty calculation and cancelled item exclusion.
+   - `xp_ledger_writer_test.dart`: Entity invariant enforcement (allocation sum mismatch rejection, zero-point rejection, net arithmetic, and RPC payload serialization).
+   - `python tools/verify_schema.py`: PASSED (30 tables, 26 indexes, RLS enabled).
+

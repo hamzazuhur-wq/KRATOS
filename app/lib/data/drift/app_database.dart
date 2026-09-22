@@ -6,6 +6,7 @@ import 'core_tables.dart';
 import 'ledger_tables.dart';
 import '../../features/tasks/data/tasks_dao.dart';
 import '../../features/tasks/data/junctions_dao.dart';
+import '../../features/xp/data/xp_ledger_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -27,11 +28,12 @@ part 'app_database.g.dart';
     TaskGoalLinks,
     Activities,
     Sessions,
-    // XP Ledger (0002)
+    // XP Ledger (0002 + Wave 5)
     XpLedger,
     XpAllocationLines,
     UserStreaks,
     StreakPauses,
+    ProcessedIdempotencyKeys,
     // Sync (0003)
     SyncOutbox,
     SyncCursors,
@@ -56,6 +58,7 @@ part 'app_database.g.dart';
     SkillToolsDao,
     TaskToolLinksDao,
     AttachmentLinksDao,
+    XpLedgerDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
