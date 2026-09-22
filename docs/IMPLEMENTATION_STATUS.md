@@ -14,7 +14,9 @@
 | Wave 4 — Junction Tables + Indexes | ✅ COMPLETE | 2026-09-23 |
 | Wave 5 — XP Ledger + Idempotency | ✅ COMPLETE | 2026-09-23 |
 | Wave 6 — Levels / Tiers Engine | ✅ COMPLETE | 2026-09-23 |
-| Wave 7 | 🔵 NEXT | — |
+| Wave 7 — Streak Engine | ✅ COMPLETE | 2026-09-23 |
+| Wave 8 | 🔵 NEXT | — |
+
 
 
 
@@ -230,5 +232,36 @@
 5. **Automated Tests (`app/test/features/progression/`)**:
    - `progression_service_test.dart`: Exhaustive test suite verifying level curves (1-100), tier thresholds (Bronze through Mythic), and compound gate promotion rules.
    - `python tools/verify_schema.py`: PASSED (30 tables, 33 CREATE TABLE statements, 29 indexes, RLS enabled).
+
+## Wave 7 — Streak Engine ✅ COMPLETE
+
+**Location:** `server/migrations/0008_init_streaks.sql`, `app/lib/features/streaks/`, `app/test/features/streaks/`
+
+### Deliverables
+
+1. **PostgreSQL Migration (`0008_init_streaks.sql`)**:
+   - `streak_freeze_inventory` table tracking available and used freeze tokens per user and LifeArea (ADR-005, ADR-012).
+   - `process_streak_activity(p_user_id, p_life_area_id, p_activity_date, p_version_hlc)` plpgsql RPC:
+     - Consecutive day activity increments streak (+1) and updates longest streak.
+     - Missed 1 day: auto-consumes 1 freeze token from inventory, logs pause into `streak_pauses`, and preserves the streak unbroken.
+     - Missed >1 days or no tokens: resets current streak to 1.
+     - Evaluates weekly +20% streak modifier eligibility (active when current streak $\ge 7$).
+
+2. **Drift Schema & DAOs (`app/lib/data/drift/` & `app/lib/features/streaks/data/`)**:
+   - `StreakFreezeInventory` table added to `ledger_tables.dart`.
+   - `StreaksDao` in `streaks_dao.dart`: handles local transactional activity processing and freeze token logic.
+   - Registered in `@DriftDatabase` in `app_database.dart`.
+
+3. **Core Domain Models & Service (`app/lib/features/streaks/domain/`)**:
+   - `StreakInfo`: model calculating weekly +20% bonus (ADR-005) and Streak Society milestone (current streak $\ge 100$).
+   - `StreakService`: coordinates reading streak status and logging activities per LifeArea (Invariant #3).
+
+4. **Presentation Widget (`app/lib/features/streaks/presentation/`)**:
+   - `StreakBadgeWidget`: Liquid Glass / Dark Volcanic styling with glowing flame icon, active days counter, and cyan ice icons for freeze tokens.
+
+5. **Automated Tests (`app/test/features/streaks/`)**:
+   - `streak_service_test.dart`: unit tests verifying initial state, 7-day +20% weekly bonus activation, and 100-day Streak Society milestone.
+   - `python tools/verify_schema.py`: PASSED (30 tables, 34 CREATE TABLE statements, 30 indexes, RLS enabled).
+
 
 

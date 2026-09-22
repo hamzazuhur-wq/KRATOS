@@ -9,6 +9,7 @@ import '../../features/tasks/data/tasks_dao.dart';
 import '../../features/tasks/data/junctions_dao.dart';
 import '../../features/xp/data/xp_ledger_dao.dart';
 import '../../features/progression/data/progression_dao.dart';
+import '../../features/streaks/data/streaks_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -30,11 +31,12 @@ part 'app_database.g.dart';
     TaskGoalLinks,
     Activities,
     Sessions,
-    // XP Ledger (0002 + Wave 5)
+    // XP Ledger (0002 + Wave 5 + Wave 7)
     XpLedger,
     XpAllocationLines,
     UserStreaks,
     StreakPauses,
+    StreakFreezeInventory,
     ProcessedIdempotencyKeys,
     // Sync (0003)
     SyncOutbox,
@@ -66,6 +68,7 @@ part 'app_database.g.dart';
     AttachmentLinksDao,
     XpLedgerDao,
     ProgressionDao,
+    StreaksDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {

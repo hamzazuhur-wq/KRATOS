@@ -71,6 +71,22 @@ class StreakPauses extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Local mirror of streak_freeze_inventory (migration 0008).
+class StreakFreezeInventory extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get lifeAreaId => text()();
+  IntColumn get tokensAvailable => integer().withDefault(const Constant(2))();
+  IntColumn get tokensUsed => integer().withDefault(const Constant(0))();
+  DateTimeColumn get lastUsedDate => dateTime().nullable()();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(() => DateTime.now().toUtc())();
+
+  @override
+  Set<Column> get primaryKey => {userId, lifeAreaId};
+}
+
+
 /// Transactional outbox mirror of server sync_outbox (migration 0003).
 class SyncOutbox extends Table {
   IntColumn get seq => integer().autoIncrement()();
