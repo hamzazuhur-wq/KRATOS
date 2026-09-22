@@ -10,6 +10,9 @@ import '../../features/tasks/data/junctions_dao.dart';
 import '../../features/xp/data/xp_ledger_dao.dart';
 import '../../features/progression/data/progression_dao.dart';
 import '../../features/streaks/data/streaks_dao.dart';
+import '../../features/categories/data/categories_dao.dart';
+import '../../features/skills/data/skills_dao.dart';
+import '../../features/tools/data/tools_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -69,6 +72,9 @@ part 'app_database.g.dart';
     XpLedgerDao,
     ProgressionDao,
     StreaksDao,
+    CategoriesDao,
+    SkillsDao,
+    ToolsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
