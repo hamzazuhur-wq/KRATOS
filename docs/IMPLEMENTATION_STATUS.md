@@ -1,7 +1,7 @@
 # KRATOS — Implementation Status (Live)
 
-> Status: **ALL WAVES 0 TO 28 COMPLETE & VERIFIED** ✅
-> Last Updated: 2026-09-23 | Levels 1–9 fully implemented, tested, and committed.
+> Status: **ALL 10 LEVELS & ALL WAVES (0 TO 33) COMPLETE & VERIFIED — PRODUCTION READY v1.0.0** 🚀
+> Last Updated: 2026-09-23 | Full-system implementation, testing, and store compliance signed off.
 
 ## Wave Status Table
 
@@ -37,6 +37,11 @@
 | Wave 26 — Self-Healing Storage & Tombstone Janitor | ✅ COMPLETE | 30/30 trash retention, purge_expired_trash RPC, TrashAndStorageScreen | 2026-09-23 |
 | Wave 27 — Live Activities & System Widgets Engine | ✅ COMPLETE | LiveActivityService session ticker, LiveActivityWidget dynamic pill | 2026-09-23 |
 | Wave 28 — System Hardening & Master Integration | ✅ COMPLETE | 35 Drift tables, master integration suite, complete system sign-off | 2026-09-23 |
+| Wave 29 — Production Build & Packaging | ✅ COMPLETE | Multi-env AppConfig, build_production.py automation, AAB/PWA readiness | 2026-09-23 |
+| Wave 30 — Telemetry & Performance Profiling | ✅ COMPLETE | TelemetryService, DiagnosticsScreen, latency profiler, error stream | 2026-09-23 |
+| Wave 31 — Visual Golden UI & Cross-Device Engine | ✅ COMPLETE | ResponsiveScaffold, breakpoint engine, adaptive Phone/Tablet/Desktop | 2026-09-23 |
+| Wave 32 — Store Compliance & Distribution Assets | ✅ COMPLETE | PRIVACY_POLICY.md, STORE_LISTING_METADATA.md, PrivacyPolicyScreen | 2026-09-23 |
+| Wave 33 — Master Production Sign-Off & v1.0.0 Tag | ✅ COMPLETE | Full-system E2E test, zero invariant violations, release v1.0.0 | 2026-09-23 |
 
 ---
 
@@ -193,4 +198,46 @@
 - **app_database.dart**: Registered `CollaborativeNotes` & `CollaborativeNoteDeltas` tables and `CollaborativeNotesDao` (35 total Drift tables).
 - **Master Test Suite**: `level9_master_integration_test.dart` — end-to-end integration covering all 35 tables, collaborative CRDT edits, AI coach auditing, janitor storage audit, and live activity ticker.
 - **Status**: Complete verification across Waves 0–28 with schema passed and 100% test integrity.
+
+---
+
+## Level 10 — Production Release, Store Compliance & v1.0.0 Packaging (Waves 29–33)
+
+### Wave 29 — Production Build & Packaging Configuration ✅
+- **AppConfig**: Multi-environment isolation (`AppConfig.production`, `staging`, `development`) isolating debug bypass flags and endpoints.
+- **Automation**: `tools/build_production.py` Python build orchestrator verifying schema compliance, asset sizes, and package bundles.
+- **Tests**: `wave29_production_config_test.dart`.
+- **Commit**: `939eab1`
+
+### Wave 30 — Telemetry, Error Reporting & Performance Profiling ✅
+- **Service**: `TelemetryService` with circular buffer (max 100 entries), safe error capture, and SQLite query latency profiler.
+- **Presentation**: `DiagnosticsScreen` — Liquid Glass UI with live engine latency card and telemetry stream.
+- **Tests**: `wave30_telemetry_test.dart`.
+- **Commit**: `81fcf9b`
+
+### Wave 31 — Visual Golden UI & Cross-Device Layout Engine ✅
+- **Engine**: `ResponsiveBreakpoints` (Compact <600dp, Medium 600-840dp, Expanded >840dp) and `ResponsiveScaffold` adapting NavigationBar on Mobile to NavigationRail on Tablet & Desktop.
+- **Tests**: `wave31_responsive_layout_test.dart` (unit & widget tests for adaptive rendering).
+- **Commit**: `346801b`
+
+### Wave 32 — Store Compliance, Privacy Policies & Distribution Assets ✅
+- **Legal & Compliance**:
+  - `docs/PRIVACY_POLICY.md` — GDPR/CCPA compliant data sovereignty policy guaranteeing local-first offline storage and zero data monetization.
+  - `docs/STORE_LISTING_METADATA.md` — promotional copy and technical permissions justifications (`RECORD_AUDIO`, `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE`).
+- **Presentation**: `PrivacyPolicyScreen` — Liquid Glass in-app data ownership viewer.
+- **Tests**: `wave32_compliance_test.dart`.
+- **Commit**: `b0a2b3f`
+
+### Wave 33 — Master Production Sign-Off & v1.0.0 Release Tag ✅
+- **Master Test Harness**: `level10_master_release_test.dart` — full-system E2E execution verifying:
+  - Production AppConfig active (no debug bypass)
+  - 35 local Drift tables operational with zero conflicts
+  - Core domain execution: User -> Life Area -> Goal -> Task -> Session
+  - XP Ledger: Hamilton-Hare allocation line sum exact invariant
+  - Streak Engine: daily activity tracking and freeze token inventory
+  - Level Progression: Level curves & compound gate readiness
+  - AI & Telemetry: Invariant #11 advisory audit and error-free telemetry buffer
+  - Storage Janitor: HLC clock drift health verified
+- **Schema**: 30 tables, 39 CREATE TABLE statements, 37 indexes, RLS enabled — PASSED.
+- **Release**: Tagged `v1.0.0`. All 34 waves across all 10 levels fully implemented, verified, and committed.
 
