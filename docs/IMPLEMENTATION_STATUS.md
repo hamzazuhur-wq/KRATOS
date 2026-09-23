@@ -1,7 +1,7 @@
 # KRATOS — Implementation Status (Live)
 
-> Status: **ALL WAVES 0 TO 23 COMPLETE & VERIFIED** ✅
-> Last Updated: 2026-09-23 | Levels 1–8 fully implemented, tested, and committed.
+> Status: **ALL WAVES 0 TO 28 COMPLETE & VERIFIED** ✅
+> Last Updated: 2026-09-23 | Levels 1–9 fully implemented, tested, and committed.
 
 ## Wave Status Table
 
@@ -32,6 +32,11 @@
 | Wave 21 — Collaborative Goals | ✅ COMPLETE | shared_goals + goal_comments, CollaborationDao, ShareGoalDialog | 2026-09-23 |
 | Wave 22 — Achievement-Gated Promotions | ✅ COMPLETE | Compound gate (XP + objectives), Streak Society milestones, PromotionGateScreen | 2026-09-23 |
 | Wave 23 — XP Partitioning & Backup | ✅ COMPLETE | Materialized monthly summary, export_user_data RPC, BackupService, BackupScreen | 2026-09-23 |
+| Wave 24 — Real-Time Collaboration & CRDT Notes | ✅ COMPLETE | collaborative_notes, CrdtTextMergeEngine, CollaborativeNoteScreen | 2026-09-23 |
+| Wave 25 — AI Habit Coach & Burnout Predictor | ✅ COMPLETE | BurnoutDetectionService, Invariant #11 audit, AICoachSheet modal | 2026-09-23 |
+| Wave 26 — Self-Healing Storage & Tombstone Janitor | ✅ COMPLETE | 30/30 trash retention, purge_expired_trash RPC, TrashAndStorageScreen | 2026-09-23 |
+| Wave 27 — Live Activities & System Widgets Engine | ✅ COMPLETE | LiveActivityService session ticker, LiveActivityWidget dynamic pill | 2026-09-23 |
+| Wave 28 — System Hardening & Master Integration | ✅ COMPLETE | 35 Drift tables, master integration suite, complete system sign-off | 2026-09-23 |
 
 ---
 
@@ -151,4 +156,41 @@
   - Wave 22 + 23: achievement rows from promotion appear in backup manifest
   - Import→export round-trip preserves life areas across fresh DB instances
   - StreakSocietyTier completeness: all 3 tiers with increasing thresholds and bonus tokens
+
+---
+
+## Level 9 — Ecosystem Expansion, Real-Time Collaboration & Intelligent Coaching (Waves 24–28)
+
+### Wave 24 — Real-Time Collaboration & CRDT Shared Notes ✅
+- **Migration**: `0016_crdt_collaborative_notes.sql` — `collaborative_notes` and `collaborative_note_deltas` tables with participant RLS.
+- **Domain**: `CrdtDelta`, `CollaborativeNoteEntity`, and `CrdtTextMergeEngine` supporting deterministic multi-device text convergence.
+- **Drift**: `CollaborativeNotes` & `CollaborativeNoteDeltas` tables + `CollaborativeNotesDao`.
+- **Presentation**: `CollaborativeNoteScreen` — Liquid Glass live collaborative pad with typing indicator and live sync status.
+- **Tests**: `wave24_crdt_collaboration_test.dart`.
+- **Commit**: `d70229a`
+
+### Wave 25 — AI Habit Coach & Burnout Predictor ✅
+- **Domain Models**: `BurnoutRiskLevel`, `HabitVelocityMetrics` (fatigue index), `CoachRecommendation`.
+- **Service**: `BurnoutDetectionService` — predictive cognitive overload detection with Invariant #11 advisory audit logging in `ai_artifacts`.
+- **Presentation**: `AICoachSheet` — Liquid Glass modal with fatigue progress meter and confirmation button.
+- **Tests**: `wave25_ai_coach_test.dart`.
+- **Commit**: `5055e56`
+
+### Wave 26 — Self-Healing Storage & Automated Tombstone Janitor ✅
+- **Migration**: `0017_trash_janitor_and_self_healing.sql` — `purge_expired_trash` RPC (30/30 retention ADR-012) + `compact_sync_tombstones` RPC.
+- **Domain / Service**: `JanitorService` — 30-day trash countdown computation, entity restoration, expired purge, and HLC clock drift audit.
+- **Presentation**: `TrashAndStorageScreen` — Liquid Glass storage manager with countdown indicators, clean expired button, and one-tap restore.
+- **Tests**: `wave26_janitor_test.dart`.
+- **Commit**: `fe0e177`
+
+### Wave 27 — Live Activities & System Widgets Engine ✅
+- **Domain / Service**: `LiveActivityService` — session ticker state broadcaster managing remaining seconds, progress percentage, and pause/resume states.
+- **Presentation**: `LiveActivityWidget` — Liquid Glass dynamic island & lock-screen pill preview with live progress indicator and controls.
+- **Tests**: `wave27_live_activity_test.dart`.
+- **Commit**: `421232f`
+
+### Wave 28 — System Hardening & Master Integration ✅
+- **app_database.dart**: Registered `CollaborativeNotes` & `CollaborativeNoteDeltas` tables and `CollaborativeNotesDao` (35 total Drift tables).
+- **Master Test Suite**: `level9_master_integration_test.dart` — end-to-end integration covering all 35 tables, collaborative CRDT edits, AI coach auditing, janitor storage audit, and live activity ticker.
+- **Status**: Complete verification across Waves 0–28 with schema passed and 100% test integrity.
 
