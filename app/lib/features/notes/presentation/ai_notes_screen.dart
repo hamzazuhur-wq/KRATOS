@@ -8,7 +8,9 @@ import 'package:flutter/material.dart';
 /// Full implementation uses Riverpod [NotesNotifier] and [AudioNotifier]
 /// backed by [NotesDao] and [AudioDao]. This is the faithful UI prototype.
 class AiNotesScreen extends StatefulWidget {
-  const AiNotesScreen({super.key});
+  final List<({String title, String preview, bool isPinned, String timeAgo, String? aiTag})>? initialNotes;
+
+  const AiNotesScreen({super.key, this.initialNotes});
 
   @override
   State<AiNotesScreen> createState() => _AiNotesScreenState();
@@ -17,17 +19,54 @@ class AiNotesScreen extends StatefulWidget {
 class _AiNotesScreenState extends State<AiNotesScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  late final List<({String title, String preview, bool isPinned, String timeAgo, String? aiTag})> _notes;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _notes = widget.initialNotes?.toList() ?? [
+      (
+        title: 'System Design Insights',
+        preview: 'CAP theorem applies when we need to choose between consistency and availability.',
+        isPinned: true,
+        timeAgo: '2h ago',
+        aiTag: 'AI Summary',
+      ),
+      (
+        title: 'KRATOS Architecture Notes',
+        preview: 'The XP ledger should be append-only with HLC timestamps for distributed ordering.',
+        isPinned: false,
+        timeAgo: 'Yesterday',
+        aiTag: null,
+      ),
+      (
+        title: 'Morning Reflection',
+        preview: 'Today I need to focus on the sync engine and Supabase auth hardening.',
+        isPinned: false,
+        timeAgo: '3 days ago',
+        aiTag: null,
+      ),
+    ];
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _addNote(String text) {
+    if (text.trim().isEmpty) return;
+    setState(() {
+      _notes.insert(0, (
+        title: text.split('\n').first,
+        preview: text,
+        isPinned: false,
+        timeAgo: 'Just now',
+        aiTag: 'Quick Capture',
+      ));
+    });
   }
 
   @override
@@ -64,9 +103,9 @@ class _AiNotesScreenState extends State<AiNotesScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: const [
-          _NotesTab(),
-          _VoiceMemosTab(),
+        children: [
+          _NotesTab(notes: _notes),
+          const _VoiceMemosTab(),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -87,7 +126,7 @@ class _AiNotesScreenState extends State<AiNotesScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       isScrollControlled: true,
-      builder: (_) => const _QuickCaptureSheet(),
+      builder: (_) => _QuickCaptureSheet(onSave: _addNote),
     );
   }
 }
@@ -97,37 +136,26 @@ class _AiNotesScreenState extends State<AiNotesScreen>
 // ---------------------------------------------------------------------------
 
 class _NotesTab extends StatelessWidget {
-  const _NotesTab();
+  final List<({String title, String preview, bool isPinned, String timeAgo, String? aiTag})> notes;
+
+  const _NotesTab({required this.notes});
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    return ListView.separated(
       padding: const EdgeInsets.all(16),
-      children: const [
-        _NoteCard(
-          title: 'System Design Insights',
-          preview: 'CAP theorem applies when we need to choose between...',
-          isPinned: true,
-          timeAgo: '2h ago',
-          aiTag: 'AI Summary',
-        ),
-        SizedBox(height: 10),
-        _NoteCard(
-          title: 'KRATOS Architecture Notes',
-          preview: 'The XP ledger should be append-only with HLC timestamps...',
-          isPinned: false,
-          timeAgo: 'Yesterday',
-          aiTag: null,
-        ),
-        SizedBox(height: 10),
-        _NoteCard(
-          title: 'Morning Reflection',
-          preview: 'Today I need to focus on the sync engine and Supabase auth...',
-          isPinned: false,
-          timeAgo: '3 days ago',
-          aiTag: null,
-        ),
-      ],
+      itemCount: notes.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final n = notes[index];
+        return _NoteCard(
+          title: n.title,
+          preview: n.preview,
+          isPinned: n.isPinned,
+          timeAgo: n.timeAgo,
+          aiTag: n.aiTag,
+        );
+      },
     );
   }
 }
@@ -372,7 +400,8 @@ class _VoiceMemoTile extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _QuickCaptureSheet extends StatefulWidget {
-  const _QuickCaptureSheet();
+  final ValueChanged<String>? onSave;
+  const _QuickCaptureSheet({this.onSave});
 
   @override
   State<_QuickCaptureSheet> createState() => _QuickCaptureSheetState();
@@ -464,7 +493,7 @@ class _QuickCaptureSheetState extends State<_QuickCaptureSheet> {
               const SizedBox(width: 10),
               ElevatedButton(
                 onPressed: () {
-                  // TODO(Wave 11): save note via NotesDao
+                  widget.onSave?.call(_controller.text);
                   Navigator.of(context).pop();
                 },
                 style: ElevatedButton.styleFrom(

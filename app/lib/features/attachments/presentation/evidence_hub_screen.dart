@@ -14,6 +14,18 @@ class _EvidenceHubScreenState extends State<EvidenceHubScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
 
+  final List<({String title, String url, String dateAdded})> _links = [
+    (title: 'Drift Documentation', url: 'https://drift.simonbinder.eu', dateAdded: 'Sep 21'),
+    (title: 'Flutter Dev', url: 'https://flutter.dev', dateAdded: 'Sep 19'),
+    (title: 'Supabase Docs', url: 'https://supabase.com/docs', dateAdded: 'Sep 10'),
+  ];
+
+  final List<({String kind, String payload, String capturedAt})> _evidence = [
+    (kind: 'goal_completion', payload: 'Goal: Read 10 books — completed', capturedAt: 'Sep 22'),
+    (kind: 'streak_milestone', payload: 'Streak: 30-day run streak reached', capturedAt: 'Sep 18'),
+    (kind: 'skill_level_up', payload: 'Flutter Dev reached Level 8', capturedAt: 'Sep 15'),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -24,6 +36,78 @@ class _EvidenceHubScreenState extends State<EvidenceHubScreen>
   void dispose() {
     _tabs.dispose();
     super.dispose();
+  }
+
+  void _showAddDialog() {
+    final titleController = TextEditingController();
+    final urlController = TextEditingController();
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      isScrollControlled: true,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(left: 20, right: 20, top: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('ADD LINK OR EVIDENCE', style: TextStyle(color: Color(0xFFC6F135), fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 14)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: titleController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Title or description',
+                hintStyle: const TextStyle(color: Colors.white38),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.05),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: urlController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'URL (optional for evidence)',
+                hintStyle: const TextStyle(color: Colors.white38),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.05),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel', style: TextStyle(color: Colors.white38))),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    final title = titleController.text.trim();
+                    final url = urlController.text.trim();
+                    if (title.isNotEmpty) {
+                      setState(() {
+                        if (url.isNotEmpty) {
+                          _links.insert(0, (title: title, url: url, dateAdded: 'Today'));
+                        } else {
+                          _evidence.insert(0, (kind: 'manual', payload: title, capturedAt: 'Today'));
+                        }
+                      });
+                    }
+                    Navigator.of(ctx).pop();
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFC6F135), foregroundColor: const Color(0xFF0D0D0D)),
+                  child: const Text('Add'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -61,14 +145,14 @@ class _EvidenceHubScreenState extends State<EvidenceHubScreen>
       ),
       body: TabBarView(
         controller: _tabs,
-        children: const [
-          _FilesTab(),
-          _LinksTab(),
-          _EvidenceTab(),
+        children: [
+          const _FilesTab(),
+          _LinksTab(links: _links),
+          _EvidenceTab(evidence: _evidence),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: _showAddDialog,
         backgroundColor: const Color(0xFFC6F135),
         foregroundColor: const Color(0xFF0D0D0D),
         child: const Icon(Icons.attach_file),
@@ -127,18 +211,19 @@ class _FileTile extends StatelessWidget {
 }
 
 class _LinksTab extends StatelessWidget {
-  const _LinksTab();
+  final List<({String title, String url, String dateAdded})> links;
+  const _LinksTab({required this.links});
+
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    return ListView.separated(
       padding: const EdgeInsets.all(16),
-      children: const [
-        _LinkTile(title: 'Drift Documentation', url: 'https://drift.simonbinder.eu', dateAdded: 'Sep 21'),
-        SizedBox(height: 8),
-        _LinkTile(title: 'Flutter Dev', url: 'https://flutter.dev', dateAdded: 'Sep 19'),
-        SizedBox(height: 8),
-        _LinkTile(title: 'Supabase Docs', url: 'https://supabase.com/docs', dateAdded: 'Sep 10'),
-      ],
+      itemCount: links.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final l = links[index];
+        return _LinkTile(title: l.title, url: l.url, dateAdded: l.dateAdded);
+      },
     );
   }
 }
@@ -169,18 +254,19 @@ class _LinkTile extends StatelessWidget {
 }
 
 class _EvidenceTab extends StatelessWidget {
-  const _EvidenceTab();
+  final List<({String kind, String payload, String capturedAt})> evidence;
+  const _EvidenceTab({required this.evidence});
+
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    return ListView.separated(
       padding: const EdgeInsets.all(16),
-      children: const [
-        _EvidenceTile(kind: 'goal_completion', payload: 'Goal: Read 10 books — completed', capturedAt: 'Sep 22'),
-        SizedBox(height: 8),
-        _EvidenceTile(kind: 'streak_milestone', payload: 'Streak: 30-day run streak reached', capturedAt: 'Sep 18'),
-        SizedBox(height: 8),
-        _EvidenceTile(kind: 'skill_level_up', payload: 'Flutter Dev reached Level 8', capturedAt: 'Sep 15'),
-      ],
+      itemCount: evidence.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final e = evidence[index];
+        return _EvidenceTile(kind: e.kind, payload: e.payload, capturedAt: e.capturedAt);
+      },
     );
   }
 }

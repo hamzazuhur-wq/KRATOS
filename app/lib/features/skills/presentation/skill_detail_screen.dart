@@ -5,7 +5,7 @@
 import 'package:flutter/material.dart';
 
 /// Skill detail screen — shows XP attribution, linked tools, and level progress.
-class SkillDetailScreen extends StatelessWidget {
+class SkillDetailScreen extends StatefulWidget {
   final String skillName;
   final String icon;
   final int xpTotal;
@@ -22,9 +22,65 @@ class SkillDetailScreen extends StatelessWidget {
   });
 
   @override
+  State<SkillDetailScreen> createState() => _SkillDetailScreenState();
+}
+
+class _SkillDetailScreenState extends State<SkillDetailScreen> {
+  late final List<String> _tools;
+
+  @override
+  void initState() {
+    super.initState();
+    _tools = List.from(widget.linkedTools);
+  }
+
+  void _showLinkToolDialog() {
+    final controller = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text('Link Tool to Skill', style: TextStyle(color: Color(0xFFC6F135), fontSize: 16, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Tool name (e.g. Flutter, Neovim, Figma)',
+            hintStyle: const TextStyle(color: Colors.white38),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.05),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white38)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty && !_tools.contains(name)) {
+                setState(() => _tools.add(name));
+              }
+              Navigator.of(ctx).pop();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFC6F135),
+              foregroundColor: const Color(0xFF0D0D0D),
+            ),
+            child: const Text('Link'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     const nextLevelXp = 500;
-    final inLevelXp = xpTotal % 500;
+    final inLevelXp = widget.xpTotal % 500;
     final progressFraction = inLevelXp / nextLevelXp;
 
     return Scaffold(
@@ -34,7 +90,7 @@ class SkillDetailScreen extends StatelessWidget {
         elevation: 0,
         iconTheme: const IconThemeData(color: Color(0xFFC6F135)),
         title: Text(
-          skillName.toUpperCase(),
+          widget.skillName.toUpperCase(),
           style: const TextStyle(
             color: Color(0xFFC6F135),
             fontWeight: FontWeight.bold,
@@ -61,7 +117,7 @@ class SkillDetailScreen extends StatelessWidget {
                         width: 2),
                   ),
                   alignment: Alignment.center,
-                  child: Text(icon, style: const TextStyle(fontSize: 36)),
+                  child: Text(widget.icon, style: const TextStyle(fontSize: 36)),
                 ),
                 const SizedBox(height: 14),
                 Container(
@@ -73,7 +129,7 @@ class SkillDetailScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
-                    'LEVEL $level',
+                    'LEVEL ${widget.level}',
                     style: const TextStyle(
                       color: Color(0xFF0D0D0D),
                       fontWeight: FontWeight.bold,
@@ -101,7 +157,7 @@ class SkillDetailScreen extends StatelessWidget {
                     ),
                     const Spacer(),
                     Text(
-                      '$xpTotal total',
+                      '${widget.xpTotal} total',
                       style: const TextStyle(
                         color: Color(0xFFC6F135),
                         fontWeight: FontWeight.bold,
@@ -135,9 +191,7 @@ class SkillDetailScreen extends StatelessWidget {
           _DetailSection(
             label: 'LINKED TOOLS',
             action: TextButton(
-              onPressed: () {
-                // TODO(Wave 12): link tool bottom sheet
-              },
+              onPressed: _showLinkToolDialog,
               child: const Text(
                 '+ Link Tool',
                 style: TextStyle(
@@ -146,14 +200,17 @@ class SkillDetailScreen extends StatelessWidget {
                     fontWeight: FontWeight.bold),
               ),
             ),
-            child: linkedTools.isEmpty
+            child: _tools.isEmpty
                 ? const Text(
                     'No tools linked yet.',
                     style: TextStyle(color: Colors.white38, fontSize: 13),
                   )
                 : Column(
-                    children: linkedTools
-                        .map((t) => _ToolChip(name: t))
+                    children: _tools
+                        .map((t) => _ToolChip(
+                              name: t,
+                              onRemove: () => setState(() => _tools.remove(t)),
+                            ))
                         .toList(),
                   ),
           ),
@@ -165,7 +222,8 @@ class SkillDetailScreen extends StatelessWidget {
 
 class _ToolChip extends StatelessWidget {
   final String name;
-  const _ToolChip({required this.name});
+  final VoidCallback? onRemove;
+  const _ToolChip({required this.name, this.onRemove});
 
   @override
   Widget build(BuildContext context) {
@@ -184,7 +242,11 @@ class _ToolChip extends StatelessWidget {
           Text(name,
               style: const TextStyle(color: Colors.white70, fontSize: 13)),
           const Spacer(),
-          const Icon(Icons.close, color: Colors.white24, size: 14),
+          if (onRemove != null)
+            GestureDetector(
+              onTap: onRemove,
+              child: const Icon(Icons.close, color: Colors.white38, size: 14),
+            ),
         ],
       ),
     );

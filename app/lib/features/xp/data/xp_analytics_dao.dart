@@ -112,4 +112,49 @@ class XpAnalyticsDao extends DatabaseAccessor<AppDatabase>
         .toList()
       ..sort((a, b) => a.date.compareTo(b.date));
   }
+
+  /// Fetch complete dashboard metrics bundle in one coordinated pass.
+  Future<XpDashboardMetrics> getDashboardMetrics(String ownerId) async {
+    final areaXp = await xpByLifeArea(ownerId);
+    final sources = await xpBySourceType(ownerId);
+    final streakBonus = await totalStreakBonusXp(ownerId);
+    final daily = await dailyXpTotals(ownerId, 7);
+
+    final totalXp = areaXp.values.fold<int>(0, (sum, xp) => sum + xp);
+
+    return XpDashboardMetrics(
+      totalXp: totalXp,
+      streakBonusXp: streakBonus,
+      lifeAreaXp: areaXp,
+      sourceTypeXp: sources,
+      dailyXp: daily.map((d) => d.xp).toList(),
+    );
+  }
 }
+
+class XpDashboardMetrics {
+  final int totalXp;
+  final int streakBonusXp;
+  final Map<String, int> lifeAreaXp;
+  final Map<String, int> sourceTypeXp;
+  final List<int> dailyXp;
+
+  const XpDashboardMetrics({
+    required this.totalXp,
+    required this.streakBonusXp,
+    required this.lifeAreaXp,
+    required this.sourceTypeXp,
+    required this.dailyXp,
+  });
+
+  factory XpDashboardMetrics.empty() {
+    return const XpDashboardMetrics(
+      totalXp: 0,
+      streakBonusXp: 0,
+      lifeAreaXp: {},
+      sourceTypeXp: {},
+      dailyXp: [0, 0, 0, 0, 0, 0, 0],
+    );
+  }
+}
+

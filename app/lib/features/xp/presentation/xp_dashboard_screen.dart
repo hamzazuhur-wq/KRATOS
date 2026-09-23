@@ -4,15 +4,93 @@
 
 import 'package:flutter/material.dart';
 
+import '../data/xp_analytics_dao.dart';
+
 /// XP Dashboard — main analytics hub.
 ///
-/// Full implementation wires Riverpod [XpDashboardNotifier] backed by
-/// [XpAnalyticsDao]. This placeholder renders a faithful visual prototype.
-class XpDashboardScreen extends StatelessWidget {
-  const XpDashboardScreen({super.key});
+/// Supports either pre-computed [metrics] or loads real-time from [dao].
+class XpDashboardScreen extends StatefulWidget {
+  final XpDashboardMetrics? metrics;
+  final XpAnalyticsDao? dao;
+  final String? userId;
+
+  const XpDashboardScreen({
+    super.key,
+    this.metrics,
+    this.dao,
+    this.userId,
+  });
+
+  @override
+  State<XpDashboardScreen> createState() => _XpDashboardScreenState();
+}
+
+class _XpDashboardScreenState extends State<XpDashboardScreen> {
+  XpDashboardMetrics? _data;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.metrics != null) {
+      _data = widget.metrics;
+    } else if (widget.dao != null && widget.userId != null) {
+      _loadData();
+    } else {
+      // Default baseline snapshot
+      _data = const XpDashboardMetrics(
+        totalXp: 8740,
+        streakBonusXp: 320,
+        lifeAreaXp: {
+          'Career': 3400,
+          'Health': 2800,
+          'Learning': 1540,
+          'Relationships': 1000,
+        },
+        sourceTypeXp: {
+          'Tasks': 4200,
+          'Sessions': 2900,
+          'Goals': 1640,
+        },
+        dailyXp: [120, 85, 200, 0, 145, 310, 95],
+      );
+    }
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    final result = await widget.dao!.getDashboardMetrics(widget.userId!);
+    if (mounted) {
+      setState(() {
+        _data = result;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final m = _data ?? XpDashboardMetrics.empty();
+
+    final areaEntries = m.lifeAreaXp.entries.map((e) {
+      final color = switch (e.key.toLowerCase()) {
+        'career' => const Color(0xFF7B68EE),
+        'health' => const Color(0xFF4CAF50),
+        'learning' => const Color(0xFF00BCD4),
+        _ => const Color(0xFFFF9500),
+      };
+      return (name: e.key, xp: e.value, color: color);
+    }).toList();
+
+    final sourceEntries = m.sourceTypeXp.entries.map((e) {
+      final icon = switch (e.key.toLowerCase()) {
+        'tasks' || 'task' => Icons.task_alt,
+        'sessions' || 'session' => Icons.timer,
+        _ => Icons.flag,
+      };
+      return (label: e.key, xp: e.value, icon: icon);
+    }).toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D0D),
       appBar: AppBar(
@@ -28,47 +106,27 @@ class XpDashboardScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Total XP hero card
-          const _HeroXpCard(totalXp: 8740, streakBonus: 320),
-          const SizedBox(height: 20),
-
-          // 7-day sparkline
-          _SectionLabel(label: 'LAST 7 DAYS'),
-          const SizedBox(height: 10),
-          const _DailySparkline(
-            dailyXp: [120, 85, 200, 0, 145, 310, 95],
-          ),
-          const SizedBox(height: 20),
-
-          // Per-life-area breakdown
-          _SectionLabel(label: 'XP BY LIFE AREA'),
-          const SizedBox(height: 10),
-          const _LifeAreaXpList(
-            entries: [
-              (name: 'Career', xp: 3400, color: Color(0xFF7B68EE)),
-              (name: 'Health', xp: 2800, color: Color(0xFF4CAF50)),
-              (name: 'Learning', xp: 1540, color: Color(0xFF00BCD4)),
-              (name: 'Relationships', xp: 1000, color: Color(0xFFFF9500)),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // XP source breakdown
-          _SectionLabel(label: 'XP BY SOURCE'),
-          const SizedBox(height: 10),
-          const _XpSourceBreakdown(
-            sources: [
-              (label: 'Tasks', xp: 4200, icon: Icons.task_alt),
-              (label: 'Sessions', xp: 2900, icon: Icons.timer),
-              (label: 'Goals', xp: 1640, icon: Icons.flag),
-            ],
-          ),
-          const SizedBox(height: 32),
-        ],
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFFC6F135)))
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _HeroXpCard(totalXp: m.totalXp, streakBonus: m.streakBonusXp),
+                const SizedBox(height: 20),
+                const _SectionLabel(label: 'LAST 7 DAYS'),
+                const SizedBox(height: 10),
+                _DailySparkline(dailyXp: m.dailyXp.isEmpty ? const [0, 0, 0, 0, 0, 0, 0] : m.dailyXp),
+                const SizedBox(height: 20),
+                const _SectionLabel(label: 'XP BY LIFE AREA'),
+                const SizedBox(height: 10),
+                _LifeAreaXpList(entries: areaEntries),
+                const SizedBox(height: 20),
+                const _SectionLabel(label: 'XP BY SOURCE'),
+                const SizedBox(height: 10),
+                _XpSourceBreakdown(sources: sourceEntries),
+                const SizedBox(height: 32),
+              ],
+            ),
     );
   }
 }
