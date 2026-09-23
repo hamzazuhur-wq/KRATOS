@@ -21,12 +21,16 @@ import '../../features/notes/data/notes_dao.dart';
 import '../../features/notes/data/audio_dao.dart';
 import '../../features/attachments/data/attachments_dao.dart';
 import '../../features/sync/data/sync_dao.dart';
+import '../../features/search/data/vector_embeddings_table.dart';
+import '../../features/search/data/vector_embeddings_dao.dart';
+import '../../features/collaboration/data/collaboration_dao.dart';
 
 part 'app_database.g.dart';
 
 /// KRATOS local offline-first database.
 ///
-/// Mirrors the 30-table PostgreSQL schema from server/migrations/0001-0004.
+/// Mirrors the 33-table Drift schema (30 PostgreSQL tables + VectorEmbeddings,
+/// SharedGoals, GoalComments from Waves 19 & 21).
 /// Platform-aware: uses Native SQLite on Android/iOS/Desktop and Wasm/IndexedDB on Web.
 @DriftDatabase(
   tables: [
@@ -70,6 +74,11 @@ part 'app_database.g.dart';
     LevelCurves,
     TierDefinitions,
     LevelObjectives,
+    // Search / Vector Embeddings (Wave 19)
+    VectorEmbeddings,
+    // Collaboration (Wave 21)
+    SharedGoals,
+    GoalComments,
   ],
   daos: [
     TasksDao,
@@ -91,6 +100,8 @@ part 'app_database.g.dart';
     AudioDao,
     AttachmentsDao,
     SyncDao,
+    VectorEmbeddingsDao,
+    CollaborationDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {

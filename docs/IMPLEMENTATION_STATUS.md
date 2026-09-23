@@ -1,7 +1,7 @@
 # KRATOS — Implementation Status (Live)
 
-> Status: **ALL WAVES 0 TO 18 COMPLETE & VERIFIED** ✅
-> Complete Level Finished: Fully validated against developer standards and system architecture.
+> Status: **ALL WAVES 0 TO 23 COMPLETE & VERIFIED** ✅
+> Last Updated: 2026-09-23 | Levels 1–8 fully implemented, tested, and committed.
 
 ## Wave Status Table
 
@@ -27,6 +27,11 @@
 | Wave 16 — Background Sync Engine | ✅ COMPLETE | Outbox drain worker, apply_sync_batch, reminders | 2026-09-23 |
 | Wave 17 — Onboarding Flow | ✅ COMPLETE | Curated life areas, initial goal, mechanics wizard | 2026-09-23 |
 | Wave 18 — Launch Hardening & AppShell | ✅ COMPLETE | Liquid Glass navigation shell, KratosApp, E2E test | 2026-09-23 |
+| Wave 19 — Semantic Vector Search | ✅ COMPLETE | VectorEmbeddingsDao, top-K cosine similarity, SemanticSearchBar | 2026-09-23 |
+| Wave 20 — Multimodal Vision & Streaming | ✅ COMPLETE | MultimodalVisionService, ProviderFallbackPolicy (30%), VisionProposalDialog | 2026-09-23 |
+| Wave 21 — Collaborative Goals | ✅ COMPLETE | shared_goals + goal_comments, CollaborationDao, ShareGoalDialog | 2026-09-23 |
+| Wave 22 — Achievement-Gated Promotions | ✅ COMPLETE | Compound gate (XP + objectives), Streak Society milestones, PromotionGateScreen | 2026-09-23 |
+| Wave 23 — XP Partitioning & Backup | ✅ COMPLETE | Materialized monthly summary, export_user_data RPC, BackupService, BackupScreen | 2026-09-23 |
 
 ---
 
@@ -86,3 +91,64 @@
 - **AppShell**: Complete navigation shell uniting all 6 core modules with real-time streak and sync badges in the top bar.
 - **E2E Test**: `wave18_e2e_integration_test.dart` verifying cross-system execution from Auth -> LifeArea -> Goal -> Task -> Session -> Largest-Remainder XP Allocation -> Streak +20% Bonus -> Level Progression Curve -> Tier promotion -> Sync Outbox mutation queue.
 - **Entrypoint**: `main.dart` updated to run `KratosApp`.
+
+---
+
+## Level 8 — Expansion & Intelligence (Waves 19–23)
+
+### Wave 19 — Semantic Vector Search ✅
+- **Migration**: `0012_vector_embeddings.sql` — `vector_embeddings` table with cosine similarity index and RLS.
+- **Drift**: `VectorEmbeddings` table + `VectorEmbeddingsDao` with top-K cosine similarity ranking (client-side dot-product).
+- **Domain**: `VectorEmbedding`, `CosineSimilarity`, `SearchResultItem` models.
+- **Presentation**: `SemanticSearchBar` with match percentage badges (Acid Lime gradient).
+- **Tests**: `wave19_vector_search_test.dart`.
+- **Commit**: `960f309`
+
+### Wave 20 — Multimodal Vision & Streaming ✅
+- **Domain**: `MultimodalInput`, `VisionAnalysisResult`, `StreamingToolCallChunk`, `ProviderFallbackPolicy` (30% error threshold per ADR-012).
+- **Service**: `MultimodalVisionService` — vision analysis with ai_artifacts audit trail (Invariant #11) + streaming plan decomposition.
+- **Presentation**: `VisionProposalDialog` — explicit user confirmation before any AI-generated action (Invariant #11).
+- **Tests**: `wave20_multimodal_ai_test.dart`.
+- **Commit**: `8f75254`
+
+### Wave 21 — Collaborative Goals ✅
+- **Migration**: `0013_collaborative_goals.sql` — `shared_goals` + `goal_comments` tables with scoped RLS per partner role.
+- **Drift**: `SharedGoals`, `GoalComments` tables + `CollaborationDao` (invite, accept, comment CRUD).
+- **Domain**: `SharedGoalEntity`, `GoalCommentEntity`, `PartnerRole` enum (Viewer/Partner/Coach).
+- **Presentation**: `ShareGoalDialog` — partner invite with role selector, Liquid Glass design.
+- **Tests**: `wave21_collaborative_goals_test.dart`.
+- **Commit**: `413de8c`
+
+### Wave 22 — Achievement-Gated Level Promotions ✅
+- **Migration**: `0014_achievement_gated_promotion.sql` — `evaluate_level_promotion_gate` RPC enforcing compound gates (XP threshold + mandatory `level_objectives` completion → inserts into `achievements`).
+- **Domain Models**: `PromotionGateResult` sealed class (Locked/PendingObjectives/Ready/Promoted), `PromotionObjective`, `StreakSocietyMilestone`, `StreakSocietyTier` enum (100/200/365 days, 5/10/20 bonus freeze tokens).
+- **Services**: `AchievementGateService` (compound gate evaluation + local promotion execution), `StreakSocietyService` (idempotent milestone awards).
+- **Presentation**: `PromotionGateScreen` — Liquid Glass UI with XP gauge, objectives checklist, promote button, and promotion celebration dialog.
+- **app_database.dart**: Added `VectorEmbeddings`, `SharedGoals`, `GoalComments` tables + `VectorEmbeddingsDao`, `CollaborationDao` DAOs (outstanding from Waves 19 & 21).
+- **Tests**: `wave22_achievement_gate_test.dart` (12 tests: gate math, Streak Society milestones, idempotency, DB writes).
+- **Commit**: `eaed9d0`
+
+### Wave 23 — XP Partitioning & Full Backup ✅
+- **Migration**: `0015_xp_partitioning_and_backup.sql`:
+  - `xp_ledger_monthly_summary` — materialized view aggregating XP per user/life-area/month with unique index for REFRESH CONCURRENTLY.
+  - `refresh_xp_monthly_summary()` — SECURITY DEFINER function for scheduled nightly refresh.
+  - `export_user_data(p_user_id uuid)` — structured JSONB backup RPC (SECURITY INVOKER, enforces `auth.uid() = p_user_id`).
+  - `validate_backup_schema(jsonb)` — schema version guard for import safety.
+- **Domain**: `BackupService` — export (all domain entities + client-side XP monthly aggregation) + import (insertOnConflictUpdate with HLC conflict resolution, schema validation, Invariant #1: xp_ledger excluded from import).
+- **Models**: `BackupManifest` (versioned JSON document), `BackupImportResult`.
+- **Presentation**: `BackupScreen` — Liquid Glass settings screen with Export and Import sections, JSON paste dialog, and status banners.
+- **Tests**: `wave23_backup_test.dart` (10 tests: manifest round-trip, schema validation, empty/seeded export, import failure modes, idempotency).
+- **Commit**: `aa09156`
+
+---
+
+## Level 8 — Comprehensive Test Suite
+
+- `level8_expansion_intelligence_test.dart` — Cross-wave integration harness:
+  - All 33 Drift tables accessible (VectorEmbeddings + SharedGoals + GoalComments registered in `app_database.dart`)
+  - Wave 19 + 22 coexistence: vector search and achievement gate in same DB session
+  - Wave 21 + 23: backup export includes life area data
+  - Wave 22 + 23: achievement rows from promotion appear in backup manifest
+  - Import→export round-trip preserves life areas across fresh DB instances
+  - StreakSocietyTier completeness: all 3 tiers with increasing thresholds and bonus tokens
+
