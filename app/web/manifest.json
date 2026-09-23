@@ -1,13 +1,15 @@
 {
-    "name": "kratos_app",
-    "short_name": "kratos_app",
+    "name": "KRATOS — Level Up Your Life",
+    "short_name": "KRATOS",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0D0D0D",
+    "theme_color": "#C6F135",
+    "description": "KRATOS: offline-first personal operating system with XP, goals, streaks, and life-area progression.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "categories": ["productivity", "lifestyle"],
+    "lang": "en",
     "icons": [
         {
             "src": "icons/Icon-192.png",
@@ -30,6 +32,23 @@
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
+        }
+    ],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Quick Capture",
+            "short_name": "Capture",
+            "description": "Quickly capture a note or task",
+            "url": "/?shortcut=capture",
+            "icons": [{"src": "icons/Icon-192.png", "sizes": "192x192"}]
+        },
+        {
+            "name": "Start Session",
+            "short_name": "Session",
+            "description": "Start a focus session",
+            "url": "/?shortcut=session",
+            "icons": [{"src": "icons/Icon-192.png", "sizes": "192x192"}]
         }
     ]
 }
