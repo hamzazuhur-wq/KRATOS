@@ -20,6 +20,7 @@ import '../../features/projects/data/projects_dao.dart';
 import '../../features/notes/data/notes_dao.dart';
 import '../../features/notes/data/audio_dao.dart';
 import '../../features/attachments/data/attachments_dao.dart';
+import '../../features/sync/data/sync_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -89,6 +90,7 @@ part 'app_database.g.dart';
     NotesDao,
     AudioDao,
     AttachmentsDao,
+    SyncDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
