@@ -56,14 +56,18 @@ class XpAnalyticsDao extends DatabaseAccessor<AppDatabase>
   // ─── XP Over Time ─────────────────────────────────────────────────────
 
   /// XP events in the last [days] days for an owner, ordered newest first.
+  ///
+  /// NOTE: Includes BOTH original positive rows AND compensating negative
+  /// reversal rows so that [dailyXpTotals] computes correct net XP.
+  /// Filtering out reversal rows (reversalEventId.isNull()) would inflate
+  /// totals because the compensating deduction would be invisible.
   Future<List<XpLedgerData>> recentXpEvents(String ownerId, int days) {
     final since =
         DateTime.now().toUtc().subtract(Duration(days: days));
     return (select(db.xpLedger)
           ..where((e) =>
               e.ownerId.equals(ownerId) &
-              e.createdAt.isBiggerThanValue(since) &
-              e.reversalEventId.isNull()) // exclude reversals
+              e.createdAt.isBiggerThanValue(since))
           ..orderBy([(e) => OrderingTerm.desc(e.createdAt)]))
         .get();
   }
@@ -71,10 +75,12 @@ class XpAnalyticsDao extends DatabaseAccessor<AppDatabase>
   // ─── XP by Source Type ────────────────────────────────────────────────
 
   /// Total XP grouped by sourceType (e.g. 'task', 'session', 'goal').
+  ///
+  /// NOTE: All rows (original + reversal) are included so the SUM nets
+  /// correctly. Excluding reversals would inflate XP per source type.
   Future<Map<String, int>> xpBySourceType(String ownerId) async {
     final rows = await (select(db.xpLedger)
-          ..where((e) =>
-              e.ownerId.equals(ownerId) & e.reversalEventId.isNull()))
+          ..where((e) => e.ownerId.equals(ownerId)))
         .get();
     final result = <String, int>{};
     for (final r in rows) {
