@@ -1,7 +1,50 @@
 # KRATOS — Implementation Status (Live)
 
-> Status: **ALL 10 LEVELS & ALL WAVES (0 TO 33) COMPLETE & VERIFIED — PRODUCTION READY v1.0.0** 🚀
-> Last Updated: 2026-09-23 | Full-system implementation, testing, and store compliance signed off.
+> Status: **Waves 0–33 have implementation artifacts; full contract compliance is PARTIAL and remains under re-audit.** A successful build or the historical wave table is not a production sign-off.
+> Last Updated: 2026-09-25 | Phase 1 XP Engine integrity fixes applied.
+
+## XP Engine Audit Fixes (2026-09-25) — Phase 1
+
+**6 critical bugs fixed** in the XP ledger system. Commit: `Phase 1: XP Engine integrity`.
+
+| # | Bug | File(s) | Fix |
+|---|-----|---------|-----|
+| 1 | `recentXpEvents` excluded compensating reversal rows — net XP inflated | `xp_analytics_dao.dart` | Removed `reversalEventId.isNull()` filter |
+| 2 | `xpBySourceType` excluded compensating reversal rows — per-type XP inflated | `xp_analytics_dao.dart` | Removed `reversalEventId.isNull()` filter |
+| 3 | Levels dashboard `_buildQuery` excluded compensating rows — level/tier inflated | `levels_dashboard_repository.dart` | Removed `reversalEventId.isNull()` from join condition |
+| 4 | `GoalXpService.completeTask` never called `LatePenaltyCalculator` | `goal_xp_service.dart` | Wired `LatePenaltyCalculator.calculate` → `latePenalty` param |
+| 5 | `GoalXpService.completeTask` never applied streak +20% bonus | `goal_xp_service.dart` | Wired `StreakService.getStreakForLifeArea` → `streakBonus` param + `logActivity` after XP |
+| 6 | `TaskDashboardRepository.updateStatus` bypassed XP engine on completion | `task_dashboard_repository.dart` | Routes `status == 'completed'\|'done'` through `GoalXpService.completeTask` |
+| DB | `xp_allocation_lines.allocated_points CHECK (> 0)` blocks reversal inserts | `server/migrations/0024_xp_constraint_fixes.sql` | `CHECK (<> 0)` — nonzero, allows negative |
+| DB | `xp_ledger.source_type` CHECK missing `'project'` | `server/migrations/0024_xp_constraint_fixes.sql` | Added `'project'` to IN list |
+| DB | `xp_ledger.action` CHECK missing `'project_completed'`, `'focus_completed'`, `'goal_completion_bonus'`, `'completed'` | `server/migrations/0024_xp_constraint_fixes.sql` | Expanded IN list with all 4 values |
+
+## System & Domain Integration Fixes (2026-09-25) — Phases 2–14
+
+**Comprehensive domain wiring completed across the KRATOS system:**
+
+| Phase | Area | Key Fixes / Deliverables |
+|---|---|---|
+| **Phase 2** | Categories System | Added `CategoriesDao.ensureSeeded()` to guarantee all 4 category types (Goal, Task, Activity, Life Area) have default entries with initial SCD Type 2 rule versions (`CategoryXpRuleVersion`) and sync outbox integration. |
+| **Phase 3** | XP & Tier Settings | Added `updateTierDefinition` and `upsertTierDefinition` in `ProgressionDao`. Connected `ProgressionSettingsScreen` to load and persist tier configurations to SQLite and enqueue `tier_definitions` to `sync_outbox`. |
+| **Phase 6 & 7** | Sessions & Activities | Wired `StreakService` into `GlobalActiveSessionController.completeSession` to calculate +20% weekly streak bonus on focus XP. Connected `SessionTimerScreen` to real session storage, sync outbox, and `DriftXpLedgerWriter` (eliminating TODO). |
+| **Phase 8** | Projects Engine | Connected `StreakService` in `ProjectsRepository.completeProject` to compute +20% streak modifier and log activity on project completion. |
+| **Phase 11 & 12** | Life Areas & Dashboard Data | Corrected invalid `sourceType: 'initial_allocation'` and `action: 'create_life_area'` in `life_areas_screen.dart` to canonical `'admin'` and `'admin_adjust'`. Added `xpByLifeAreaNamed()` in `XpAnalyticsDao` to resolve human-readable Life Area names on the XP Dashboard. |
+| **Phase 14 & 15** | Database & Sync Outbox | Verified all mutation pathways (task completion, goal completion, project completion, session completion, tier updates, and category updates) enqueue to `sync_outbox` in the same transaction. |
+
+
+## Re-audit Snapshot (2026-09-23)
+
+- `flutter test --no-pub`: **266 passed** after updating stale test imports and APIs; no test files are excluded.
+- `flutter build web --no-pub`: **passed**.
+- `flutter analyze --no-pub`: **0 analyzer errors**; the command still reports warnings/infos (101 findings), so the analyzer output is not clean.
+- Static schema verifier: **passed** for 30 PostgreSQL tables, 39 `CREATE TABLE` statements, 37 indexes, and RLS declarations. This does not execute migrations against PostgreSQL.
+- Comprehensive static audit: **one unresolved UI integration finding** remains. `AppShell` intentionally does not show a streak badge because a selected Life Area and live-backed streak state are not yet established at the shell level; retain this as a product/context decision, not a mock value.
+- Supabase/PostgreSQL migration execution remains **UNVERIFIED** because the required external environment is unavailable.
+- Verified defects fixed during this continuation: Drift and test API/import compilation errors; backup export now serializes actual typed row fields for round-trip import; archived goals reject further mutation; related regression coverage passes.
+- The progression screen no longer exposes its hard-coded 4,500 XP simulator; it now reads XP allocations per active Life Area and renders separate progression/tier state for each area.
+- Remaining contract work is not represented as complete by this snapshot. In particular, concrete repository/outbox/UI coverage is uneven across User, Life Area, Goal, Activity, Session, Category, Skill/Tool, Files/Evidence, and AI action flows. Session-to-XP/streak ledger integration and broader entity sync/delete/restore coverage require additional implementation and verification.
+- The current `apply_sync_batch` RPC supports `xp_ledger`, `tasks`, `life_areas`, `goals`, and `notes`; other local entity mutations must not be reported as server-sync-complete until RPC support and its migration are added and tested.
 
 ## Wave Status Table
 
@@ -240,4 +283,3 @@
   - Storage Janitor: HLC clock drift health verified
 - **Schema**: 30 tables, 39 CREATE TABLE statements, 37 indexes, RLS enabled — PASSED.
 - **Release**: Tagged `v1.0.0`. All 34 waves across all 10 levels fully implemented, verified, and committed.
-
