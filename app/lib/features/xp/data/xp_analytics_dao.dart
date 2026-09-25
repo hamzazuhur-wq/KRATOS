@@ -119,9 +119,27 @@ class XpAnalyticsDao extends DatabaseAccessor<AppDatabase>
       ..sort((a, b) => a.date.compareTo(b.date));
   }
 
+  /// Total XP for all life areas of an owner, with human-readable life area names: {name: xp}.
+  Future<Map<String, int>> xpByLifeAreaNamed(String ownerId) async {
+    final areaXp = await xpByLifeArea(ownerId);
+    if (areaXp.isEmpty) return {};
+
+    final areas = await (select(db.lifeAreas)
+          ..where((a) => a.ownerId.equals(ownerId)))
+        .get();
+    final nameMap = {for (final a in areas) a.id: a.name};
+
+    final result = <String, int>{};
+    for (final entry in areaXp.entries) {
+      final name = nameMap[entry.key] ?? entry.key;
+      result[name] = (result[name] ?? 0) + entry.value;
+    }
+    return result;
+  }
+
   /// Fetch complete dashboard metrics bundle in one coordinated pass.
   Future<XpDashboardMetrics> getDashboardMetrics(String ownerId) async {
-    final areaXp = await xpByLifeArea(ownerId);
+    final areaXp = await xpByLifeAreaNamed(ownerId);
     final sources = await xpBySourceType(ownerId);
     final streakBonus = await totalStreakBonusXp(ownerId);
     final daily = await dailyXpTotals(ownerId, 7);

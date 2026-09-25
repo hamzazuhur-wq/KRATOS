@@ -115,6 +115,27 @@ class ProgressionDao extends DatabaseAccessor<AppDatabase>
       (select(db.tierDefinitions)..orderBy([(t) => OrderingTerm.asc(t.ordinal)]))
           .get();
 
+  /// Update an existing tier definition.
+  Future<void> updateTierDefinition({
+    required String name,
+    required int entryXp,
+    String? color,
+    String? icon,
+    int? ordinal,
+  }) =>
+      (update(db.tierDefinitions)..where((t) => t.name.equals(name))).write(
+        TierDefinitionsCompanion(
+          entryXp: Value(entryXp),
+          color: color != null ? Value(color) : const Value.absent(),
+          icon: icon != null ? Value(icon) : const Value.absent(),
+          ordinal: ordinal != null ? Value(ordinal) : const Value.absent(),
+        ),
+      );
+
+  /// Upsert a tier definition.
+  Future<void> upsertTierDefinition(TierDefinitionsCompanion tier) =>
+      into(db.tierDefinitions).insertOnConflictUpdate(tier);
+
   /// Find matching level curve for given total XP.
   Future<LevelCurve> findLevelForXp(int totalXp) async {
     final row = await (select(db.levelCurves)
@@ -150,4 +171,56 @@ class ProgressionDao extends DatabaseAccessor<AppDatabase>
   /// Objectives for a given level.
   Future<List<LevelObjective>> objectivesForLevel(int level) =>
       (select(db.levelObjectives)..where((o) => o.level.equals(level))).get();
+
+  /// Find single level curve by level number.
+  Future<LevelCurve?> findLevel(int level) =>
+      (select(db.levelCurves)..where((c) => c.level.equals(level))).getSingleOrNull();
+
+  /// Watch single level curve by level number.
+  Stream<LevelCurve?> watchLevel(int level) =>
+      (select(db.levelCurves)..where((c) => c.level.equals(level))).watchSingleOrNull();
+
+  /// Update level curve metadata (name, description, categoryId, tierName, deltaXp).
+  Future<void> updateLevelCurve({
+    required int level,
+    String? name,
+    String? description,
+    String? categoryId,
+    String? tierName,
+    int? deltaXp,
+    int? cumulativeXpRequired,
+  }) async {
+    final existing = await findLevel(level);
+    if (existing == null) {
+      await into(db.levelCurves).insert(
+        LevelCurvesCompanion(
+          level: Value(level),
+          deltaXp: Value(deltaXp ?? 100),
+          cumulativeXpRequired: Value(cumulativeXpRequired ?? 0),
+          name: Value(name),
+          description: Value(description),
+          categoryId: Value(categoryId),
+          tierName: Value(tierName),
+        ),
+      );
+      return;
+    }
+
+    await (update(db.levelCurves)..where((c) => c.level.equals(level))).write(
+      LevelCurvesCompanion(
+        name: name != null ? Value(name) : const Value.absent(),
+        description: description != null ? Value(description) : const Value.absent(),
+        categoryId: categoryId != null ? Value(categoryId) : const Value.absent(),
+        tierName: tierName != null ? Value(tierName) : const Value.absent(),
+        deltaXp: deltaXp != null ? Value(deltaXp) : const Value.absent(),
+        cumulativeXpRequired: cumulativeXpRequired != null
+            ? Value(cumulativeXpRequired)
+            : const Value.absent(),
+      ),
+    );
+  }
+
+  /// Upsert a level curve.
+  Future<void> upsertLevelCurve(LevelCurvesCompanion curve) =>
+      into(db.levelCurves).insertOnConflictUpdate(curve);
 }

@@ -3,13 +3,22 @@
 // Session XP is awarded via XpLedgerWriter after the timer ends.
 
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
+
+import '../../../data/drift/app_database.dart';
+import '../../../domain/hlc.dart';
+import '../../../domain/ids.dart';
+import '../../streaks/domain/streak_service.dart';
+import '../../xp/data/xp_ledger_writer_impl.dart';
+import '../../xp/domain/xp_allocation_math.dart';
 
 /// Stateful focus timer widget for a single KRATOS session.
 ///
-/// Integrates with [SessionsDao] and [XpLedgerWriter] (wired via Riverpod
-/// in the full implementation). This screen manages the local timer state.
+/// Integrates with [SessionsDao] and [XpLedgerWriter] for persistent time logging
+/// and immutable XP ledger credit with streak bonus.
 class SessionTimerScreen extends StatefulWidget {
   /// Optional task or activity name shown in the header.
   final String? contextLabel;
@@ -17,10 +26,21 @@ class SessionTimerScreen extends StatefulWidget {
   /// Optional XP estimate shown while running.
   final int? estimatedXp;
 
+  final AppDatabase? database;
+  final String? ownerId;
+  final String? taskId;
+  final String? activityId;
+  final String? lifeAreaId;
+
   const SessionTimerScreen({
     super.key,
     this.contextLabel,
     this.estimatedXp,
+    this.database,
+    this.ownerId,
+    this.taskId,
+    this.activityId,
+    this.lifeAreaId,
   });
 
   @override
@@ -69,13 +89,105 @@ class _SessionTimerScreenState extends State<SessionTimerScreen>
     setState(() => _isRunning = false);
   }
 
-  void _endSession() {
+  Future<void> _endSession() async {
     _ticker?.cancel();
     setState(() {
       _isRunning = false;
       _isCompleted = true;
     });
-    // TODO(Wave 9 impl): call SessionsDao.endSession() then XpLedgerWriter.record()
+
+    final db = widget.database;
+    final ownerId = widget.ownerId;
+    if (db != null && ownerId != null && _elapsed.inSeconds >= 10) {
+      final now = DateTime.now().toUtc();
+      final hlc = Hlc.now(Id.uuidV7());
+      final sessionId = Id.uuidV7().value;
+      final durationMs = _elapsed.inMilliseconds;
+
+      await db.transaction(() async {
+        await db.into(db.sessions).insert(
+          SessionsCompanion(
+            id: drift.Value(sessionId),
+            ownerId: drift.Value(ownerId),
+            taskId: drift.Value(widget.taskId),
+            activityId: drift.Value(widget.activityId),
+            lifeAreaId: drift.Value(widget.lifeAreaId),
+            startedAt: drift.Value(now.subtract(_elapsed)),
+            endedAt: drift.Value(now),
+            durationMs: drift.Value(durationMs),
+            versionHlc: drift.Value(hlc.toString()),
+            createdAt: drift.Value(now),
+            updatedAt: drift.Value(now),
+          ),
+        );
+
+        await db.into(db.syncOutbox).insert(
+          SyncOutboxCompanion.insert(
+            userId: ownerId,
+            op: 'upsert',
+            entity: 'sessions',
+            entityId: sessionId,
+            payloadJson: jsonEncode({
+              'id': sessionId,
+              'owner_id': ownerId,
+              'task_id': widget.taskId,
+              'activity_id': widget.activityId,
+              'life_area_id': widget.lifeAreaId,
+              'started_at': now.subtract(_elapsed).toIso8601String(),
+              'ended_at': now.toIso8601String(),
+              'duration_ms': durationMs,
+            }),
+            hlc: hlc.toString(),
+            deviceId: 'local_device',
+          ),
+        );
+
+        final xp = widget.estimatedXp ?? (_elapsed.inMinutes > 0 ? _elapsed.inMinutes : 1);
+        if (xp > 0) {
+          final writer = DriftXpLedgerWriter(db);
+          final idempotencyKey = Id('xp_sess_$sessionId');
+
+          String effectiveArea = widget.lifeAreaId ?? '';
+          if (effectiveArea.isEmpty) {
+            final areas = await (db.select(db.lifeAreas)
+                  ..where((l) => l.ownerId.equals(ownerId) & l.deletedAt.isNull())
+                  ..limit(1))
+                .get();
+            effectiveArea = areas.isNotEmpty ? areas.first.id : 'la_default';
+          }
+
+          final streakService = StreakService(db);
+          final streakInfo = await streakService.getStreakForLifeArea(
+            userId: Id(ownerId),
+            lifeAreaId: Id(effectiveArea),
+          );
+          final streakBonus = streakInfo.calculateStreakBonus(xp);
+
+          await writer.recordEvent(
+            ownerId: Id(ownerId),
+            idempotencyKey: idempotencyKey,
+            sourceType: 'session',
+            sourceId: Id(sessionId),
+            action: 'focus_completed',
+            basePoints: xp,
+            streakBonus: streakBonus,
+            allocationRatios: [
+              AllocationRatio(lifeAreaId: Id(effectiveArea), percentage: 100.0),
+            ],
+            clock: hlc,
+            deviceId: Id('local_device'),
+          );
+
+          await streakService.logActivity(
+            userId: Id(ownerId),
+            lifeAreaId: Id(effectiveArea),
+            activityDate: now,
+            versionHlc: hlc.toString(),
+          );
+        }
+      });
+    }
+
     _showCompletionDialog();
   }
 
