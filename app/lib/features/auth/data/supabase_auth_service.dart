@@ -81,13 +81,11 @@ class SupabaseAuthService implements AuthService {
   Future<void> signInWithGoogle({String? redirectTo}) async {
     try {
       _emit(const AuthLoading('Signing in with Google...'));
-      // On web, explicitly set redirectTo to the current origin so PKCE code
-      // exchange always resolves at the correct URL registered in Google Cloud
-      // Console. Without this, the code verifier stored in sessionStorage may
-      // not survive a cross-origin redirect, causing a silent auth failure.
-      final defaultRedirect = kIsWeb
-          ? Uri.base.origin // e.g. https://kratos-os.online
-          : 'io.supabase.kratos://login-callback';
+      // On web, null defers to the Site URL configured in the Supabase
+      // Dashboard (Authentication > URL Configuration), which is the
+      // standard supabase_flutter pattern and avoids mismatches.
+      final defaultRedirect =
+          kIsWeb ? null : 'io.supabase.kratos://login-callback';
       await _client.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: redirectTo ?? defaultRedirect,
