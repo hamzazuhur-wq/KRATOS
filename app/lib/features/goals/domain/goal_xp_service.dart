@@ -3,12 +3,14 @@
 // Enforces the Main Goal completion bonus contract:
 // +30% of positive descendant XP, one-time, no compounding, idempotent.
 
+import 'dart:convert';
 import 'package:drift/drift.dart' as drift;
 
 import '../../../../data/drift/app_database.dart';
 import '../../../../domain/hlc.dart';
 import '../../../../domain/ids.dart';
 import '../../streaks/domain/streak_service.dart';
+import '../../xp/domain/completion_bonus_calculator.dart';
 import '../../xp/data/xp_ledger_writer_impl.dart';
 import '../../xp/domain/xp_allocation_math.dart';
 
@@ -24,9 +26,8 @@ class GoalXpService {
 
   /// Completes a task and awards category-governed XP through the immutable ledger.
   ///
-  /// XP modifiers applied (per ADR-005, Invariants #6, #7, #8):
+  /// XP modifiers applied:
   ///   - Late penalty: −30% of baseXp when task.dueDate is past AND status ≠ 'cancelled'
-  ///   - Streak bonus: +20% of baseXp when the life area has a 7+ day streak
   Future<int> completeTask({
     required Task task,
     required String ownerId,
@@ -43,29 +44,56 @@ class GoalXpService {
 
     if (task.categoryId != null) {
       final category = await database.categoriesDao.findById(task.categoryId!);
-      if (category != null) {
+      if (category != null && category.baseXp > 0) {
         baseXp = category.baseXp;
-        final ruleVer = await database.categoriesDao.activeRuleVersion(category.id);
+        final ruleVer = await database.categoriesDao.activeRuleVersion(
+          category.id,
+        );
         ruleVersionId = ruleVer?.id;
       }
     }
+    if (baseXp <= 0) {
+      baseXp = task.xpReward ?? 50;
+    }
+    if (baseXp <= 0) baseXp = 50;
 
-    // 2. Resolve Life Area
+    // 2. Resolve Life Area thoroughly
     String effectiveAreaId = lifeAreaId ?? '';
+    if (effectiveAreaId.isEmpty && task.lifeAreaId != null) {
+      effectiveAreaId = task.lifeAreaId!;
+    }
+    if (effectiveAreaId.isEmpty && task.primaryGoalId != null) {
+      final g =
+          await (database.select(database.goals)
+                ..where((goal) => goal.id.equals(task.primaryGoalId!)))
+              .getSingleOrNull();
+      if (g != null && g.lifeAreaId != null) {
+        effectiveAreaId = g.lifeAreaId!;
+      }
+    }
+    if (effectiveAreaId.isEmpty && task.projectId != null) {
+      final p = await (database.select(
+        database.projects,
+      )..where((proj) => proj.id.equals(task.projectId!))).getSingleOrNull();
+      if (p != null && p.lifeAreaId != null) {
+        effectiveAreaId = p.lifeAreaId!;
+      }
+    }
     if (effectiveAreaId.isEmpty) {
-      final areas = await (database.select(database.lifeAreas)
-            ..where((l) => l.ownerId.equals(ownerId) & l.deletedAt.isNull())
-            ..limit(1))
-          .get();
+      final areas =
+          await (database.select(database.lifeAreas)
+                ..where((l) => l.ownerId.equals(ownerId) & l.deletedAt.isNull())
+                ..limit(1))
+              .get();
       if (areas.isNotEmpty) {
         effectiveAreaId = areas.first.id;
-      } else {
-        effectiveAreaId = 'la_default';
       }
     }
 
     // 3. Mark task completed
-    await (database.update(database.tasks)..where((t) => t.id.equals(task.id))).write(
+    await (database.update(
+      database.tasks,
+    )..where((t) => t.id.equals(task.id))).write(
       TasksCompanion(
         status: const drift.Value('done'),
         completedAt: drift.Value(now),
@@ -86,13 +114,6 @@ class GoalXpService {
         now: now,
       );
 
-      // 4b. Streak bonus: +20% when life area streak >= 7 days (ADR-005)
-      final streakInfo = await _streakService.getStreakForLifeArea(
-        userId: Id(ownerId),
-        lifeAreaId: Id(effectiveAreaId),
-      );
-      final streakBonus = streakInfo.calculateStreakBonus(baseXp);
-
       await _xpWriter.recordEvent(
         ownerId: Id(ownerId),
         idempotencyKey: idempotencyKey,
@@ -101,7 +122,6 @@ class GoalXpService {
         action: 'completed',
         basePoints: baseXp,
         latePenalty: latePenalty,
-        streakBonus: streakBonus,
         allocationRatios: [
           AllocationRatio(lifeAreaId: Id(effectiveAreaId), percentage: 100.0),
         ],
@@ -110,12 +130,14 @@ class GoalXpService {
         categoryRuleVersionId: ruleVersionId != null ? Id(ruleVersionId) : null,
       );
 
-      // 4c. Log streak activity so streak counter advances (ADR-005)
-      await _streakService.logActivity(
+      // Streak XP is a separate, daily ledger event after the task's base XP.
+      await _streakService.recordQualifyingCompletion(
         userId: Id(ownerId),
+        sourceId: Id(task.id),
         lifeAreaId: Id(effectiveAreaId),
-        activityDate: now,
+        completedAt: now,
         versionHlc: hlc.toString(),
+        deviceId: Id('local_device'),
       );
     }
 
@@ -127,7 +149,6 @@ class GoalXpService {
     return baseXp;
   }
 
-
   /// Recalculates goal progress based on descendant tasks.
   Future<void> recalculateGoalProgress(String goalId) async {
     final goal = await database.goalsDao.findById(goalId);
@@ -138,16 +159,18 @@ class GoalXpService {
     final taskIds = links.map((l) => l.taskId).toList();
 
     // Also get tasks where primaryGoalId is this goal
-    final directTasks = await (database.select(database.tasks)
-          ..where((t) => t.primaryGoalId.equals(goalId) & t.deletedAt.isNull()))
-        .get();
+    final directTasks =
+        await (database.select(database.tasks)..where(
+              (t) => t.primaryGoalId.equals(goalId) & t.deletedAt.isNull(),
+            ))
+            .get();
 
     final allTaskIds = {...taskIds, ...directTasks.map((t) => t.id)}.toList();
     if (allTaskIds.isEmpty) return;
 
-    final tasks = await (database.select(database.tasks)
-          ..where((t) => t.id.isIn(allTaskIds) & t.deletedAt.isNull()))
-        .get();
+    final tasks = await (database.select(
+      database.tasks,
+    )..where((t) => t.id.isIn(allTaskIds) & t.deletedAt.isNull())).get();
 
     final completedCount = tasks.where((t) => t.status == 'done').length;
     final progress = tasks.isEmpty ? 0.0 : completedCount / tasks.length;
@@ -169,11 +192,11 @@ class GoalXpService {
     required String ownerId,
   }) async {
     final existing = await database.goalsDao.findById(goal.id);
-    if ((existing != null && existing.status == 'completed') || goal.status == 'completed') {
+    if ((existing != null && existing.status == 'completed') ||
+        goal.status == 'completed') {
       return 0; // Already completed
     }
 
-    final now = DateTime.now().toUtc();
     final hlc = Hlc.now(Id.uuidV7());
 
     // 1. Mark goal completed
@@ -182,64 +205,82 @@ class GoalXpService {
       versionHlc: hlc.toString(),
     );
 
+    // Record immutable activity_event for goal_completed (Phase 7)
+    final now = DateTime.now().toUtc();
+    await database.into(database.activityEvents).insert(
+      ActivityEventsCompanion.insert(
+        id: Id.uuidV7().value,
+        ownerId: ownerId,
+        eventType: 'goal_completed',
+        entityType: 'goal',
+        entityId: drift.Value(goal.id),
+        lifeAreaId: drift.Value(goal.lifeAreaId),
+        metadata: drift.Value(
+          jsonEncode({
+            'title': goal.title,
+            'root_id': goal.rootId,
+            'is_main_goal': goal.parentId == null,
+          }),
+        ),
+        occurredAt: now,
+        versionHlc: hlc.toString(),
+        createdAt: now,
+      ),
+    );
+
+    var streakAreaId = goal.lifeAreaId ?? '';
+    if (streakAreaId.isEmpty) {
+      final areas =
+          await (database.select(database.lifeAreas)
+                ..where((l) => l.ownerId.equals(ownerId) & l.deletedAt.isNull())
+                ..limit(1))
+              .get();
+      if (areas.isNotEmpty) streakAreaId = areas.first.id;
+    }
+    if (streakAreaId.isNotEmpty) {
+      await _streakService.recordQualifyingCompletion(
+        userId: Id(ownerId),
+        sourceId: Id(goal.id),
+        lifeAreaId: Id(streakAreaId),
+        completedAt: DateTime.now(),
+        versionHlc: hlc.toString(),
+        deviceId: Id('local_device'),
+      );
+    }
+
     // 2. Only Main Goals (root goals) receive the +30% completion bonus!
     final isMainGoal = goal.parentId == null;
     if (!isMainGoal) {
       return 0; // Sub-goals do not receive completion bonus
     }
 
-    // 3. Compute all positive descendant XP
-    // Descendants include tasks under this root goal and all sub-goals of this root
-    final allDescendantGoals = await database.goalsDao.descendantsOfRoot(goal.rootId);
-    final allGoalIds = allDescendantGoals.map((g) => g.id).toList();
-
-    // Find all tasks linked to any of these goals
-    final links = await (database.select(database.taskGoalLinks)
-          ..where((l) => l.goalId.isIn(allGoalIds)))
-        .get();
-    final directTasks = await (database.select(database.tasks)
-          ..where((t) => t.primaryGoalId.isIn(allGoalIds) & t.deletedAt.isNull()))
-        .get();
-
-    final allTaskIds = {
-      ...links.map((l) => l.taskId),
-      ...directTasks.map((t) => t.id),
-    }.toList();
-
-    int descendantXpTotal = 0;
-    if (allTaskIds.isNotEmpty) {
-      final ledgerRows = await (database.select(database.xpLedger)
-            ..where((r) =>
-                r.sourceType.equals('task') &
-                r.sourceId.isIn(allTaskIds) &
-                r.points.isBiggerThanValue(0)))
-          .get();
-
-      descendantXpTotal = ledgerRows.fold(0, (sum, r) => sum + r.points);
-    }
-
-    // Contract: +30% of positive descendant XP (one time, no compounding)
-    // If no tasks were completed yet, use 30% of target XP or minimum base
-    final bonusPoints = descendantXpTotal > 0
-        ? (descendantXpTotal * 0.30).round()
-        : ((goal.xpTarget ?? 500) * 0.30).round();
+    // Only XP events actually awarded to child work are eligible. Completion
+    // bonuses are excluded so they cannot recursively compound.
+    final eligibleChildXp = await eligibleAwardedChildXp(goal.id);
+    final bonusPoints = CompletionBonusCalculator.calculate(eligibleChildXp);
 
     if (bonusPoints > 0) {
-      final idempotencyKey = Id('xp_main_goal_bonus_${goal.id}');
-      final alreadyAwarded = await _xpWriter.isIdempotencyKeyProcessed(idempotencyKey);
+      final idempotencyKey = Id('goal_completion_bonus_${goal.id}');
+      final alreadyAwarded = await _xpWriter.isIdempotencyKeyProcessed(
+        idempotencyKey,
+      );
 
       if (alreadyAwarded) {
         return 0;
       }
 
-      String effectiveAreaId = goal.lifeAreaId ?? '';
-      if (effectiveAreaId.isEmpty) {
-        final areas = await (database.select(database.lifeAreas)
-              ..where((l) => l.ownerId.equals(ownerId) & l.deletedAt.isNull())
-              ..limit(1))
-            .get();
-        effectiveAreaId = areas.isNotEmpty ? areas.first.id : 'la_default';
+      String? effectiveAreaId = goal.lifeAreaId;
+      if (effectiveAreaId == null || effectiveAreaId.isEmpty) {
+        final areas =
+            await (database.select(database.lifeAreas)
+                  ..where(
+                    (l) => l.ownerId.equals(ownerId) & l.deletedAt.isNull(),
+                  )
+                  ..limit(1))
+                .get();
+        effectiveAreaId = areas.isNotEmpty ? areas.first.id : null;
       }
+      if (effectiveAreaId == null) return 0;
 
       await _xpWriter.recordEvent(
         ownerId: Id(ownerId),
@@ -247,7 +288,8 @@ class GoalXpService {
         sourceType: 'goal',
         sourceId: Id(goal.id),
         action: 'goal_completion_bonus',
-        basePoints: bonusPoints,
+        basePoints: 0,
+        bonusPoints: bonusPoints,
         allocationRatios: [
           AllocationRatio(lifeAreaId: Id(effectiveAreaId), percentage: 100.0),
         ],
@@ -257,5 +299,87 @@ class GoalXpService {
     }
 
     return bonusPoints;
+  }
+
+  /// Sum net XP awarded for completed Tasks and Sub-goals under a Main Goal.
+  /// Reversals reduce the original eligible event; completion bonuses never
+  /// become child XP.
+  Future<int> eligibleAwardedChildXp(String goalId) async {
+    final goal = await database.goalsDao.findById(goalId);
+    if (goal == null || goal.parentId != null) return 0;
+
+    final goalTree = await database.goalsDao.descendantsOfRoot(goal.rootId);
+    final childGoalIds = goalTree
+        .where((child) => child.id != goal.id && child.status == 'completed')
+        .map((child) => child.id)
+        .toSet();
+    final goalIds = {...childGoalIds, goal.id};
+
+    final linkedTasks = await (database.select(
+      database.taskGoalLinks,
+    )..where((link) => link.goalId.isIn(goalIds))).get();
+    final linkedTaskIds = linkedTasks.map((link) => link.taskId).toSet();
+    final linkedTaskRows = linkedTaskIds.isEmpty
+        ? <Task>[]
+        : await (database.select(database.tasks)..where(
+                (task) =>
+                    task.id.isIn(linkedTaskIds) &
+                    task.ownerId.equals(goal.ownerId) &
+                    task.deletedAt.isNull(),
+              ))
+              .get();
+    final directTasks =
+        await (database.select(database.tasks)..where(
+              (task) =>
+                  task.primaryGoalId.isIn(goalIds) &
+                  task.ownerId.equals(goal.ownerId) &
+                  task.deletedAt.isNull(),
+            ))
+            .get();
+    final taskIds = {
+      ...linkedTaskRows.map((task) => task.id),
+      ...directTasks.map((task) => task.id),
+    };
+
+    final eligibleEvents = <XpLedgerData>[];
+    if (taskIds.isNotEmpty) {
+      eligibleEvents.addAll(
+        await (database.select(database.xpLedger)..where(
+              (event) =>
+                  event.ownerId.equals(goal.ownerId) &
+                  event.sourceType.equals('task') &
+                  event.sourceId.isIn(taskIds) &
+                  event.action.equals('completed'),
+            ))
+            .get(),
+      );
+    }
+    if (childGoalIds.isNotEmpty) {
+      eligibleEvents.addAll(
+        await (database.select(database.xpLedger)..where(
+              (event) =>
+                  event.ownerId.equals(goal.ownerId) &
+                  event.sourceType.equals('goal') &
+                  event.sourceId.isIn(childGoalIds) &
+                  event.action.isNotValue('goal_completion_bonus'),
+            ))
+            .get(),
+      );
+    }
+
+    if (eligibleEvents.isEmpty) return 0;
+    final eventIds = eligibleEvents.map((event) => event.id).toSet();
+    final reversals =
+        await (database.select(database.xpLedger)..where(
+              (event) =>
+                  event.ownerId.equals(goal.ownerId) &
+                  event.sourceType.equals('reversal') &
+                  event.reversalEventId.isIn(eventIds),
+            ))
+            .get();
+    final netAwardedXp =
+        eligibleEvents.fold<int>(0, (sum, event) => sum + event.points) +
+        reversals.fold<int>(0, (sum, event) => sum + event.points);
+    return netAwardedXp < 0 ? 0 : netAwardedXp;
   }
 }

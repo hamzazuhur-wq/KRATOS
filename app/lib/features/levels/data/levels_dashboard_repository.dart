@@ -32,6 +32,11 @@ class LevelsDashboardRepository {
     return _database.progressionDao.allTiers();
   }
 
+  Future<List<LevelCurve>> curves() async {
+    await _database.progressionDao.ensureSeeded();
+    return _database.progressionDao.allCurves();
+  }
+
   JoinedSelectStatement _buildQuery(String ownerId) {
     return _database.select(_database.lifeAreas).join([
       leftOuterJoin(

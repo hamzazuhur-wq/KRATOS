@@ -1,12 +1,14 @@
 // ignore_for_file: public_member_api_docs
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/services.dart';
 
 import '../../../data/drift/app_database.dart';
 import '../../../domain/hlc.dart';
 import '../../../domain/ids.dart';
+import '../../activities/domain/activity_xp_calculator.dart';
 import '../../streaks/domain/streak_service.dart';
 import '../../xp/data/xp_ledger_writer_impl.dart';
 import '../../xp/domain/xp_allocation_math.dart';
@@ -90,7 +92,8 @@ class ActiveSessionState {
 }
 
 class GlobalActiveSessionController {
-  static final GlobalActiveSessionController _instance = GlobalActiveSessionController._internal();
+  static final GlobalActiveSessionController _instance =
+      GlobalActiveSessionController._internal();
   factory GlobalActiveSessionController() => _instance;
   GlobalActiveSessionController._internal() {
     _initMethodChannel();
@@ -124,7 +127,10 @@ class GlobalActiveSessionController {
           break;
         case 'onNativeComplete':
           if (_activeDb != null && _activeOwnerId != null) {
-            await completeSession(database: _activeDb!, ownerId: _activeOwnerId!);
+            await completeSession(
+              database: _activeDb!,
+              ownerId: _activeOwnerId!,
+            );
           }
           break;
         case 'onNativeStop':
@@ -177,7 +183,10 @@ class GlobalActiveSessionController {
       pausedAt: null,
       totalPausedMs: 0,
       isPaused: false,
-      elapsedSeconds: (DateTime.now().toUtc().difference(now).inSeconds).clamp(0, 86400 * 7),
+      elapsedSeconds: (DateTime.now().toUtc().difference(now).inSeconds).clamp(
+        0,
+        86400 * 7,
+      ),
     );
 
     _stateController.add(_state);
@@ -192,7 +201,8 @@ class GlobalActiveSessionController {
     if (s == null) return;
     if (!s.isPaused) {
       final now = DateTime.now().toUtc();
-      final elapsedMs = now.difference(s.startedAt).inMilliseconds - s.totalPausedMs;
+      final elapsedMs =
+          now.difference(s.startedAt).inMilliseconds - s.totalPausedMs;
       final elapsedSec = (elapsedMs ~/ 1000).clamp(0, 86400 * 7);
       _state = s.copyWith(elapsedSeconds: elapsedSec);
       _stateController.add(_state);
@@ -203,10 +213,7 @@ class GlobalActiveSessionController {
   void pauseSession() {
     final s = _state;
     if (s != null && !s.isPaused) {
-      _state = s.copyWith(
-        isPaused: true,
-        pausedAt: DateTime.now().toUtc(),
-      );
+      _state = s.copyWith(isPaused: true, pausedAt: DateTime.now().toUtc());
       _stateController.add(_state);
       _notifyNativePause();
     }
@@ -216,7 +223,10 @@ class GlobalActiveSessionController {
     final s = _state;
     if (s != null && s.isPaused) {
       final pausedAt = s.pausedAt ?? DateTime.now().toUtc();
-      final pauseDelta = DateTime.now().toUtc().difference(pausedAt).inMilliseconds;
+      final pauseDelta = DateTime.now()
+          .toUtc()
+          .difference(pausedAt)
+          .inMilliseconds;
       _state = s.copyWith(
         isPaused: false,
         pausedAt: null,
@@ -247,73 +257,123 @@ class GlobalActiveSessionController {
     if (s.isPaused && s.pausedAt != null) {
       finalPaused += now.difference(s.pausedAt!).inMilliseconds;
     }
-    final actualDurationMs = (now.difference(s.startedAt).inMilliseconds - finalPaused).clamp(0, 86400 * 7 * 1000);
+    final actualDurationMs =
+        (now.difference(s.startedAt).inMilliseconds - finalPaused).clamp(
+          0,
+          86400 * 7 * 1000,
+        );
 
+    var xpPoints = 0;
     await database.transaction(() async {
       // 1. Insert Session row
-      await database.into(database.sessions).insert(
-        SessionsCompanion.insert(
-          id: s.sessionId,
-          ownerId: ownerId,
-          taskId: drift.Value(s.entityType == 'task' ? s.entityId : null),
-          activityId: drift.Value(s.entityType == 'activity' ? s.entityId : null),
-          lifeAreaId: drift.Value(s.lifeAreaId),
-          startedAt: s.startedAt,
-          endedAt: drift.Value(now),
-          durationMs: drift.Value(actualDurationMs),
-          note: drift.Value(note ?? 'Completed focus session on ${s.title}'),
-          versionHlc: hlc.toString(),
-          createdAt: now,
-          updatedAt: now,
-        ),
-      );
+      await database
+          .into(database.sessions)
+          .insert(
+            SessionsCompanion.insert(
+              id: s.sessionId,
+              ownerId: ownerId,
+              taskId: drift.Value(s.entityType == 'task' ? s.entityId : null),
+              activityId: drift.Value(
+                s.entityType == 'activity' ? s.entityId : null,
+              ),
+              lifeAreaId: drift.Value(s.lifeAreaId),
+              startedAt: s.startedAt,
+              endedAt: drift.Value(now),
+              durationMs: drift.Value(actualDurationMs),
+              note: drift.Value(
+                note ?? 'Completed focus session on ${s.title}',
+              ),
+              versionHlc: hlc.toString(),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
 
       // 2. Enqueue to sync outbox
-      await database.into(database.syncOutbox).insert(
-        SyncOutboxCompanion.insert(
-          userId: ownerId,
-          op: 'upsert',
-          entity: 'sessions',
-          entityId: s.sessionId,
-          payloadJson: jsonEncode({
-            'id': s.sessionId,
-            'owner_id': ownerId,
-            'task_id': s.entityType == 'task' ? s.entityId : null,
-            'activity_id': s.entityType == 'activity' ? s.entityId : null,
-            'life_area_id': s.lifeAreaId,
-            'started_at': s.startedAt.toIso8601String(),
-            'ended_at': now.toIso8601String(),
-            'duration_ms': actualDurationMs,
-            'note': note,
-          }),
-          hlc: hlc.toString(),
-          deviceId: 'local_device',
-        ),
-      );
+      await database
+          .into(database.syncOutbox)
+          .insert(
+            SyncOutboxCompanion.insert(
+              userId: ownerId,
+              op: 'upsert',
+              entity: 'sessions',
+              entityId: s.sessionId,
+              payloadJson: jsonEncode({
+                'id': s.sessionId,
+                'owner_id': ownerId,
+                'task_id': s.entityType == 'task' ? s.entityId : null,
+                'activity_id': s.entityType == 'activity' ? s.entityId : null,
+                'life_area_id': s.lifeAreaId,
+                'started_at': s.startedAt.toIso8601String(),
+                'ended_at': now.toIso8601String(),
+                'duration_ms': actualDurationMs,
+                'note': note,
+              }),
+              hlc: hlc.toString(),
+              deviceId: 'local_device',
+            ),
+          );
 
-      // 3. Award XP through Point Ledger
-      final actualMinutes = (actualDurationMs / 60000);
-      int xpPoints = actualMinutes.round();
-      if (xpPoints < 1 && actualDurationMs >= 10000) xpPoints = 1;
-      if (xpPoints > 0) {
-        final writer = DriftXpLedgerWriter(database);
-        final idempotencyKey = Id('xp_sess_${s.sessionId}');
-
-        String effectiveArea = s.lifeAreaId ?? '';
-        if (effectiveArea.isEmpty) {
-          final areas = await (database.select(database.lifeAreas)
-                ..where((l) => l.ownerId.equals(ownerId) & l.deletedAt.isNull())
-                ..limit(1))
-              .get();
-          effectiveArea = areas.isNotEmpty ? areas.first.id : 'la_default';
-        }
-
-        final streakService = StreakService(database);
-        final streakInfo = await streakService.getStreakForLifeArea(
-          userId: Id(ownerId),
-          lifeAreaId: Id(effectiveArea),
+      // 3. Award XP through Point Ledger (Phase 2: ActivityXpCalculator)
+      if (s.entityType == 'activity') {
+        // The generated Activity model in this checkout does not expose the
+        // schema's optional difficulty column; use its declared default.
+        const difficulty = 5;
+        final sessionDuration = Duration(milliseconds: actualDurationMs);
+        final cappedSessionDuration =
+            sessionDuration > const Duration(hours: 12)
+            ? const Duration(hours: 12)
+            : sessionDuration;
+        xpPoints = ActivityXpCalculator.calculateActivityXp(
+          difficulty.clamp(1, 10),
+          cappedSessionDuration,
         );
-        final streakBonus = streakInfo.calculateStreakBonus(xpPoints);
+        if (xpPoints < 1) {
+          xpPoints = 1; // always award at least 1 XP for a valid session
+        }
+      } else if (s.entityType == 'task') {
+        final t = await (database.select(
+          database.tasks,
+        )..where((task) => task.id.equals(s.entityId))).getSingleOrNull();
+        xpPoints = (t?.xpReward != null && t!.xpReward! > 0) ? t.xpReward! : 25;
+      } else {
+        xpPoints = 25;
+      }
+
+      final writer = DriftXpLedgerWriter(database);
+      final idempotencyKey = Id('xp_sess_${s.sessionId}');
+
+      String effectiveArea = s.lifeAreaId ?? '';
+      if (effectiveArea.isEmpty && s.entityType == 'activity') {
+        final act = await (database.select(
+          database.activities,
+        )..where((a) => a.id.equals(s.entityId))).getSingleOrNull();
+        if (act != null && act.lifeAreaId != null) {
+          effectiveArea = act.lifeAreaId!;
+        }
+      } else if (effectiveArea.isEmpty && s.entityType == 'task') {
+        final t = await (database.select(
+          database.tasks,
+        )..where((task) => task.id.equals(s.entityId))).getSingleOrNull();
+        if (t != null && t.lifeAreaId != null) {
+          effectiveArea = t.lifeAreaId!;
+        }
+      }
+      if (effectiveArea.isEmpty) {
+        final areas =
+            await (database.select(database.lifeAreas)
+                  ..where(
+                    (l) => l.ownerId.equals(ownerId) & l.deletedAt.isNull(),
+                  )
+                  ..limit(1))
+                .get();
+        if (areas.isNotEmpty) {
+          effectiveArea = areas.first.id;
+        }
+      }
+
+      if (effectiveArea.isNotEmpty && xpPoints > 0) {
+        final streakService = StreakService(database);
 
         await writer.recordEvent(
           ownerId: Id(ownerId),
@@ -322,33 +382,31 @@ class GlobalActiveSessionController {
           sourceId: Id(s.sessionId),
           action: 'focus_completed',
           basePoints: xpPoints,
-          streakBonus: streakBonus,
           allocationRatios: [
             AllocationRatio(lifeAreaId: Id(effectiveArea), percentage: 100.0),
           ],
           clock: hlc,
           deviceId: Id('local_device'),
         );
-      }
 
-      // 4. Update Streak if life area is present
-      if (s.lifeAreaId != null && s.lifeAreaId!.isNotEmpty) {
-        try {
-          final streakService = StreakService(database);
-          await streakService.logActivity(
+        if (s.entityType == 'activity') {
+          await streakService.recordQualifyingCompletion(
             userId: Id(ownerId),
-            lifeAreaId: Id(s.lifeAreaId!),
-            activityDate: now,
+            sourceId: Id(s.entityId),
+            lifeAreaId: Id(effectiveArea),
+            completedAt: now,
             versionHlc: hlc.toString(),
+            deviceId: Id('local_device'),
           );
-        } catch (_) {}
+        }
       }
     });
 
+    final displayXp = xpPoints;
     return {
       'sessionId': s.sessionId,
       'durationMs': actualDurationMs,
-      'xpEarned': (actualDurationMs ~/ 60000).clamp(1, 1000),
+      'xpEarned': displayXp,
     };
   }
 
@@ -372,47 +430,122 @@ class GlobalActiveSessionController {
     if (s.isPaused && s.pausedAt != null) {
       finalPaused += now.difference(s.pausedAt!).inMilliseconds;
     }
-    final actualDurationMs = (now.difference(s.startedAt).inMilliseconds - finalPaused).clamp(0, 86400 * 7 * 1000);
+    final actualDurationMs =
+        (now.difference(s.startedAt).inMilliseconds - finalPaused).clamp(
+          0,
+          86400 * 7 * 1000,
+        );
 
     await database.transaction(() async {
-      await database.into(database.sessions).insert(
-        SessionsCompanion.insert(
-          id: s.sessionId,
-          ownerId: ownerId,
-          taskId: drift.Value(s.entityType == 'task' ? s.entityId : null),
-          activityId: drift.Value(s.entityType == 'activity' ? s.entityId : null),
-          lifeAreaId: drift.Value(s.lifeAreaId),
-          startedAt: s.startedAt,
-          endedAt: drift.Value(now),
-          durationMs: drift.Value(actualDurationMs),
-          note: drift.Value(note ?? 'Stopped focus session on ${s.title}'),
-          versionHlc: hlc.toString(),
-          createdAt: now,
-          updatedAt: now,
-        ),
-      );
+      await database
+          .into(database.sessions)
+          .insert(
+            SessionsCompanion.insert(
+              id: s.sessionId,
+              ownerId: ownerId,
+              taskId: drift.Value(s.entityType == 'task' ? s.entityId : null),
+              activityId: drift.Value(
+                s.entityType == 'activity' ? s.entityId : null,
+              ),
+              lifeAreaId: drift.Value(s.lifeAreaId),
+              startedAt: s.startedAt,
+              endedAt: drift.Value(now),
+              durationMs: drift.Value(actualDurationMs),
+              note: drift.Value(note ?? 'Stopped focus session on ${s.title}'),
+              versionHlc: hlc.toString(),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
 
-      await database.into(database.syncOutbox).insert(
-        SyncOutboxCompanion.insert(
-          userId: ownerId,
-          op: 'upsert',
-          entity: 'sessions',
-          entityId: s.sessionId,
-          payloadJson: jsonEncode({
-            'id': s.sessionId,
-            'owner_id': ownerId,
-            'task_id': s.entityType == 'task' ? s.entityId : null,
-            'activity_id': s.entityType == 'activity' ? s.entityId : null,
-            'life_area_id': s.lifeAreaId,
-            'started_at': s.startedAt.toIso8601String(),
-            'ended_at': now.toIso8601String(),
-            'duration_ms': actualDurationMs,
-            'status': 'stopped',
-          }),
-          hlc: hlc.toString(),
-          deviceId: 'local_device',
-        ),
-      );
+      await database
+          .into(database.syncOutbox)
+          .insert(
+            SyncOutboxCompanion.insert(
+              userId: ownerId,
+              op: 'upsert',
+              entity: 'sessions',
+              entityId: s.sessionId,
+              payloadJson: jsonEncode({
+                'id': s.sessionId,
+                'owner_id': ownerId,
+                'task_id': s.entityType == 'task' ? s.entityId : null,
+                'activity_id': s.entityType == 'activity' ? s.entityId : null,
+                'life_area_id': s.lifeAreaId,
+                'started_at': s.startedAt.toIso8601String(),
+                'ended_at': now.toIso8601String(),
+                'duration_ms': actualDurationMs,
+                'status': 'stopped',
+              }),
+              hlc: hlc.toString(),
+              deviceId: 'local_device',
+            ),
+          );
+
+      // Award XP on stop if session lasted at least 5 seconds (Phase 2: ActivityXpCalculator)
+      if (actualDurationMs >= 5000) {
+        int xpPoints;
+        if (s.entityType == 'activity') {
+          // Use the schema default because the generated Activity model in
+          // this checkout does not expose its optional difficulty column.
+          const difficulty = 5;
+          final sessionDuration = Duration(milliseconds: actualDurationMs);
+          final cappedSessionDuration =
+              sessionDuration > const Duration(hours: 12)
+              ? const Duration(hours: 12)
+              : sessionDuration;
+          xpPoints = ActivityXpCalculator.calculateActivityXp(
+            difficulty.clamp(1, 10),
+            cappedSessionDuration,
+          );
+          if (xpPoints < 1) {
+            xpPoints = 1;
+          }
+        } else {
+          xpPoints = 15;
+        }
+
+        String effectiveArea = s.lifeAreaId ?? '';
+        if (effectiveArea.isEmpty && s.entityType == 'activity') {
+          final act = await (database.select(
+            database.activities,
+          )..where((a) => a.id.equals(s.entityId))).getSingleOrNull();
+          if (act != null && act.lifeAreaId != null) {
+            effectiveArea = act.lifeAreaId!;
+          }
+        }
+        if (effectiveArea.isEmpty) {
+          final areas =
+              await (database.select(database.lifeAreas)
+                    ..where(
+                      (l) => l.ownerId.equals(ownerId) & l.deletedAt.isNull(),
+                    )
+                    ..limit(1))
+                  .get();
+          if (areas.isNotEmpty) {
+            effectiveArea = areas.first.id;
+          }
+        }
+
+        if (effectiveArea.isNotEmpty && xpPoints > 0) {
+          final writer = DriftXpLedgerWriter(database);
+          final idempotencyKey = Id('xp_sess_${s.sessionId}');
+
+          await writer.recordEvent(
+            ownerId: Id(ownerId),
+            idempotencyKey: idempotencyKey,
+            sourceType: 'session',
+            sourceId: Id(s.sessionId),
+            action: 'focus_stopped',
+            basePoints: xpPoints,
+            allocationRatios: [
+              AllocationRatio(lifeAreaId: Id(effectiveArea), percentage: 100.0),
+            ],
+            clock: hlc,
+            deviceId: Id('local_device'),
+          );
+        }
+      }
     });
   }
 
@@ -428,23 +561,27 @@ class GlobalActiveSessionController {
   void _notifyNativeStart() {
     final s = _state;
     if (s == null) return;
-    _channel.invokeMethod('startFocusSession', {
-      'sessionId': s.sessionId,
-      'title': s.title,
-      'lifeAreaName': s.lifeAreaName ?? '',
-      'targetSeconds': s.targetDurationSeconds,
-      'startedAtMs': s.startedAt.millisecondsSinceEpoch,
-    }).catchError((_) {});
+    _channel
+        .invokeMethod('startFocusSession', {
+          'sessionId': s.sessionId,
+          'title': s.title,
+          'lifeAreaName': s.lifeAreaName ?? '',
+          'targetSeconds': s.targetDurationSeconds,
+          'startedAtMs': s.startedAt.millisecondsSinceEpoch,
+        })
+        .catchError((_) {});
   }
 
   void _notifyNativeUpdate() {
     final s = _state;
     if (s == null) return;
-    _channel.invokeMethod('updateFocusSession', {
-      'elapsedSeconds': s.elapsedSeconds,
-      'isPaused': s.isPaused,
-      'formattedElapsed': s.formattedElapsed,
-    }).catchError((_) {});
+    _channel
+        .invokeMethod('updateFocusSession', {
+          'elapsedSeconds': s.elapsedSeconds,
+          'isPaused': s.isPaused,
+          'formattedElapsed': s.formattedElapsed,
+        })
+        .catchError((_) {});
   }
 
   void _notifyNativePause() {

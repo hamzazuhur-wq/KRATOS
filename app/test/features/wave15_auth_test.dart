@@ -1,9 +1,8 @@
 // Wave 15: Unit tests for Authentication domain and MockAuthService.
 
 import 'package:test/test.dart';
-import '../../lib/domain/ids.dart';
-import '../../lib/features/auth/data/mock_auth_service.dart';
-import '../../lib/features/auth/domain/auth_models.dart';
+import 'package:kratos_app/features/auth/data/mock_auth_service.dart';
+import 'package:kratos_app/features/auth/domain/auth_models.dart';
 
 void main() {
   group('KratosUser and Auth Models', () {

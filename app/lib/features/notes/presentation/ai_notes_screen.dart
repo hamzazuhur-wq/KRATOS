@@ -112,8 +112,8 @@ class _AiNotesScreenState extends State<AiNotesScreen>
         onPressed: () => _showQuickCaptureSheet(context),
         backgroundColor: const Color(0xFFC6F135),
         foregroundColor: const Color(0xFF0D0D0D),
-        child: const Icon(Icons.add),
         tooltip: 'Quick Capture',
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -145,7 +145,7 @@ class _NotesTab extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: notes.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final n = notes[index];
         return _NoteCard(

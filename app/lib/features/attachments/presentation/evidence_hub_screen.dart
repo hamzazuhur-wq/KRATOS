@@ -155,8 +155,8 @@ class _EvidenceHubScreenState extends State<EvidenceHubScreen>
         onPressed: _showAddDialog,
         backgroundColor: const Color(0xFFC6F135),
         foregroundColor: const Color(0xFF0D0D0D),
-        child: const Icon(Icons.attach_file),
         tooltip: 'Add Attachment',
+        child: const Icon(Icons.attach_file),
       ),
     );
   }
@@ -219,7 +219,7 @@ class _LinksTab extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: links.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final l = links[index];
         return _LinkTile(title: l.title, url: l.url, dateAdded: l.dateAdded);
@@ -262,7 +262,7 @@ class _EvidenceTab extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: evidence.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final e = evidence[index];
         return _EvidenceTile(kind: e.kind, payload: e.payload, capturedAt: e.capturedAt);

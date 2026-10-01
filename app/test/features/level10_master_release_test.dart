@@ -10,7 +10,7 @@
 //   7. AI & Telemetry: Invariant #11 advisory audit and error-free telemetry buffer
 //   8. Storage Janitor: HLC clock drift health verified
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kratos_app/core/config/app_config.dart';
@@ -20,7 +20,8 @@ import 'package:kratos_app/features/maintenance/domain/janitor_service.dart';
 import 'package:kratos_app/features/progression/data/progression_dao.dart';
 import 'package:kratos_app/features/progression/domain/progression_calculator.dart';
 import 'package:kratos_app/features/streaks/data/streaks_dao.dart';
-import 'package:kratos_app/features/xp/domain/hamilton_hare_allocator.dart';
+import 'package:kratos_app/features/xp/domain/xp_allocation_math.dart';
+import 'package:kratos_app/domain/ids.dart';
 
 AppDatabase _openInMemory() => AppDatabase.forTesting(NativeDatabase.memory());
 
@@ -100,9 +101,13 @@ void main() {
       const totalXp = 100;
       final lines = HamiltonHareAllocator.allocate(
         totalPoints: totalXp,
-        weights: [1, 1, 1], // split 3 ways: 34 + 33 + 33 = 100
+        ratios: [
+          AllocationRatio(lifeAreaId: Id('la_a'), percentage: 1),
+          AllocationRatio(lifeAreaId: Id('la_b'), percentage: 1),
+          AllocationRatio(lifeAreaId: Id('la_c'), percentage: 1),
+        ], // split 3 ways: 34 + 33 + 33 = 100
       );
-      final allocatedSum = lines.fold<int>(0, (sum, val) => sum + val);
+      final allocatedSum = lines.fold<int>(0, (sum, val) => sum + val.points);
       expect(allocatedSum, totalXp);
 
       // Record XP Ledger event
@@ -110,13 +115,14 @@ void main() {
       final now = DateTime.now().toUtc();
       await db.into(db.xpLedger).insert(XpLedgerCompanion(
             id: const Value(eventId),
-            userId: const Value(userId),
+            ownerId: const Value(userId),
             points: const Value(totalXp),
             sourceType: const Value('task'),
             sourceId: const Value(goalId),
             idempotencyKey: const Value('idem_release_001'),
+            action: const Value('complete'),
             versionHlc: const Value('1-0-1'),
-            occurredAt: Value(now),
+            deviceId: const Value('dev_release_01'),
             createdAt: Value(now),
           ));
 

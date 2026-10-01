@@ -16,13 +16,13 @@ class AudioDao extends DatabaseAccessor<AppDatabase> with _$AudioDaoMixin {
 
   // ─── Voice Memos ──────────────────────────────────────────────────────
 
-  Future<List<AudioData>> allAudios(String ownerId) =>
+  Future<List<Audio>> allAudios(String ownerId) =>
       (select(db.audios)
             ..where((a) => a.ownerId.equals(ownerId) & a.deletedAt.isNull())
             ..orderBy([(a) => OrderingTerm.desc(a.capturedAt)]))
           .get();
 
-  Future<List<AudioData>> audioForSession(String sessionId) =>
+  Future<List<Audio>> audioForSession(String sessionId) =>
       (select(db.audios)
             ..where(
                 (a) => a.sessionId.equals(sessionId) & a.deletedAt.isNull())
@@ -56,7 +56,7 @@ class AudioDao extends DatabaseAccessor<AppDatabase> with _$AudioDaoMixin {
 
   // ─── Achievements ────────────────────────────────────────────────────
 
-  Future<List<AchievementData>> allAchievements(String ownerId) =>
+  Future<List<Achievement>> allAchievements(String ownerId) =>
       (select(db.achievements)
             ..where((a) => a.ownerId.equals(ownerId))
             ..orderBy([(a) => OrderingTerm.desc(a.awardedAt)]))

@@ -1,7 +1,12 @@
+import 'dart:ui';
+
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 
-import '../../../app/active_glass_card.dart';
+import '../../../app/kratos_dropdown.dart';
+import '../../../app/kratos_motion.dart';
+import '../../../app/kratos_skeleton.dart';
+import '../../../app/kratos_visuals.dart';
 import '../../../data/drift/app_database.dart';
 import '../../../domain/hlc.dart';
 import '../../../domain/ids.dart';
@@ -77,7 +82,7 @@ class _LifeAreasScreenState extends State<LifeAreasScreen> {
             tooltip: 'Domain Categories',
             icon: const Icon(Icons.category_outlined, color: Colors.white70),
             onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
+              KratosMaterialPageRoute<void>(
                 builder: (_) => CategoriesScreen(
                   database: widget.database,
                   ownerId: widget.ownerId,
@@ -88,127 +93,150 @@ class _LifeAreasScreenState extends State<LifeAreasScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<List<LifeArea>>(
-        stream: (widget.database.select(widget.database.lifeAreas)
-              ..where((area) =>
-                  area.ownerId.equals(widget.ownerId) &
-                  area.archivedAt.isNull() &
-                  area.deletedAt.isNull())
-              ..orderBy([(area) => drift.OrderingTerm.asc(area.sortOrder)]))
-            .watch(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return const Center(
-              child: Text('Could not load Vision domains data.',
-                  style: TextStyle(color: Colors.white70)),
-            );
-          }
-          if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xFFC6F135)),
-            );
-          }
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const KratosEnvironment(),
+          StreamBuilder<List<LifeArea>>(
+            stream:
+                (widget.database.select(widget.database.lifeAreas)
+                      ..where(
+                        (area) =>
+                            area.ownerId.equals(widget.ownerId) &
+                            area.archivedAt.isNull() &
+                            area.deletedAt.isNull(),
+                      )
+                      ..orderBy([
+                        (area) => drift.OrderingTerm.asc(area.sortOrder),
+                      ]))
+                    .watch(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return const Center(
+                  child: Text(
+                    'Could not load Vision domains data.',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                );
+              }
+              final isLoading = !snapshot.hasData;
+              final areas = snapshot.data ?? [];
 
-          final areas = snapshot.data!;
-          if (areas.isEmpty) {
-            return _EmptyVisionDomains(onCreate: () => _openEditor(context));
-          }
-
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-            children: [
-              // Hero Direction Statement
-              ActiveGlassCard(
-                borderRadius: BorderRadius.circular(20),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFC6F135).withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.auto_awesome,
-                          color: Color(0xFFC6F135),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+              final Widget content;
+              if (!snapshot.hasData) {
+                content = const SizedBox.shrink();
+              } else if (areas.isEmpty) {
+                content = _EmptyVisionDomains(
+                  onCreate: () => _openEditor(context),
+                );
+              } else {
+                content = ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                  children: [
+                    // Hero Direction Statement
+                    KratosGlassCard(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
                           children: [
-                            Text(
-                              'PERSISTENT DOMAINS',
-                              style: TextStyle(
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFC6F135)
+                                    .withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.auto_awesome,
                                 color: Color(0xFFC6F135),
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.5,
+                                size: 20,
                               ),
                             ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Shape your long-term focus across core life domains.',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
+                            const SizedBox(width: 14),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'PERSISTENT DOMAINS',
+                                    style: TextStyle(
+                                      color: Color(0xFFC6F135),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Shape your long-term focus across core life domains.',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'DOMAINS OF LIFE',
-                    style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
                     ),
-                  ),
-                  Text(
-                    '${areas.length} ACTIVE',
-                    style: const TextStyle(
-                      color: Color(0xFFC6F135),
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              ...areas.map((area) => _DomainCard(
-                    database: widget.database,
-                    ownerId: widget.ownerId,
-                    area: area,
-                    onOpen: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => LifeAreaDashboardScreen(
-                          database: widget.database,
-                          ownerId: widget.ownerId,
-                          area: area,
+                    const SizedBox(height: 18),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'DOMAINS OF LIFE',
+                          style: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2,
+                          ),
                         ),
+                        Text(
+                          '${areas.length} ACTIVE',
+                          style: const TextStyle(
+                            color: Color(0xFFC6F135),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ...areas.map(
+                      (area) => _DomainCard(
+                        database: widget.database,
+                        ownerId: widget.ownerId,
+                        area: area,
+                        onOpen: () => Navigator.of(context).push(
+                          KratosPageRoute<void>(
+                            page: LifeAreaDashboardScreen(
+                              database: widget.database,
+                              ownerId: widget.ownerId,
+                              area: area,
+                            ),
+                          ),
+                        ),
+                        onEdit: () => _openEditor(context, area: area),
+                        onArchive: () => _archive(context, area),
                       ),
                     ),
-                    onEdit: () => _openEditor(context, area: area),
-                    onArchive: () => _archive(context, area),
-                  )),
-            ],
-          );
-        },
+                  ],
+                );
+              }
+
+              return SkeletonReveal(
+                loading: isLoading,
+                skeleton: const LifeAreasPageSkeleton(),
+                child: content,
+              );
+            },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openEditor(context),
@@ -240,7 +268,9 @@ class _LifeAreasScreenState extends State<LifeAreasScreen> {
     final hlc = Hlc.now(Id.uuidV7()).toString();
     if (area == null) {
       final newAreaId = Id.uuidV7().value;
-      await widget.database.into(widget.database.lifeAreas).insert(
+      await widget.database
+          .into(widget.database.lifeAreas)
+          .insert(
             LifeAreasCompanion.insert(
               id: newAreaId,
               ownerId: widget.ownerId,
@@ -270,25 +300,24 @@ class _LifeAreasScreenState extends State<LifeAreasScreen> {
           action: 'admin_adjust',
           basePoints: result.startingXp,
           allocationRatios: [
-            AllocationRatio(
-              lifeAreaId: Id(newAreaId),
-              percentage: 100.0,
-            ),
+            AllocationRatio(lifeAreaId: Id(newAreaId), percentage: 100.0),
           ],
           clock: Hlc.now(Id.uuidV7()),
           deviceId: const Id('device-local'),
         );
       }
     } else {
-      await (widget.database.update(widget.database.lifeAreas)
-            ..where((row) => row.id.equals(area.id)))
-          .write(LifeAreasCompanion(
-        name: drift.Value(result.name),
-        description: drift.Value(result.description),
-        categoryId: drift.Value(result.categoryId),
-        versionHlc: drift.Value(hlc),
-        updatedAt: drift.Value(now),
-      ));
+      await (widget.database.update(
+        widget.database.lifeAreas,
+      )..where((row) => row.id.equals(area.id))).write(
+        LifeAreasCompanion(
+          name: drift.Value(result.name),
+          description: drift.Value(result.description),
+          categoryId: drift.Value(result.categoryId),
+          versionHlc: drift.Value(hlc),
+          updatedAt: drift.Value(now),
+        ),
+      );
     }
   }
 
@@ -297,7 +326,10 @@ class _LifeAreasScreenState extends State<LifeAreasScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF161616),
-        title: const Text('Archive Domain', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Archive Domain',
+          style: TextStyle(color: Colors.white),
+        ),
         content: Text(
           'Are you sure you want to archive "${area.name}"? It will be hidden from the active dashboard.',
           style: const TextStyle(color: Colors.white70),
@@ -305,7 +337,10 @@ class _LifeAreasScreenState extends State<LifeAreasScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white54),
+            ),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
@@ -317,13 +352,15 @@ class _LifeAreasScreenState extends State<LifeAreasScreen> {
     );
 
     if (confirmed == true && mounted) {
-      await (widget.database.update(widget.database.lifeAreas)
-            ..where((row) => row.id.equals(area.id)))
-          .write(LifeAreasCompanion(
-        archivedAt: drift.Value(DateTime.now().toUtc()),
-        versionHlc: drift.Value(Hlc.now(Id.uuidV7()).toString()),
-        updatedAt: drift.Value(DateTime.now().toUtc()),
-      ));
+      await (widget.database.update(
+        widget.database.lifeAreas,
+      )..where((row) => row.id.equals(area.id))).write(
+        LifeAreasCompanion(
+          archivedAt: drift.Value(DateTime.now().toUtc()),
+          versionHlc: drift.Value(Hlc.now(Id.uuidV7()).toString()),
+          updatedAt: drift.Value(DateTime.now().toUtc()),
+        ),
+      );
     }
   }
 }
@@ -347,139 +384,158 @@ class _DomainCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: KratosGlassCard(
+        dashboardGlass: true,
+        accentColor: const Color(0xFFC6F135),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFC6F135).withValues(alpha: 0.22),
-        ),
-      ),
-      child: InkWell(
-        onTap: onOpen,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        padding: EdgeInsets.zero,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onOpen,
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFC6F135).withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.visibility,
-                      color: Color(0xFFC6F135),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          area.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC6F135).withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
                         ),
-                        if (area.description != null &&
-                            area.description!.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            area.description!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white60,
-                              fontSize: 12,
-                              height: 1.3,
+                        child: const Icon(
+                          Icons.visibility,
+                          color: Color(0xFFC6F135),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              area.name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (area.description != null &&
+                                area.description!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                area.description!,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white60,
+                                  fontSize: 12,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      KratosPopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert, color: Colors.white38),
+                        onSelected: (value) {
+                          if (value == 'edit') onEdit();
+                          if (value == 'archive') onArchive();
+                        },
+                        itemBuilder: (_) => const [
+                          KratosPopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit, size: 16, color: Colors.white70),
+                                SizedBox(width: 8),
+                                Text('Edit', style: TextStyle(color: Colors.white)),
+                              ],
+                            ),
+                          ),
+                          KratosPopupMenuItem(
+                            value: 'archive',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.archive,
+                                  size: 16,
+                                  color: Colors.redAccent,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Archive',
+                                  style: TextStyle(color: Colors.redAccent),
+                                ),
+                              ],
                             ),
                           ),
                         ],
-                      ],
-                    ),
-                  ),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert, color: Colors.white38),
-                    color: const Color(0xFF1A1A1A),
-                    onSelected: (value) {
-                      if (value == 'edit') onEdit();
-                      if (value == 'archive') onArchive();
-                    },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit, size: 16, color: Colors.white70),
-                            SizedBox(width: 8),
-                            Text('Edit', style: TextStyle(color: Colors.white)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'archive',
-                        child: Row(
-                          children: [
-                            Icon(Icons.archive, size: 16, color: Colors.redAccent),
-                            SizedBox(width: 8),
-                            Text('Archive', style: TextStyle(color: Colors.redAccent)),
-                          ],
-                        ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 14),
+                  // Stats badges row
+                  FutureBuilder<(int xp, int activeGoals, int tasksCount)>(
+                    future: _loadDomainStats(),
+                    builder: (context, snapshot) {
+                      final xp = snapshot.data?.$1 ?? 0;
+                      final goals = snapshot.data?.$2 ?? 0;
+                      final tasks = snapshot.data?.$3 ?? 0;
+
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _StatChip(
+                                    icon: Icons.bolt,
+                                    label: '$xp XP',
+                                    color: const Color(0xFFC6F135),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _StatChip(
+                                    icon: Icons.track_changes,
+                                    label: '$goals Goals',
+                                    color: Colors.white70,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _StatChip(
+                                    icon: Icons.task_alt,
+                                    label: '$tasks Tasks',
+                                    color: Colors.white70,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(
+                            Icons.chevron_right,
+                            color: Color(0xFFC6F135),
+                            size: 20,
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-              // Stats badges row
-              FutureBuilder<(int xp, int activeGoals, int tasksCount)>(
-                future: _loadDomainStats(),
-                builder: (context, snapshot) {
-                  final xp = snapshot.data?.$1 ?? 0;
-                  final goals = snapshot.data?.$2 ?? 0;
-                  final tasks = snapshot.data?.$3 ?? 0;
-
-                  return Row(
-                    children: [
-                      _StatChip(
-                        icon: Icons.bolt,
-                        label: '$xp XP',
-                        color: const Color(0xFFC6F135),
-                      ),
-                      const SizedBox(width: 8),
-                      _StatChip(
-                        icon: Icons.track_changes,
-                        label: '$goals Goals',
-                        color: Colors.white70,
-                      ),
-                      const SizedBox(width: 8),
-                      _StatChip(
-                        icon: Icons.task_alt,
-                        label: '$tasks Tasks',
-                        color: Colors.white70,
-                      ),
-                      const Spacer(),
-                      const Icon(
-                        Icons.chevron_right,
-                        color: Color(0xFFC6F135),
-                        size: 20,
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -489,19 +545,23 @@ class _DomainCard extends StatelessWidget {
   Future<(int, int, int)> _loadDomainStats() async {
     final xpDao = XpAnalyticsDao(database);
     final xp = await xpDao.totalXpForLifeArea(area.id);
-    final goals = await (database.select(database.goals)
-          ..where((g) =>
-              g.ownerId.equals(ownerId) &
-              g.lifeAreaId.equals(area.id) &
-              g.status.equals('active') &
-              g.deletedAt.isNull()))
-        .get();
-    final tasks = await (database.select(database.tasks)
-          ..where((t) =>
-              t.ownerId.equals(ownerId) &
-              t.lifeAreaId.equals(area.id) &
-              t.deletedAt.isNull()))
-        .get();
+    final goals =
+        await (database.select(database.goals)..where(
+              (g) =>
+                  g.ownerId.equals(ownerId) &
+                  g.lifeAreaId.equals(area.id) &
+                  g.status.equals('active') &
+                  g.deletedAt.isNull(),
+            ))
+            .get();
+    final tasks =
+        await (database.select(database.tasks)..where(
+              (t) =>
+                  t.ownerId.equals(ownerId) &
+                  t.lifeAreaId.equals(area.id) &
+                  t.deletedAt.isNull(),
+            ))
+            .get();
     return (xp, goals.length, tasks.length);
   }
 }
@@ -551,44 +611,48 @@ class _EmptyVisionDomains extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.visibility_outlined, size: 56, color: Colors.white24),
-              const SizedBox(height: 14),
-              const Text(
-                'No Vision Domains yet',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Create your first domain to anchor your long-term focus and direction.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white54, fontSize: 13),
-              ),
-              const SizedBox(height: 20),
-              FilledButton.icon(
-                onPressed: onCreate,
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFC6F135),
-                  foregroundColor: const Color(0xFF0D0D0D),
-                ),
-                icon: const Icon(Icons.add),
-                label: const Text(
-                  'Create Vision Domain',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.visibility_outlined,
+            size: 56,
+            color: Colors.white24,
           ),
-        ),
-      );
+          const SizedBox(height: 14),
+          const Text(
+            'No Vision Domains yet',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Create your first domain to anchor your long-term focus and direction.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white54, fontSize: 13),
+          ),
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: onCreate,
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFC6F135),
+              foregroundColor: const Color(0xFF0D0D0D),
+            ),
+            icon: const Icon(Icons.add),
+            label: const Text(
+              'Create Vision Domain',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _LifeAreaDraft {
@@ -644,116 +708,223 @@ class _LifeAreaEditorState extends State<_LifeAreaEditor> {
   }
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
-        child: ActiveGlassCard(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget build(BuildContext context) => BackdropFilter(
+    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+    child: Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D0F0D).withValues(alpha: 0.96),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border.all(color: Colors.white12, width: 1),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.viewInsetsOf(context).bottom + 24,
+        left: 20,
+        right: 20,
+        top: 14,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Header
+            Row(
               children: [
-                Text(
-                  widget.area == null ? 'NEW VISION DOMAIN' : 'EDIT DOMAIN',
-                  style: const TextStyle(
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC6F135).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFFC6F135).withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome,
                     color: Color(0xFFC6F135),
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
+                    size: 20,
                   ),
                 ),
-                const SizedBox(height: 18),
-                TextField(
-                  key: const Key('life_area_name_input'),
-                  controller: _name,
-                  autofocus: true,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Domain Name *',
-                    labelStyle: TextStyle(color: Colors.white60),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                FutureBuilder<List<Category>>(
-                  future: widget.database.categoriesDao
-                      .categoriesByType(widget.ownerId, 'life_area'),
-                  builder: (context, snapshot) {
-                    final categories = snapshot.data ?? const <Category>[];
-                    final selected = categories
-                        .where((c) => c.id == _categoryId)
-                        .firstOrNull;
-                    return InkWell(
-                      key: const Key('life_area_category_picker'),
-                      onTap: categories.isEmpty
-                          ? null
-                          : () async {
-                              final picked = await showModalBottomSheet<String>(
-                                context: context,
-                                backgroundColor: const Color(0xFF161616),
-                                builder: (_) => ListView(
-                                  padding: const EdgeInsets.all(16),
-                                  children: categories
-                                      .map((c) => ListTile(
-                                            title: Text(c.name,
-                                                style: const TextStyle(
-                                                    color: Colors.white)),
-                                            onTap: () =>
-                                                Navigator.pop(context, c.id),
-                                          ))
-                                      .toList(),
-                                ),
-                              );
-                              if (picked != null) {
-                                setState(() => _categoryId = picked);
-                              }
-                            },
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Category (optional)',
-                          labelStyle: TextStyle(color: Colors.white60),
-                          suffixIcon: Icon(Icons.expand_more, color: Colors.white54),
-                        ),
-                        child: Text(
-                          selected?.name ??
-                              (categories.isEmpty
-                                  ? 'No categories'
-                                  : 'Select category'),
-                          style: TextStyle(
-                            color: selected == null
-                                ? Colors.white38
-                                : Colors.white,
-                          ),
-                        ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.area == null
+                          ? 'CREATE VISION DOMAIN'
+                          : 'EDIT VISION DOMAIN',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.5,
                       ),
-                    );
-                  },
+                    ),
+                    const Text(
+                      'Core pillar of life, focus, and mastery',
+                      style: TextStyle(color: Colors.white38, fontSize: 11),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                if (widget.area == null) ...[
-                  // Starting Level Picker
-                  FutureBuilder<List<LevelDetailData>>(
-                    future: LevelDetailRepository(widget.database)
-                        .getAllLevelsWithDetails(widget.ownerId),
-                    builder: (context, snapshot) {
-                      final levels = snapshot.data ?? const <LevelDetailData>[];
-                      return InkWell(
-                        key: const Key('starting_level_picker'),
-                        onTap: levels.isEmpty
-                            ? null
-                            : () async {
-                                final picked = await showModalBottomSheet<LevelDetailData>(
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            TextField(
+              key: const Key('life_area_name_input'),
+              controller: _name,
+              autofocus: true,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+              decoration: InputDecoration(
+                labelText: 'Domain Name *',
+                labelStyle: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                ),
+                hintText: 'e.g. Physical Mastery, Software Architecture',
+                hintStyle: const TextStyle(color: Colors.white24),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.05),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.white12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFC6F135)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            FutureBuilder<List<Category>>(
+              future: widget.database.categoriesDao.categoriesByType(
+                widget.ownerId,
+                'life_area',
+              ),
+              builder: (context, snapshot) {
+                final categories = snapshot.data ?? const <Category>[];
+                final selected = categories
+                    .where((c) => c.id == _categoryId)
+                    .firstOrNull;
+                return InkWell(
+                  key: const Key('life_area_category_picker'),
+                  onTap: categories.isEmpty
+                      ? null
+                      : () async {
+                          final picked = await showModalBottomSheet<String>(
+                            context: context,
+                            backgroundColor: const Color(0xFF161616),
+                            builder: (_) => ListView(
+                              padding: const EdgeInsets.all(16),
+                              children: categories
+                                  .map(
+                                    (c) => ListTile(
+                                      title: Text(
+                                        c.name,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      onTap: () => Navigator.pop(context, c.id),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          );
+                          if (picked != null) {
+                            setState(() => _categoryId = picked);
+                          }
+                        },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Category (optional)',
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              selected?.name ??
+                                  (categories.isEmpty
+                                      ? 'No categories'
+                                      : 'Select category'),
+                              style: TextStyle(
+                                color: selected == null
+                                    ? Colors.white38
+                                    : Colors.white,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Icon(
+                          Icons.expand_more,
+                          color: Colors.white54,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 14),
+            if (widget.area == null) ...[
+              // Starting Level Picker
+              FutureBuilder<List<LevelDetailData>>(
+                future: LevelDetailRepository(widget.database)
+                    .getAllLevelsWithDetails(widget.ownerId),
+                builder: (context, snapshot) {
+                  final levels = snapshot.data ?? const <LevelDetailData>[];
+                  return InkWell(
+                    key: const Key('starting_level_picker'),
+                    onTap: levels.isEmpty
+                        ? null
+                        : () async {
+                            final picked =
+                                await showModalBottomSheet<LevelDetailData>(
                                   context: context,
                                   backgroundColor: const Color(0xFF161616),
                                   builder: (_) => ListView(
                                     padding: const EdgeInsets.all(16),
                                     children: [
                                       const Padding(
-                                        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: 8,
+                                          horizontal: 16,
+                                        ),
                                         child: Text(
                                           'SELECT STARTING LEVEL',
                                           style: TextStyle(
@@ -764,178 +935,276 @@ class _LifeAreaEditorState extends State<_LifeAreaEditor> {
                                           ),
                                         ),
                                       ),
-                                      ...levels.map((lvl) => ListTile(
-                                            title: Text(
-                                              lvl.name,
-                                              style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold),
+                                      ...levels.map(
+                                        (lvl) => ListTile(
+                                          title: Text(
+                                            lvl.name,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
                                             ),
-                                            subtitle: Text(
-                                              '${lvl.tier} • Level ${lvl.level} (${lvl.lowerXp} - ${lvl.upperXp} XP)',
-                                              style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                          ),
+                                          subtitle: Text(
+                                            '${lvl.tier} â€¢ Level ${lvl.level} (${lvl.lowerXp} - ${lvl.upperXp} XP)',
+                                            style: const TextStyle(
+                                              color: Colors.white54,
+                                              fontSize: 12,
                                             ),
-                                            onTap: () => Navigator.pop(context, lvl),
-                                          )),
+                                          ),
+                                          onTap: () =>
+                                              Navigator.pop(context, lvl),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 );
-                                if (picked != null) {
-                                  setState(() {
-                                    _selectedLevel = picked;
-                                    _startingXp = picked.lowerXp;
-                                  });
-                                }
-                              },
-                        child: InputDecorator(
-                          decoration: InputDecoration(
-                            labelText: 'Starting Level (optional)',
-                            labelStyle: const TextStyle(color: Colors.white60),
-                            suffixIcon: _selectedLevel != null
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear, size: 18, color: Colors.white54),
-                                    onPressed: () {
-                                      setState(() {
-                                        _selectedLevel = null;
-                                        _startingXp = 0;
-                                      });
-                                    },
-                                  )
-                                : const Icon(Icons.expand_more, color: Colors.white54),
-                          ),
-                          child: Text(
-                            _selectedLevel != null
-                                ? '${_selectedLevel!.name} (${_selectedLevel!.tier})'
-                                : (levels.isEmpty
-                                    ? 'No levels configured'
-                                    : 'Select starting level'),
-                            style: TextStyle(
-                              color: _selectedLevel == null
-                                  ? Colors.white38
-                                  : const Color(0xFFC6F135),
-                              fontWeight: _selectedLevel == null
-                                  ? FontWeight.normal
-                                  : FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  if (_selectedLevel != null) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFFC6F135).withValues(alpha: 0.2),
-                        ),
+                            if (picked != null) {
+                              setState(() {
+                                _selectedLevel = picked;
+                                _startingXp = picked.lowerXp;
+                              });
+                            }
+                          },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'STARTING XP',
+                                'Starting Level (optional)',
                                 style: TextStyle(
-                                  color: Colors.white60,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
+                                  color: Colors.white54,
+                                  fontSize: 11,
                                 ),
                               ),
+                              const SizedBox(height: 2),
                               Text(
-                                '$_startingXp XP',
-                                style: const TextStyle(
-                                  color: Color(0xFFC6F135),
-                                  fontWeight: FontWeight.w900,
+                                _selectedLevel != null
+                                    ? '${_selectedLevel!.name} (${_selectedLevel!.tier})'
+                                    : (levels.isEmpty
+                                          ? 'No levels configured'
+                                          : 'Select starting level'),
+                                style: TextStyle(
+                                  color: _selectedLevel == null
+                                      ? Colors.white38
+                                      : const Color(0xFFC6F135),
+                                  fontWeight: _selectedLevel == null
+                                      ? FontWeight.normal
+                                      : FontWeight.bold,
                                   fontSize: 13,
                                 ),
                               ),
                             ],
                           ),
-                          SliderTheme(
-                            data: SliderTheme.of(context).copyWith(
-                              activeTrackColor: const Color(0xFFC6F135),
-                              thumbColor: const Color(0xFFC6F135),
-                              inactiveTrackColor: Colors.white12,
-                              trackHeight: 4,
-                            ),
-                            child: Slider(
-                              value: _startingXp.toDouble().clamp(
-                                    _selectedLevel!.lowerXp.toDouble(),
-                                    _selectedLevel!.upperXp.toDouble(),
+                          _selectedLevel != null
+                              ? IconButton(
+                                  icon: const Icon(
+                                    Icons.clear,
+                                    size: 18,
+                                    color: Colors.white54,
                                   ),
-                              min: _selectedLevel!.lowerXp.toDouble(),
-                              max: _selectedLevel!.upperXp.toDouble() > _selectedLevel!.lowerXp.toDouble()
-                                  ? _selectedLevel!.upperXp.toDouble()
-                                  : (_selectedLevel!.lowerXp.toDouble() + 1),
-                              divisions: (_selectedLevel!.upperXp - _selectedLevel!.lowerXp) > 0
-                                  ? 20
-                                  : null,
-                              onChanged: (val) {
-                                setState(() => _startingXp = val.round());
-                              },
-                            ),
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('${_selectedLevel!.lowerXp} XP',
-                                  style: const TextStyle(color: Colors.white24, fontSize: 10)),
-                              Text('${_selectedLevel!.upperXp} XP',
-                                  style: const TextStyle(color: Colors.white24, fontSize: 10)),
-                            ],
-                          ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _selectedLevel = null;
+                                      _startingXp = 0;
+                                    });
+                                  },
+                                )
+                              : const Icon(
+                                  Icons.expand_more,
+                                  color: Colors.white54,
+                                  size: 20,
+                                ),
                         ],
                       ),
                     ),
-                  ],
-                  const SizedBox(height: 12),
-                ],
-                TextField(
-                  key: const Key('life_area_description_input'),
-                  controller: _description,
-                  maxLines: 3,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Direction & Description',
-                    labelStyle: TextStyle(color: Colors.white60),
+                  );
+                },
+              ),
+              if (_selectedLevel != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFC6F135).withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'STARTING XP',
+                            style: TextStyle(
+                              color: Colors.white60,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          Text(
+                            '$_startingXp XP',
+                            style: const TextStyle(
+                              color: Color(0xFFC6F135),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: const Color(0xFFC6F135),
+                          thumbColor: const Color(0xFFC6F135),
+                          inactiveTrackColor: Colors.white12,
+                          trackHeight: 4,
+                        ),
+                        child: Slider(
+                          value: _startingXp.toDouble().clamp(
+                            _selectedLevel!.lowerXp.toDouble(),
+                            _selectedLevel!.upperXp.toDouble(),
+                          ),
+                          min: _selectedLevel!.lowerXp.toDouble(),
+                          max:
+                              _selectedLevel!.upperXp.toDouble() >
+                                  _selectedLevel!.lowerXp.toDouble()
+                              ? _selectedLevel!.upperXp.toDouble()
+                              : (_selectedLevel!.lowerXp.toDouble() + 1),
+                          divisions:
+                              (_selectedLevel!.upperXp -
+                                      _selectedLevel!.lowerXp) >
+                                  0
+                              ? 20
+                              : null,
+                          onChanged: (val) {
+                            setState(() => _startingXp = val.round());
+                          },
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${_selectedLevel!.lowerXp} XP',
+                            style: const TextStyle(
+                              color: Colors.white24,
+                              fontSize: 10,
+                            ),
+                          ),
+                          Text(
+                            '${_selectedLevel!.upperXp} XP',
+                            style: const TextStyle(
+                              color: Colors.white24,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                FilledButton(
-                  key: const Key('save_life_area_button'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFC6F135),
-                    foregroundColor: const Color(0xFF0D0D0D),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+              ],
+              const SizedBox(height: 14),
+            ],
+            TextField(
+              key: const Key('life_area_description_input'),
+              controller: _description,
+              maxLines: 3,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: InputDecoration(
+                labelText: 'Direction & Vision Description',
+                labelStyle: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                ),
+                hintText: 'What is your highest standard and vision for this life area?',
+                hintStyle: const TextStyle(color: Colors.white24),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.05),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.white12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFC6F135)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      foregroundColor: Colors.white54,
+                    ),
+                    child: const Text(
+                      'CANCEL',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  onPressed: () {
-                    final name = _name.text.trim();
-                    if (name.isEmpty) return;
-                    Navigator.of(context).pop(_LifeAreaDraft(
-                      name,
-                      _description.text.trim().isEmpty
-                          ? null
-                          : _description.text.trim(),
-                      _categoryId,
-                      startingLevel: _selectedLevel?.level,
-                      startingXp: _startingXp,
-                    ));
-                  },
-                  child: Text(
-                    widget.area == null ? 'CREATE DOMAIN' : 'SAVE CHANGES',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: FilledButton(
+                    key: const Key('save_life_area_button'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFC6F135),
+                      foregroundColor: const Color(0xFF0D0D0D),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      final name = _name.text.trim();
+                      if (name.isEmpty) return;
+                      Navigator.of(context).pop(
+                        _LifeAreaDraft(
+                          name,
+                          _description.text.trim().isEmpty
+                              ? null
+                              : _description.text.trim(),
+                          _categoryId,
+                          startingLevel: _selectedLevel?.level,
+                          startingXp: _startingXp,
+                        ),
+                      );
+                    },
+                    child: Text(
+                      widget.area == null ? 'CREATE DOMAIN' : 'SAVE CHANGES',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
+          ],
         ),
-      );
+      ),
+    ),
+  );
 }

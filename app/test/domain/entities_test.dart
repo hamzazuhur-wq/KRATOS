@@ -16,7 +16,7 @@ void main() {
         id: const Id('018e5e9a-7c00-7000-8000-000000000000'),
         deviceId: 'dev123',
         displayName: 'Old Name',
-        syncVersion: '0',
+        timezone: 'UTC',
         versionHlc: Hlc.now(nodeId),
         createdAt: Iso8601Timestamp.now(),
         updatedAt: Iso8601Timestamp.now(),
@@ -107,10 +107,10 @@ void main() {
       
       // progress validation + clamp
       final ph = Hlc.now(nodeId);
-      expect(() => goal.setProgress(-0.5, ph, h2), throwsA(isA<ValidationError>()));
-      expect(() => goal.setProgress(1.5, ph, h2), throwsA(isA<ValidationError>()));
+      expect(() => goal.setProgress(-0.5, ph), throwsA(isA<ValidationError>()));
+      expect(() => goal.setProgress(1.5, ph), throwsA(isA<ValidationError>()));
       
-      goal = goal.setProgress(0.8, ph, h2);
+      goal = goal.setProgress(0.8, ph);
       expect(goal.progress, 0.8);
       expect(goal.xpEarned, 80);
       

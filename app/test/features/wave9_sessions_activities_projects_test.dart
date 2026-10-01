@@ -2,17 +2,17 @@
 
 import 'package:test/test.dart';
 
-import '../../lib/domain/errors.dart';
-import '../../lib/domain/hlc.dart';
-import '../../lib/domain/ids.dart';
-import '../../lib/domain/timestamps.dart';
-import '../../lib/features/sessions/domain/session_models.dart';
+import 'package:kratos_app/domain/errors.dart';
+import 'package:kratos_app/domain/hlc.dart';
+import 'package:kratos_app/domain/ids.dart';
+import 'package:kratos_app/domain/timestamps.dart';
+import 'package:kratos_app/features/sessions/domain/session_models.dart';
 
 void main() {
   Hlc hlc([int c = 1]) => Hlc(
         wallMs: DateTime.now().millisecondsSinceEpoch,
         counter: c,
-        node: 'test',
+        nodeId: Id.uuidV7(),
       );
 
   Iso8601Timestamp now() => Iso8601Timestamp.now();
@@ -149,13 +149,13 @@ void main() {
         id: Id.uuidV7(),
         ownerId: Id.uuidV7(),
         activityId: Id.uuidV7(),
-        startedAt: Iso8601Timestamp(start),
+        startedAt: Iso8601Timestamp.fromDateTime(start),
         versionHlc: hlc(),
-        createdAt: Iso8601Timestamp(start),
-        updatedAt: Iso8601Timestamp(start),
+        createdAt: Iso8601Timestamp.fromDateTime(start),
+        updatedAt: Iso8601Timestamp.fromDateTime(start),
       );
       final endTime =
-          Iso8601Timestamp(start.add(const Duration(minutes: 30)));
+          Iso8601Timestamp.fromDateTime(start.add(const Duration(minutes: 30)));
       final ended = s.end(endTime, hlc(2));
       expect(ended.isCompleted, isTrue);
       expect(ended.durationMs, equals(30 * 60 * 1000));
@@ -167,15 +167,15 @@ void main() {
         id: Id.uuidV7(),
         ownerId: Id.uuidV7(),
         activityId: Id.uuidV7(),
-        startedAt: Iso8601Timestamp(start),
-        endedAt: Iso8601Timestamp(start.add(const Duration(minutes: 10))),
+        startedAt: Iso8601Timestamp.fromDateTime(start),
+        endedAt: Iso8601Timestamp.fromDateTime(start.add(const Duration(minutes: 10))),
         durationMs: 600000,
         versionHlc: hlc(),
-        createdAt: Iso8601Timestamp(start),
-        updatedAt: Iso8601Timestamp(start),
+        createdAt: Iso8601Timestamp.fromDateTime(start),
+        updatedAt: Iso8601Timestamp.fromDateTime(start),
       );
       expect(
-        () => s.end(Iso8601Timestamp(start.add(const Duration(minutes: 20))),
+        () => s.end(Iso8601Timestamp.fromDateTime(start.add(const Duration(minutes: 20))),
             hlc(2)),
         throwsA(isA<ConflictError>()),
       );
@@ -187,13 +187,13 @@ void main() {
         id: Id.uuidV7(),
         ownerId: Id.uuidV7(),
         activityId: Id.uuidV7(),
-        startedAt: Iso8601Timestamp(start),
-        endedAt: Iso8601Timestamp(
+        startedAt: Iso8601Timestamp.fromDateTime(start),
+        endedAt: Iso8601Timestamp.fromDateTime(
             start.add(const Duration(hours: 1, minutes: 23))),
         durationMs: (1 * 60 + 23) * 60 * 1000,
         versionHlc: hlc(),
-        createdAt: Iso8601Timestamp(start),
-        updatedAt: Iso8601Timestamp(start),
+        createdAt: Iso8601Timestamp.fromDateTime(start),
+        updatedAt: Iso8601Timestamp.fromDateTime(start),
       );
       expect(s.formattedDuration, equals('1h 23m'));
     });

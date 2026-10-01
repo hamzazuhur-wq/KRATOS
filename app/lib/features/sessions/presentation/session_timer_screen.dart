@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 
+import '../../../app/number_pop_in.dart';
 import '../../../data/drift/app_database.dart';
 import '../../../domain/hlc.dart';
 import '../../../domain/ids.dart';
@@ -18,7 +19,7 @@ import '../../xp/domain/xp_allocation_math.dart';
 /// Stateful focus timer widget for a single KRATOS session.
 ///
 /// Integrates with [SessionsDao] and [XpLedgerWriter] for persistent time logging
-/// and immutable XP ledger credit with streak bonus.
+/// and immutable XP ledger credit.
 class SessionTimerScreen extends StatefulWidget {
   /// Optional task or activity name shown in the header.
   final String? contextLabel;
@@ -65,9 +66,10 @@ class _SessionTimerScreenState extends State<SessionTimerScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-    _pulseAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
-    );
+    _pulseAnim = Tween<double>(
+      begin: 0.85,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -105,63 +107,65 @@ class _SessionTimerScreenState extends State<SessionTimerScreen>
       final durationMs = _elapsed.inMilliseconds;
 
       await db.transaction(() async {
-        await db.into(db.sessions).insert(
-          SessionsCompanion(
-            id: drift.Value(sessionId),
-            ownerId: drift.Value(ownerId),
-            taskId: drift.Value(widget.taskId),
-            activityId: drift.Value(widget.activityId),
-            lifeAreaId: drift.Value(widget.lifeAreaId),
-            startedAt: drift.Value(now.subtract(_elapsed)),
-            endedAt: drift.Value(now),
-            durationMs: drift.Value(durationMs),
-            versionHlc: drift.Value(hlc.toString()),
-            createdAt: drift.Value(now),
-            updatedAt: drift.Value(now),
-          ),
-        );
+        await db
+            .into(db.sessions)
+            .insert(
+              SessionsCompanion(
+                id: drift.Value(sessionId),
+                ownerId: drift.Value(ownerId),
+                taskId: drift.Value(widget.taskId),
+                activityId: drift.Value(widget.activityId),
+                lifeAreaId: drift.Value(widget.lifeAreaId),
+                startedAt: drift.Value(now.subtract(_elapsed)),
+                endedAt: drift.Value(now),
+                durationMs: drift.Value(durationMs),
+                versionHlc: drift.Value(hlc.toString()),
+                createdAt: drift.Value(now),
+                updatedAt: drift.Value(now),
+              ),
+            );
 
-        await db.into(db.syncOutbox).insert(
-          SyncOutboxCompanion.insert(
-            userId: ownerId,
-            op: 'upsert',
-            entity: 'sessions',
-            entityId: sessionId,
-            payloadJson: jsonEncode({
-              'id': sessionId,
-              'owner_id': ownerId,
-              'task_id': widget.taskId,
-              'activity_id': widget.activityId,
-              'life_area_id': widget.lifeAreaId,
-              'started_at': now.subtract(_elapsed).toIso8601String(),
-              'ended_at': now.toIso8601String(),
-              'duration_ms': durationMs,
-            }),
-            hlc: hlc.toString(),
-            deviceId: 'local_device',
-          ),
-        );
+        await db
+            .into(db.syncOutbox)
+            .insert(
+              SyncOutboxCompanion.insert(
+                userId: ownerId,
+                op: 'upsert',
+                entity: 'sessions',
+                entityId: sessionId,
+                payloadJson: jsonEncode({
+                  'id': sessionId,
+                  'owner_id': ownerId,
+                  'task_id': widget.taskId,
+                  'activity_id': widget.activityId,
+                  'life_area_id': widget.lifeAreaId,
+                  'started_at': now.subtract(_elapsed).toIso8601String(),
+                  'ended_at': now.toIso8601String(),
+                  'duration_ms': durationMs,
+                }),
+                hlc: hlc.toString(),
+                deviceId: 'local_device',
+              ),
+            );
 
-        final xp = widget.estimatedXp ?? (_elapsed.inMinutes > 0 ? _elapsed.inMinutes : 1);
+        final xp =
+            widget.estimatedXp ??
+            (_elapsed.inMinutes > 0 ? _elapsed.inMinutes : 1);
         if (xp > 0) {
           final writer = DriftXpLedgerWriter(db);
           final idempotencyKey = Id('xp_sess_$sessionId');
 
           String effectiveArea = widget.lifeAreaId ?? '';
           if (effectiveArea.isEmpty) {
-            final areas = await (db.select(db.lifeAreas)
-                  ..where((l) => l.ownerId.equals(ownerId) & l.deletedAt.isNull())
-                  ..limit(1))
-                .get();
+            final areas =
+                await (db.select(db.lifeAreas)
+                      ..where(
+                        (l) => l.ownerId.equals(ownerId) & l.deletedAt.isNull(),
+                      )
+                      ..limit(1))
+                    .get();
             effectiveArea = areas.isNotEmpty ? areas.first.id : 'la_default';
           }
-
-          final streakService = StreakService(db);
-          final streakInfo = await streakService.getStreakForLifeArea(
-            userId: Id(ownerId),
-            lifeAreaId: Id(effectiveArea),
-          );
-          final streakBonus = streakInfo.calculateStreakBonus(xp);
 
           await writer.recordEvent(
             ownerId: Id(ownerId),
@@ -170,7 +174,6 @@ class _SessionTimerScreenState extends State<SessionTimerScreen>
             sourceId: Id(sessionId),
             action: 'focus_completed',
             basePoints: xp,
-            streakBonus: streakBonus,
             allocationRatios: [
               AllocationRatio(lifeAreaId: Id(effectiveArea), percentage: 100.0),
             ],
@@ -178,12 +181,16 @@ class _SessionTimerScreenState extends State<SessionTimerScreen>
             deviceId: Id('local_device'),
           );
 
-          await streakService.logActivity(
-            userId: Id(ownerId),
-            lifeAreaId: Id(effectiveArea),
-            activityDate: now,
-            versionHlc: hlc.toString(),
-          );
+          if (widget.activityId != null) {
+            await StreakService(db).recordQualifyingCompletion(
+              userId: Id(ownerId),
+              sourceId: Id(widget.activityId!),
+              lifeAreaId: Id(effectiveArea),
+              completedAt: now,
+              versionHlc: hlc.toString(),
+              deviceId: Id('local_device'),
+            );
+          }
         }
       });
     }
@@ -257,10 +264,11 @@ class _SessionTimerScreenState extends State<SessionTimerScreen>
                   boxShadow: _isRunning
                       ? [
                           BoxShadow(
-                            color: const Color(0xFFC6F135).withValues(alpha: 0.2),
+                            color: const Color(0xFFC6F135)
+                                .withValues(alpha: 0.2),
                             blurRadius: 30,
                             spreadRadius: 5,
-                          )
+                          ),
                         ]
                       : null,
                 ),
@@ -268,7 +276,7 @@ class _SessionTimerScreenState extends State<SessionTimerScreen>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
+                    KratosNumberPopIn(
                       _formatDuration(_elapsed),
                       style: TextStyle(
                         color: _isRunning
@@ -277,14 +285,12 @@ class _SessionTimerScreenState extends State<SessionTimerScreen>
                         fontSize: 48,
                         fontWeight: FontWeight.w200,
                         letterSpacing: 2,
-                        fontFeatures: const [
-                          FontFeature.tabularFigures(),
-                        ],
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
                     if (_isRunning)
                       const Text(
-                        'RUNNING',
+                        'TIMING ON',
                         style: TextStyle(
                           color: Color(0xFFC6F135),
                           fontSize: 10,
@@ -301,14 +307,18 @@ class _SessionTimerScreenState extends State<SessionTimerScreen>
             if (widget.estimatedXp != null && _isRunning)
               Container(
                 margin: const EdgeInsets.only(bottom: 24),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFC6F135).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                      color: const Color(0xFFC6F135).withValues(alpha: 0.4)),
+                    color: const Color(0xFFC6F135).withValues(alpha: 0.4),
+                  ),
                 ),
-                child: Text(
+                child: KratosNumberPopIn(
                   '~${widget.estimatedXp} XP on completion',
                   style: const TextStyle(
                     color: Color(0xFFC6F135),
@@ -340,7 +350,7 @@ class _SessionTimerScreenState extends State<SessionTimerScreen>
                   const SizedBox(width: 20),
                   if (_elapsed.inSeconds >= 30)
                     _TimerButton(
-                      label: 'END',
+                      label: 'COMPLETE',
                       icon: Icons.stop,
                       color: const Color(0xFFFF3B30),
                       onTap: _endSession,
@@ -430,8 +440,7 @@ class _SessionCompletedDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle,
-                color: Color(0xFFC6F135), size: 52),
+            const Icon(Icons.check_circle, color: Color(0xFFC6F135), size: 52),
             const SizedBox(height: 16),
             const Text(
               'SESSION COMPLETE',
@@ -443,13 +452,13 @@ class _SessionCompletedDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            Text(
+            KratosNumberPopIn(
               '${minutes}m focused',
               style: const TextStyle(color: Colors.white70, fontSize: 14),
             ),
             if (estimatedXp != null) ...[
               const SizedBox(height: 8),
-              Text(
+              KratosNumberPopIn(
                 '+$estimatedXp XP awarded',
                 style: const TextStyle(
                   color: Color(0xFFC6F135),

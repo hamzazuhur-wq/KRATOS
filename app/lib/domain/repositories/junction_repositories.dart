@@ -2,6 +2,7 @@
 // Pure Dart — no Drift, no Supabase.
 
 import '../entities/task.dart';
+import '../hlc.dart';
 import '../ids.dart';
 
 /// CRUD for Tasks — stub DAO (full UX in Wave 9).

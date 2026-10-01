@@ -143,7 +143,7 @@ class _TrashAndStorageScreenState extends State<TrashAndStorageScreen> {
                           const SizedBox(height: 4),
                           Text(
                             'Active Entities: ${_report!.totalLifeAreas} Life Areas, ${_report!.totalGoals} Goals, ${_report!.totalTasks} Tasks, ${_report!.totalNotes} Notes',
-                            style: const TextStyle(color: Colors.white40, fontSize: 12),
+                            style: const TextStyle(color: Color(0x66FFFFFF), fontSize: 12),
                           ),
                         ],
                       ),

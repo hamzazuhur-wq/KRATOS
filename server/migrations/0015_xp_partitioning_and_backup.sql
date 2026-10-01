@@ -18,15 +18,16 @@
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS xp_ledger_monthly_summary AS
 SELECT
-    user_id,
-    life_area_id,
-    date_trunc('month', occurred_at) AS month_start,
+    l.owner_id AS user_id,
+    al.life_area_id,
+    date_trunc('month', l.created_at) AS month_start,
     COUNT(*)                          AS event_count,
-    SUM(points)                       AS total_xp,
-    MIN(occurred_at)                  AS first_event_at,
-    MAX(occurred_at)                  AS last_event_at
-FROM xp_ledger
-GROUP BY user_id, life_area_id, date_trunc('month', occurred_at);
+    SUM(al.allocated_points)          AS total_xp,
+    MIN(l.created_at)                 AS first_event_at,
+    MAX(l.created_at)                 AS last_event_at
+FROM xp_ledger l
+JOIN xp_allocation_lines al ON al.ledger_id = l.id
+GROUP BY l.owner_id, al.life_area_id, date_trunc('month', l.created_at);
 
 -- Unique index for fast lookups and REFRESH CONCURRENTLY support
 CREATE UNIQUE INDEX IF NOT EXISTS idx_xp_monthly_summary_pk

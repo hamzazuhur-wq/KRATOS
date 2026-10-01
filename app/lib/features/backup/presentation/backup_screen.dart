@@ -3,7 +3,10 @@
 //
 // Design: Dark Volcanic (#0D0D0D) + Acid Lime (#C6F135) + Liquid Glass panels.
 
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../domain/backup_service.dart';
 import '../../../data/drift/app_database.dart';
 
@@ -43,11 +46,24 @@ class _BackupScreenState extends State<BackupScreen> {
     try {
       final manifest = await _service.exportToJson(widget.userId);
       final json = manifest.toJsonString(pretty: true);
+      final bytes = Uint8List.fromList(utf8.encode(json));
+      final dateStr = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
+      final fileName = 'kratos_backup_$dateStr.json';
 
-      // In a real app this would use file_picker / share_plus to save the file.
-      // For now we display the size as confirmation.
+      final savedUri = await FilePicker.saveFile(
+        dialogTitle: 'Save KRATOS Backup File',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        bytes: bytes,
+      );
+
       final sizeKb = (json.length / 1024).toStringAsFixed(1);
-      _setStatus('✅ Export complete — $sizeKb KB ready for download.', isError: false);
+      if (savedUri != null) {
+        _setStatus('✅ Export saved successfully ($sizeKb KB) -> $savedUri', isError: false);
+      } else {
+        _setStatus('✅ Export file generated ($sizeKb KB).', isError: false);
+      }
     } catch (e) {
       _setStatus('❌ Export failed: $e', isError: true);
     } finally {
@@ -55,9 +71,67 @@ class _BackupScreenState extends State<BackupScreen> {
     }
   }
 
-  Future<void> _import() async {
-    // In a real app we'd use file_picker to load a .json file.
-    // For demo / test purposes, show a paste dialog.
+  Future<void> _copyExportJson() async {
+    setState(() {
+      _exporting = true;
+      _statusMessage = null;
+    });
+
+    try {
+      final manifest = await _service.exportToJson(widget.userId);
+      final json = manifest.toJsonString(pretty: true);
+      await Clipboard.setData(ClipboardData(text: json));
+      final sizeKb = (json.length / 1024).toStringAsFixed(1);
+      _setStatus('✅ Backup JSON copied to clipboard ($sizeKb KB).', isError: false);
+    } catch (e) {
+      _setStatus('❌ Failed to copy export: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  Future<void> _importFromFile() async {
+    try {
+      final file = await FilePicker.pickFile(
+        dialogTitle: 'Select KRATOS Backup File (.json)',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      final rawJson = utf8.decode(bytes);
+
+      if (rawJson.trim().isEmpty) {
+        _setStatus('❌ Could not read the selected backup file.', isError: true);
+        return;
+      }
+
+      setState(() {
+        _importing = true;
+        _statusMessage = null;
+      });
+
+      final importResult = await _service.importFromJson(rawJson);
+      if (importResult.success) {
+        _setStatus(
+          '✅ Import successful! Restored ${importResult.totalImported} entities '
+          '(${importResult.lifeAreasImported} life areas, ${importResult.goalsImported} goals, '
+          '${importResult.tasksImported} tasks, ${importResult.notesImported} notes, '
+          '${importResult.skillsImported} skills, ${importResult.projectsImported} projects).',
+          isError: false,
+        );
+      } else {
+        _setStatus('❌ Import failed: ${importResult.errorMessage}', isError: true);
+      }
+    } catch (e) {
+      _setStatus('❌ Import error: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _importing = false);
+    }
+  }
+
+  Future<void> _importFromText() async {
     final rawJson = await _showImportDialog();
     if (rawJson == null || rawJson.trim().isEmpty) return;
 
@@ -86,10 +160,12 @@ class _BackupScreenState extends State<BackupScreen> {
   }
 
   void _setStatus(String message, {required bool isError}) {
-    if (mounted) setState(() {
-      _statusMessage = message;
-      _statusIsError = isError;
-    });
+    if (mounted) {
+      setState(() {
+        _statusMessage = message;
+        _statusIsError = isError;
+      });
+    }
   }
 
   Future<String?> _showImportDialog() async {
@@ -199,11 +275,27 @@ class _BackupScreenState extends State<BackupScreen> {
                     style: TextStyle(color: Colors.white54, fontSize: 13),
                   ),
                   const SizedBox(height: 16),
-                  _ActionButton(
-                    label: 'Export JSON Backup',
-                    icon: Icons.download_rounded,
-                    loading: _exporting,
-                    onTap: _export,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ActionButton(
+                          label: 'Save File (.json)',
+                          icon: Icons.download_rounded,
+                          loading: _exporting,
+                          onTap: _export,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ActionButton(
+                          label: 'Copy JSON',
+                          icon: Icons.copy_rounded,
+                          loading: _exporting,
+                          onTap: _copyExportJson,
+                          outline: true,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -229,12 +321,27 @@ class _BackupScreenState extends State<BackupScreen> {
                     style: TextStyle(color: Colors.orange, fontSize: 11),
                   ),
                   const SizedBox(height: 16),
-                  _ActionButton(
-                    label: 'Import from JSON',
-                    icon: Icons.upload_file_rounded,
-                    loading: _importing,
-                    onTap: _import,
-                    outline: true,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ActionButton(
+                          label: 'Select File (.json)',
+                          icon: Icons.file_open_rounded,
+                          loading: _importing,
+                          onTap: _importFromFile,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ActionButton(
+                          label: 'Paste JSON',
+                          icon: Icons.paste_rounded,
+                          loading: _importing,
+                          onTap: _importFromText,
+                          outline: true,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

@@ -59,16 +59,16 @@ class HamiltonHareAllocator {
     required List<AllocationRatio> ratios,
   }) {
     if (ratios.isEmpty) {
-      throw ValidationError('Allocation ratios cannot be empty');
+      throw ValidationError('ratios', 'Allocation ratios cannot be empty');
     }
     if (totalPoints == 0) {
-      throw ValidationError('Cannot allocate 0 total points');
+      throw ValidationError('totalPoints', 'Cannot allocate 0 total points');
     }
 
     final totalPercentage =
         ratios.fold<double>(0, (sum, r) => sum + r.percentage);
     if (totalPercentage <= 0) {
-      throw ValidationError('Total allocation percentage must be positive');
+      throw ValidationError('ratios', 'Total allocation percentage must be positive');
     }
 
     if (totalPoints > 0) {
@@ -129,7 +129,7 @@ class HamiltonHareAllocator {
     final finalSum = results.fold<int>(0, (sum, r) => sum + r.points);
     if (finalSum != totalPoints) {
       throw InvariantViolation(
-          'Hamilton-Hare sum $finalSum does not equal totalPoints $totalPoints');
+          'allocation_sum', 'Hamilton-Hare sum $finalSum does not equal totalPoints $totalPoints');
     }
 
     return results;

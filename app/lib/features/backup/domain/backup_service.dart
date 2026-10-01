@@ -11,6 +11,7 @@
 // Invariant #14: Tombstones win — deleted_at entries are respected on import.
 
 import 'dart:convert';
+import 'package:drift/drift.dart';
 import '../../../data/drift/app_database.dart';
 
 /// Versioned backup manifest schema.
@@ -175,7 +176,7 @@ class BackupService {
 
     // XP Ledger monthly summary (aggregate from local ledger)
     final xpLedger = await (_db.select(_db.xpLedger)
-          ..where((x) => x.userId.equals(userId)))
+          ..where((x) => x.ownerId.equals(userId)))
         .get();
 
     final xpSummary = _aggregateXpByMonth(xpLedger);
@@ -365,22 +366,31 @@ class BackupService {
   }
 
   Map<String, dynamic> _rowToMap(dynamic row) {
-    // Drift DataClass.toJson() equivalent — convert to plain map
-    // Using toString on the data class gives column=value pairs;
-    // we build a minimal safe map from known fields via toColumns().
-    return {'_raw': row.toString()};
+    final raw = row.toJson() as Map<String, dynamic>;
+    return raw.map((key, value) {
+      final snakeKey = key.replaceAllMapped(
+        RegExp(r'[A-Z]'),
+        (match) => '_${match.group(0)!.toLowerCase()}',
+      );
+      final jsonValue =
+          value is DateTime ? value.toUtc().toIso8601String() : value;
+      return MapEntry(snakeKey, jsonValue);
+    });
   }
 
   List<Map<String, dynamic>> _aggregateXpByMonth(List<XpLedgerData> ledger) {
     final Map<String, _MonthBucket> buckets = {};
     for (final row in ledger) {
       final month = DateTime.utc(
-        row.occurredAt.year,
-        row.occurredAt.month,
+        row.createdAt.year,
+        row.createdAt.month,
       ).toIso8601String();
-      final key = '${row.lifeAreaId ?? 'global'}_$month';
+      // Ledger events are global; life-area attribution is stored in the
+      // allocation-line table and must not be fabricated here.
+      const lifeAreaId = 'global';
+      final key = '${lifeAreaId}_$month';
       buckets[key] ??= _MonthBucket(
-        lifeAreaId: row.lifeAreaId ?? 'global',
+        lifeAreaId: lifeAreaId,
         monthStart: month,
       );
       buckets[key]!.totalXp += row.points;

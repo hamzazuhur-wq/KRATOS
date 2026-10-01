@@ -1,9 +1,9 @@
 // Wave 5 tests: Hamilton-Hare Largest-Remainder math & Late penalty calculation.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kratos/domain/errors.dart';
-import 'package:kratos/domain/ids.dart';
-import 'package:kratos/features/xp/domain/xp_allocation_math.dart';
+import 'package:kratos_app/domain/errors.dart';
+import 'package:kratos_app/domain/ids.dart';
+import 'package:kratos_app/features/xp/domain/xp_allocation_math.dart';
 
 void main() {
   final areaA = Id.uuidV7();

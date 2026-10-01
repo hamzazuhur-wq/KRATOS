@@ -17,6 +17,7 @@
 //   4. Wave 22 + Wave 23: achievement rows are exported in backup manifest
 //   5. Full Level 8 schema table count sanity check
 
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kratos_app/data/drift/app_database.dart';
@@ -75,8 +76,8 @@ void main() {
       final db = _openInMemory();
       final dao = VectorEmbeddingsDao(db);
       final results = await dao.searchSimilar(
-        userId: userId,
-        queryEmbedding: [0.1, 0.2, 0.3],
+        ownerId: userId,
+        queryVector: [0.1, 0.2, 0.3],
         topK: 5,
       );
       expect(results, isEmpty);
@@ -87,7 +88,7 @@ void main() {
       final db = _openInMemory();
       final dao = CollaborationDao(db);
       await _seedBase(db, userId, lifeAreaId);
-      final goals = await dao.sharedGoalsForUser(userId);
+      final goals = await dao.getPartnersForGoal('goal_test');
       expect(goals, isEmpty);
       await db.close();
     });
@@ -116,8 +117,8 @@ void main() {
     test('vector search returns empty while gate evaluation runs concurrently', () async {
       // Both operations are non-destructive reads — should coexist safely
       final searchFuture = vectorDao.searchSimilar(
-        userId: userId,
-        queryEmbedding: List.generate(8, (i) => i * 0.1),
+        ownerId: userId,
+        queryVector: List.generate(8, (i) => i * 0.1),
         topK: 3,
       );
       final gateFuture = gateService.evaluate(
@@ -143,8 +144,8 @@ void main() {
       );
       // Vector table should still be queryable
       final searchResults = await vectorDao.searchSimilar(
-        userId: userId,
-        queryEmbedding: [1.0, 0.0, 0.0],
+        ownerId: userId,
+        queryVector: [1.0, 0.0, 0.0],
         topK: 5,
       );
       expect(searchResults, isEmpty);
@@ -161,12 +162,10 @@ void main() {
   group('Level 8 — Wave 23 backup with collaboration data', () {
     late AppDatabase db;
     late BackupService backupService;
-    late CollaborationDao collaborationDao;
 
     setUp(() async {
       db = _openInMemory();
       backupService = BackupService(db: db);
-      collaborationDao = CollaborationDao(db);
       await _seedBase(db, userId, lifeAreaId);
     });
 

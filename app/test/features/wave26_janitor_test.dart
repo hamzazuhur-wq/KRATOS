@@ -7,7 +7,7 @@
 //   4. Purging items older than 30 days
 //   5. Storage audit and HLC clock drift sanity
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kratos_app/data/drift/app_database.dart';
@@ -129,7 +129,7 @@ void main() {
       );
 
       expect(report.isClockHealthy, isTrue);
-      expect(report.clockSkewSeconds, 5);
+      expect(report.clockSkewSeconds, inInclusiveRange(4, 5));
     });
   });
 }

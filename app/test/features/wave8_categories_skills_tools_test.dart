@@ -3,23 +3,23 @@
 
 import 'package:test/test.dart';
 
-import '../../lib/domain/errors.dart';
-import '../../lib/domain/hlc.dart';
-import '../../lib/domain/ids.dart';
-import '../../lib/domain/timestamps.dart';
-import '../../lib/features/categories/domain/category_models.dart';
-import '../../lib/features/skills/domain/skill_models.dart';
+import 'package:kratos_app/domain/errors.dart';
+import 'package:kratos_app/domain/hlc.dart';
+import 'package:kratos_app/domain/ids.dart';
+import 'package:kratos_app/domain/timestamps.dart';
+import 'package:kratos_app/features/categories/domain/category_models.dart';
+import 'package:kratos_app/features/skills/domain/skill_models.dart';
 
 void main() {
   // ─── Helpers ─────────────────────────────────────────────────────────────
 
-  Hlc _hlc([int counter = 1]) => Hlc(
+  Hlc hlc([int counter = 1]) => Hlc(
         wallMs: DateTime.now().millisecondsSinceEpoch,
         counter: counter,
-        node: 'test',
+        nodeId: Id.uuidV7(),
       );
 
-  Category _makeCategory({bool isImmutable = false, int baseXp = 100}) {
+  Category makeCategory({bool isImmutable = false, int baseXp = 100}) {
     final now = Iso8601Timestamp.now();
     return Category(
       id: Id.uuidV7(),
@@ -27,13 +27,13 @@ void main() {
       name: 'Health',
       baseXp: baseXp,
       isImmutable: isImmutable,
-      versionHlc: _hlc(),
+      versionHlc: hlc(),
       createdAt: now,
       updatedAt: now,
     );
   }
 
-  SkillEntity _makeSkill({int xpTotal = 500, int level = 3}) {
+  SkillEntity makeSkill({int xpTotal = 500, int level = 3}) {
     final now = Iso8601Timestamp.now();
     return SkillEntity(
       id: Id.uuidV7(),
@@ -41,20 +41,20 @@ void main() {
       name: 'Flutter Dev',
       xpTotal: xpTotal,
       level: level,
-      versionHlc: _hlc(),
+      versionHlc: hlc(),
       createdAt: now,
       updatedAt: now,
     );
   }
 
-  ToolEntity _makeTool() {
+  ToolEntity makeTool() {
     final now = Iso8601Timestamp.now();
     return ToolEntity(
       id: Id.uuidV7(),
       ownerId: Id.uuidV7(),
       name: 'VS Code',
       toolType: 'software',
-      versionHlc: _hlc(),
+      versionHlc: hlc(),
       createdAt: now,
       updatedAt: now,
     );
@@ -64,53 +64,53 @@ void main() {
 
   group('Category domain entity', () {
     test('creates with valid baseXp', () {
-      final cat = _makeCategory(baseXp: 100);
+      final cat = makeCategory(baseXp: 100);
       expect(cat.baseXp, equals(100));
       expect(cat.isActive, isTrue);
     });
 
     test('rejects negative baseXp', () {
       expect(
-        () => _makeCategory(baseXp: -1),
+        () => makeCategory(baseXp: -1),
         throwsA(isA<ValidationError>()),
       );
     });
 
     test('rename returns new instance with updated name', () {
-      final cat = _makeCategory();
-      final renamed = cat.rename('Wellness', _hlc(2));
+      final cat = makeCategory();
+      final renamed = cat.rename('Wellness', hlc(2));
       expect(renamed.name, equals('Wellness'));
       expect(renamed.id, equals(cat.id));
     });
 
     test('archive produces archived Category', () {
-      final cat = _makeCategory();
-      final archived = cat.archive(_hlc(2));
+      final cat = makeCategory();
+      final archived = cat.archive(hlc(2));
       expect(archived.isArchived, isTrue);
       expect(archived.isActive, isFalse);
     });
 
     test('cannot archive an already-archived Category', () {
-      final cat = _makeCategory().archive(_hlc(2));
-      expect(() => cat.archive(_hlc(3)), throwsA(isA<ConflictError>()));
+      final cat = makeCategory().archive(hlc(2));
+      expect(() => cat.archive(hlc(3)), throwsA(isA<ConflictError>()));
     });
 
     test('cannot archive an immutable Category (ADR-003)', () {
-      final cat = _makeCategory(isImmutable: true);
-      expect(() => cat.archive(_hlc(2)), throwsA(isA<ConflictError>()));
+      final cat = makeCategory(isImmutable: true);
+      expect(() => cat.archive(hlc(2)), throwsA(isA<ConflictError>()));
     });
 
     test('updateBaseXp returns new Category with new baseXp', () {
-      final cat = _makeCategory(baseXp: 100);
-      final updated = cat.updateBaseXp(150, _hlc(2));
+      final cat = makeCategory(baseXp: 100);
+      final updated = cat.updateBaseXp(150, hlc(2));
       expect(updated.baseXp, equals(150));
       expect(updated.id, equals(cat.id));
     });
 
     test('updateBaseXp rejects negative value', () {
-      final cat = _makeCategory();
+      final cat = makeCategory();
       expect(
-        () => cat.updateBaseXp(-10, _hlc(2)),
+        () => cat.updateBaseXp(-10, hlc(2)),
         throwsA(isA<ValidationError>()),
       );
     });
@@ -155,18 +155,18 @@ void main() {
 
   group('SkillEntity domain entity (ADR-004 + Invariant #4)', () {
     test('creates with valid xpTotal and level', () {
-      final skill = _makeSkill(xpTotal: 500, level: 3);
+      final skill = makeSkill(xpTotal: 500, level: 3);
       expect(skill.xpTotal, equals(500));
       expect(skill.level, equals(3));
       expect(skill.isActive, isTrue);
     });
 
     test('rejects negative xpTotal', () {
-      expect(() => _makeSkill(xpTotal: -1), throwsA(isA<ValidationError>()));
+      expect(() => makeSkill(xpTotal: -1), throwsA(isA<ValidationError>()));
     });
 
     test('rejects negative level', () {
-      expect(() => _makeSkill(level: -1), throwsA(isA<ValidationError>()));
+      expect(() => makeSkill(level: -1), throwsA(isA<ValidationError>()));
     });
 
     test('rejects blank name', () {
@@ -178,7 +178,7 @@ void main() {
           name: '   ',
           xpTotal: 100,
           level: 1,
-          versionHlc: _hlc(),
+          versionHlc: hlc(),
           createdAt: now,
           updatedAt: now,
         ),
@@ -187,24 +187,24 @@ void main() {
     });
 
     test('rename returns new Skill with updated name', () {
-      final skill = _makeSkill();
-      final renamed = skill.rename('Dart Programming', _hlc(2));
+      final skill = makeSkill();
+      final renamed = skill.rename('Dart Programming', hlc(2));
       expect(renamed.name, equals('Dart Programming'));
       expect(renamed.id, equals(skill.id));
     });
 
     test('softDelete marks skill as deleted (Invariant #10)', () {
-      final skill = _makeSkill();
-      final deleted = skill.softDelete(Id.uuidV7(), _hlc(2));
+      final skill = makeSkill();
+      final deleted = skill.softDelete(Id.uuidV7(), hlc(2));
       expect(deleted.isDeleted, isTrue);
       // xpTotal is preserved — historical audit chain intact
       expect(deleted.xpTotal, equals(skill.xpTotal));
     });
 
     test('double softDelete throws ConflictError', () {
-      final skill = _makeSkill().softDelete(Id.uuidV7(), _hlc(2));
+      final skill = makeSkill().softDelete(Id.uuidV7(), hlc(2));
       expect(
-        () => skill.softDelete(Id.uuidV7(), _hlc(3)),
+        () => skill.softDelete(Id.uuidV7(), hlc(3)),
         throwsA(isA<ConflictError>()),
       );
     });
@@ -214,7 +214,7 @@ void main() {
 
   group('ToolEntity domain entity (ADR-004)', () {
     test('creates valid tool', () {
-      final tool = _makeTool();
+      final tool = makeTool();
       expect(tool.name, equals('VS Code'));
       expect(tool.isActive, isTrue);
     });
@@ -227,7 +227,7 @@ void main() {
           ownerId: Id.uuidV7(),
           name: '  ',
           toolType: 'software',
-          versionHlc: _hlc(),
+          versionHlc: hlc(),
           createdAt: now,
           updatedAt: now,
         ),
@@ -236,22 +236,22 @@ void main() {
     });
 
     test('rename returns new Tool with updated name', () {
-      final tool = _makeTool();
-      final renamed = tool.rename('Neovim', _hlc(2));
+      final tool = makeTool();
+      final renamed = tool.rename('Neovim', hlc(2));
       expect(renamed.name, equals('Neovim'));
       expect(renamed.id, equals(tool.id));
     });
 
     test('softDelete marks tool as deleted', () {
-      final tool = _makeTool();
-      final deleted = tool.softDelete(Id.uuidV7(), _hlc(2));
+      final tool = makeTool();
+      final deleted = tool.softDelete(Id.uuidV7(), hlc(2));
       expect(deleted.isDeleted, isTrue);
     });
 
     test('double softDelete throws ConflictError', () {
-      final tool = _makeTool().softDelete(Id.uuidV7(), _hlc(2));
+      final tool = makeTool().softDelete(Id.uuidV7(), hlc(2));
       expect(
-        () => tool.softDelete(Id.uuidV7(), _hlc(3)),
+        () => tool.softDelete(Id.uuidV7(), hlc(3)),
         throwsA(isA<ConflictError>()),
       );
     });

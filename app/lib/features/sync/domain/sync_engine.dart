@@ -1,84 +1,207 @@
 // ignore_for_file: public_member_api_docs
-// Wave 16: SyncEngine — Outbox Drain Worker & Real-time State Coordinator.
-// Handles batch synchronization, exponential backoff, and idempotent replay.
 
 import 'dart:async';
 import 'dart:math';
-import '../data/sync_dao.dart';
+
+import '../../../data/drift/app_database.dart';
 import 'sync_models.dart';
 
 class SyncEngine {
-  final SyncDao _syncDao;
+  final SyncOutboxStore _outbox;
+  final SyncTransport _transport;
   final String _userId;
   final String _deviceId;
+  final AppDatabase? _database;
 
   final _stateController = StreamController<SyncConnectionState>.broadcast();
-  SyncConnectionState _currentState = SyncConnectionState.online;
-
+  SyncConnectionState _currentState = SyncConnectionState.offline;
   Timer? _drainTimer;
   bool _isDraining = false;
+  bool _isPulling = false;
 
   SyncEngine({
-    required SyncDao syncDao,
+    required SyncOutboxStore outbox,
+    required SyncTransport transport,
     required String userId,
     required String deviceId,
-  })  : _syncDao = syncDao,
-        _userId = userId,
-        _deviceId = deviceId;
+    AppDatabase? database,
+  }) : _outbox = outbox,
+       _transport = transport,
+       _userId = userId,
+       _deviceId = deviceId,
+       _database = database;
 
   Stream<SyncConnectionState> get stateStream => _stateController.stream;
   SyncConnectionState get currentState => _currentState;
 
-  /// Start scheduled outbox drain worker (runs every [interval]).
   void start({Duration interval = const Duration(seconds: 15)}) {
     _drainTimer?.cancel();
-    _drainTimer = Timer.periodic(interval, (_) => triggerDrain());
-    // Initial immediate drain
-    triggerDrain();
+    _runSyncCycle();
+    _drainTimer = Timer.periodic(interval, (_) => _runSyncCycle());
   }
 
-  /// Stop scheduled outbox drain worker.
+  Future<void> _runSyncCycle() async {
+    final pending = await _outbox.countPending(_userId);
+    if (pending > 0) {
+      await triggerDrain();
+    }
+    final db = _database;
+    if (db != null) {
+      final stillPending = await _outbox.countPending(_userId);
+      if (stillPending == 0) {
+        await triggerPull(db);
+      }
+    }
+  }
+
   void stop() {
     _drainTimer?.cancel();
     _drainTimer = null;
   }
 
-  /// Manually trigger an outbox drain pass.
-  Future<SyncResult> triggerDrain() async {
-    if (_isDraining) {
-      return const SyncResult(applied: 0, skipped: 0);
-    }
-    _isDraining = true;
+  /// Initial hydration (bootstrap after login).
+  /// Pulls remote snapshot from Supabase into Drift and updates the watermark cursor.
+  Future<void> initialHydration(AppDatabase database) async {
+    if (_isPulling) return;
+    _isPulling = true;
     _setState(SyncConnectionState.syncing);
-
     try {
-      final pendingRows = await _syncDao.getPendingItems(_userId, limit: 50);
-      if (pendingRows.isEmpty) {
-        _setState(SyncConnectionState.online);
-        _isDraining = false;
-        return const SyncResult(applied: 0, skipped: 0);
-      }
-
-      // Convert to batch payload
-      final seqs = pendingRows.map((r) => r.seq).toList();
-
-      // In real deployment, RPC apply_sync_batch is invoked here.
-      // For local/offline first, we simulate success and mark completed.
-      await _syncDao.markCompleted(seqs);
-
+      await _transport.pullChanges(
+        userId: _userId,
+        deviceId: _deviceId,
+        database: database,
+      );
       _setState(SyncConnectionState.online);
-      _isDraining = false;
-      return SyncResult(applied: seqs.length, skipped: 0);
     } catch (e) {
       _setState(SyncConnectionState.error);
-      _isDraining = false;
-      return SyncResult.failure(e.toString());
+      rethrow;
+    } finally {
+      _isPulling = false;
     }
   }
 
-  /// Calculate exponential backoff duration based on retry attempt.
+  /// Unified bidirectional sync cycle: pushes pending outbox, then pulls remote changes.
+  Future<SyncResult> sync({bool forcePull = false}) async {
+    if (_isDraining || _isPulling) {
+      return SyncResult.failure('A sync operation is already in progress.');
+    }
+
+    final pendingCount = await _outbox.countPending(_userId);
+    SyncResult result;
+    if (pendingCount > 0) {
+      result = await triggerDrain();
+      if (!result.isSuccess && !forcePull) {
+        return result;
+      }
+    } else {
+      result = const SyncResult(applied: 0, skipped: 0, isSuccess: true);
+      _setState(SyncConnectionState.online);
+    }
+
+    final db = _database;
+    if (db != null) {
+      await triggerPull(db);
+    }
+    return result;
+  }
+
+  Future<void> triggerPull([AppDatabase? database]) async {
+    final db = database ?? _database;
+    if (db == null || _isPulling) return;
+    _isPulling = true;
+    try {
+      await _transport.pullChanges(
+        userId: _userId,
+        deviceId: _deviceId,
+        database: db,
+      );
+      _setState(SyncConnectionState.online);
+    } catch (_) {
+      // Background pull failures (network/offline) do not interrupt the engine
+    } finally {
+      _isPulling = false;
+    }
+  }
+
+  Future<SyncResult> triggerDrain() async {
+    if (_isDraining) {
+      return SyncResult.failure('A sync batch is already in progress.');
+    }
+    _isDraining = true;
+    _setState(SyncConnectionState.syncing);
+    var attemptedItems = <SyncItem>[];
+    try {
+      final items = await _outbox.loadPending(_userId, limit: 50);
+      if (items.isEmpty) {
+        if (await _outbox.countPending(_userId) > 0) {
+          _setState(SyncConnectionState.error);
+          return SyncResult.failure(
+            'Pending operations are waiting for their retry time.',
+          );
+        }
+        _setState(SyncConnectionState.offline);
+        return SyncResult.failure(
+          'No operation was sent; server acknowledgement is unavailable.',
+        );
+      }
+
+      attemptedItems = items;
+
+      final acknowledgements = await _transport.pushBatch(
+        userId: _userId,
+        deviceId: _deviceId,
+        items: items,
+      );
+      final expectedSeqs = items.map((item) => item.seq).toSet();
+      final acknowledgedSet = acknowledgements.map((item) => item.seq).toSet();
+      if (acknowledgedSet.length != acknowledgements.length ||
+          acknowledgedSet.length != expectedSeqs.length ||
+          !acknowledgedSet.containsAll(expectedSeqs) ||
+          acknowledgements.any(
+            (item) =>
+                !{'applied', 'skipped', 'duplicate'}.contains(item.status),
+          )) {
+        throw const SyncTransportException(
+          message:
+              'The server acknowledgement did not cover the submitted batch.',
+          code: 'incomplete_acknowledgement',
+          retryable: true,
+        );
+      }
+      final acknowledgedSeqs = acknowledgements.map((a) => a.seq).toList();
+      await _outbox.markAcknowledged(acknowledgedSeqs);
+      _setState(SyncConnectionState.online);
+      return SyncResult(
+        applied: acknowledgements.where((a) => a.status == 'applied').length,
+        skipped: acknowledgements
+            .where((a) => a.status == 'skipped' || a.status == 'duplicate')
+            .length,
+      );
+    } catch (error) {
+      final failure = error is SyncTransportException
+          ? error
+          : SyncTransportException(
+              message: error.toString(),
+              code: 'transport_error',
+              retryable: true,
+            );
+      for (final item in attemptedItems) {
+        await _outbox.recordFailure(
+          seq: item.seq,
+          errorClass: failure.retryable ? 'retryable' : 'permanent',
+          errorCode: failure.code,
+          backoff: calculateBackoff(item.attempts + 1),
+          retryable: failure.retryable,
+        );
+      }
+      _setState(SyncConnectionState.error);
+      return SyncResult.failure(failure.toString());
+    } finally {
+      _isDraining = false;
+    }
+  }
+
   Duration calculateBackoff(int attempt) {
-    // 2^attempt capped at 300 seconds
     final seconds = min(pow(2, attempt).toInt(), 300);
     return Duration(seconds: seconds);
   }

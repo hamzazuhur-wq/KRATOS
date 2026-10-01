@@ -10,13 +10,17 @@
 
 import 'dart:convert';
 import 'dart:ui';
+
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 
 import '../../../app/active_glass_card.dart';
+import '../../../app/kratos_dropdown.dart';
 import '../../../data/drift/app_database.dart';
 import '../../../domain/hlc.dart';
 import '../../../domain/ids.dart';
+import '../../activities/domain/activity_xp_calculator.dart';
+import '../../xp/domain/base_xp_config.dart';
 
 class CategoriesScreen extends StatefulWidget {
   final AppDatabase database;
@@ -60,14 +64,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       title: 'Goal Categories',
       singularTitle: 'Goal Category',
       icon: Icons.track_changes,
-      description: 'Used by Main Goals & Sub-goals to classify long-term objectives.',
+      description:
+          'Used by Main Goals & Sub-goals to classify long-term objectives.',
     ),
     _CategoryGroupMeta(
       key: 'task',
       title: 'Task Categories',
       singularTitle: 'Task Category',
       icon: Icons.check_circle_outline,
-      description: 'Used by everyday and goal-linked tasks to define work focus.',
+      description:
+          'Used by everyday and goal-linked tasks to define work focus.',
     ),
     _CategoryGroupMeta(
       key: 'activity',
@@ -81,7 +87,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       title: 'Life Area Categories',
       singularTitle: 'Life Area Category',
       icon: Icons.dashboard_customize_outlined,
-      description: 'Used to classify core life domains (Professional, Health, etc.).',
+      description:
+          'Used to classify core life domains (Professional, Health, etc.).',
     ),
   ];
 
@@ -168,10 +175,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     Expanded(
                       child: Text(
                         'Manage the categories used throughout KRATOS.',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
                       ),
                     ),
                   ],
@@ -179,6 +183,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               ),
             ),
           ),
+          if (widget.initialCategoryType == '__xp_rules__')
+            const _EntityXpRulesSection(),
           ..._groups.map((group) {
             final isExpanded = _expandedKeys.contains(group.key);
             return _AccordionGroupCard(
@@ -193,6 +199,219 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   _openCategoryEditor(category: cat, type: group.key),
             );
           }),
+        ],
+      ),
+    );
+  }
+}
+
+class _EntityXpRulesSection extends StatefulWidget {
+  const _EntityXpRulesSection();
+
+  @override
+  State<_EntityXpRulesSection> createState() => _EntityXpRulesSectionState();
+}
+
+class _EntityXpRulesSectionState extends State<_EntityXpRulesSection> {
+  static const _durations = [0, 15, 30, 60, 120, 240, 360, 480, 600, 720];
+  final Map<BaseXpSource, int> _difficulty = {
+    for (final source in BaseXpSource.values) source: 5,
+  };
+  int _activityMinutes = 120;
+
+  int _xp(BaseXpSource source, int difficulty) => switch (source) {
+    BaseXpSource.activity => ActivityXpCalculator.ceilingXp(difficulty),
+    BaseXpSource.skill => BaseXpConfig.forSkill(difficulty),
+    BaseXpSource.task => BaseXpConfig.forTask(difficulty),
+    BaseXpSource.subGoal => BaseXpConfig.forSubGoal(difficulty),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              'ENTITY XP RULES · PREVIEW',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          for (final source in const [
+            BaseXpSource.task,
+            BaseXpSource.activity,
+            BaseXpSource.subGoal,
+            BaseXpSource.skill,
+          ])
+            _ruleCard(source),
+        ],
+      ),
+    );
+  }
+
+  Widget _ruleCard(BaseXpSource source) {
+    final difficulty = _difficulty[source]!;
+    final maximum = BaseXpConfig.maxPointsFor(source);
+    final isActivity = source == BaseXpSource.activity;
+    final factor = isActivity
+        ? ActivityXpCalculator.durationFactor(_activityMinutes)
+        : 1.0;
+    final previewXp = isActivity
+        ? ActivityXpCalculator.calculateActivityXp(
+            difficulty,
+            Duration(minutes: _activityMinutes),
+          )
+        : _xp(source, difficulty);
+    final label = switch (source) {
+      BaseXpSource.activity => 'ACTIVITY',
+      BaseXpSource.skill => 'SKILL',
+      BaseXpSource.task => 'TASK',
+      BaseXpSource.subGoal => 'SUB-GOAL',
+    };
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D0F0D).withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Color(0xFFC6F135),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+              Text(
+                'MAX $maximum XP',
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Text(
+                'DIFFICULTY',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: KratosDropdown<int>(
+                  value: difficulty,
+                  hint: 'Difficulty',
+                  isExpanded: true,
+                  items: [
+                    for (var value = 1; value <= 10; value++)
+                      KratosDropdownItem(value: value, label: '$value / 10'),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _difficulty[source] = value);
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: Text(
+                  '$previewXp XP',
+                  key: ValueKey('$previewXp-$factor'),
+                  style: const TextStyle(
+                    color: Color(0xFFC6F135),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (isActivity) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'SESSION DURATION',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 138,
+                  child: KratosDropdown<int>(
+                    value: _activityMinutes,
+                    hint: 'Duration',
+                    isExpanded: true,
+                    items: [
+                      for (final minutes in _durations)
+                        KratosDropdownItem(
+                          value: minutes,
+                          label: minutes == 0 ? '0 min' : '$minutes min',
+                        ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _activityMinutes = value);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'CEILING ${_xp(source, difficulty)} XP  ·  DURATION ${(factor * 100).round()}%  ·  MAX 720 MIN',
+              style: const TextStyle(
+                color: Colors.white38,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
+            const SizedBox(height: 9),
+            Wrap(
+              spacing: 6,
+              runSpacing: 5,
+              children: [
+                for (final minutes in _durations)
+                  Text(
+                    '$minutes′ ${(ActivityXpCalculator.durationFactor(minutes) * 100).round()}%',
+                    style: const TextStyle(color: Colors.white38, fontSize: 9),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -263,7 +482,9 @@ class _AccordionGroupCard extends StatelessWidget {
                     ),
                     child: Icon(
                       group.icon,
-                      color: isExpanded ? const Color(0xFFC6F135) : Colors.white70,
+                      color: isExpanded
+                          ? const Color(0xFFC6F135)
+                          : Colors.white70,
                       size: 18,
                     ),
                   ),
@@ -275,7 +496,9 @@ class _AccordionGroupCard extends StatelessWidget {
                         Text(
                           group.title,
                           style: TextStyle(
-                            color: isExpanded ? const Color(0xFFC6F135) : Colors.white,
+                            color: isExpanded
+                                ? const Color(0xFFC6F135)
+                                : Colors.white,
                             fontWeight: FontWeight.w900,
                             fontSize: 14,
                             letterSpacing: 0.5,
@@ -297,7 +520,10 @@ class _AccordionGroupCard extends StatelessWidget {
                     builder: (context, snapshot) {
                       final count = snapshot.data?.length ?? 0;
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         margin: const EdgeInsets.only(right: 8),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.06),
@@ -342,16 +568,25 @@ class _AccordionGroupCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: const Color(0xFFFF3B30).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFF3B30).withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: const Color(0xFFFF3B30).withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.error_outline, color: Color(0xFFFF3B30), size: 18),
+                          const Icon(
+                            Icons.error_outline,
+                            color: Color(0xFFFF3B30),
+                            size: 18,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Could not load ${group.title}.',
-                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ],
@@ -396,7 +631,10 @@ class _AccordionGroupCard extends StatelessWidget {
                               children: [
                                 const Text(
                                   'No categories defined yet',
-                                  style: TextStyle(color: Colors.white38, fontSize: 12),
+                                  style: TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 12,
+                                  ),
                                 ),
                                 const SizedBox(height: 12),
                                 _AddCategoryButton(
@@ -548,7 +786,9 @@ class _CategoryItemRow extends StatelessWidget {
                           color: isArchived ? Colors.white38 : Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
-                          decoration: isArchived ? TextDecoration.lineThrough : null,
+                          decoration: isArchived
+                              ? TextDecoration.lineThrough
+                              : null,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -557,7 +797,10 @@ class _CategoryItemRow extends StatelessWidget {
                     if (isArchived) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1.5,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white10,
                           borderRadius: BorderRadius.circular(4),
@@ -574,12 +817,16 @@ class _CategoryItemRow extends StatelessWidget {
                     ],
                   ],
                 ),
-                if (category.description != null && category.description!.isNotEmpty)
+                if (category.description != null &&
+                    category.description!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
                       category.description!,
-                      style: const TextStyle(color: Colors.white38, fontSize: 11),
+                      style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 11,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -590,71 +837,100 @@ class _CategoryItemRow extends StatelessWidget {
 
           // Base XP badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFC6F135).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: const Color(0xFFC6F135).withValues(alpha: 0.3),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFC6F135).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: const Color(0xFFC6F135).withValues(alpha: 0.3),
+                ),
+              ),
+              child: Text(
+                '${category.baseXp} XP',
+                style: const TextStyle(
+                  color: Color(0xFFC6F135),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
-            child: Text(
-              '${category.baseXp} XP',
-              style: const TextStyle(
-                color: Color(0xFFC6F135),
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
 
           // Popup Menu
-          PopupMenuButton<String>(
+          KratosPopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: Colors.white38, size: 18),
-            color: const Color(0xFF141414),
             padding: EdgeInsets.zero,
             onSelected: (action) => _handleAction(context, action),
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              const KratosPopupMenuItem(
                 value: 'edit',
                 child: Row(
                   children: [
                     Icon(Icons.edit_outlined, size: 16, color: Colors.white70),
                     SizedBox(width: 8),
-                    Text('Edit', style: TextStyle(color: Colors.white, fontSize: 13)),
+                    Text(
+                      'Edit',
+                      style: TextStyle(color: Colors.white, fontSize: 13),
+                    ),
                   ],
                 ),
               ),
               if (!isArchived)
-                const PopupMenuItem(
+                const KratosPopupMenuItem(
                   value: 'archive',
                   child: Row(
                     children: [
-                      Icon(Icons.archive_outlined, size: 16, color: Color(0xFFFF9500)),
+                      Icon(
+                        Icons.archive_outlined,
+                        size: 16,
+                        color: Color(0xFFFF9500),
+                      ),
                       SizedBox(width: 8),
-                      Text('Archive', style: TextStyle(color: Color(0xFFFF9500), fontSize: 13)),
+                      Text(
+                        'Archive',
+                        style: TextStyle(
+                          color: Color(0xFFFF9500),
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                 )
               else
-                const PopupMenuItem(
+                const KratosPopupMenuItem(
                   value: 'restore',
                   child: Row(
                     children: [
-                      Icon(Icons.unarchive_outlined, size: 16, color: Color(0xFFC6F135)),
+                      Icon(
+                        Icons.unarchive_outlined,
+                        size: 16,
+                        color: Color(0xFFC6F135),
+                      ),
                       SizedBox(width: 8),
-                      Text('Restore', style: TextStyle(color: Color(0xFFC6F135), fontSize: 13)),
+                      Text(
+                        'Restore',
+                        style: TextStyle(
+                          color: Color(0xFFC6F135),
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              const PopupMenuItem(
+              const KratosPopupMenuItem(
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete_outline, size: 16, color: Color(0xFFFF3B30)),
+                    Icon(
+                      Icons.delete_outline,
+                      size: 16,
+                      color: Color(0xFFFF3B30),
+                    ),
                     SizedBox(width: 8),
-                    Text('Delete', style: TextStyle(color: Color(0xFFFF3B30), fontSize: 13)),
+                    Text(
+                      'Delete',
+                      style: TextStyle(color: Color(0xFFFF3B30), fontSize: 13),
+                    ),
                   ],
                 ),
               ),
@@ -672,7 +948,10 @@ class _CategoryItemRow extends StatelessWidget {
       onEdit();
     } else if (action == 'archive') {
       await database.categoriesDao.archiveCategory(category.id, hlc);
-      await _enqueueSync(op: 'update', payload: {'archived_at': DateTime.now().toUtc().toIso8601String()});
+      await _enqueueSync(
+        op: 'update',
+        payload: {'archived_at': DateTime.now().toUtc().toIso8601String()},
+      );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -697,15 +976,26 @@ class _CategoryItemRow extends StatelessWidget {
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: const Color(0xFF141414),
-          title: const Text('Delete Category?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          content: Text('Are you sure you want to permanently delete "${category.name}"?', style: const TextStyle(color: Colors.white70)),
+          title: const Text(
+            'Delete Category?',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'Are you sure you want to permanently delete "${category.name}"?',
+            style: const TextStyle(color: Colors.white70),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white60),
+              ),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFF3B30)),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFFF3B30),
+              ),
               onPressed: () => Navigator.pop(ctx, true),
               child: const Text('Delete'),
             ),
@@ -727,18 +1017,23 @@ class _CategoryItemRow extends StatelessWidget {
     }
   }
 
-  Future<void> _enqueueSync({required String op, required Map<String, dynamic> payload}) async {
-    await database.into(database.syncOutbox).insert(
-      SyncOutboxCompanion.insert(
-        userId: ownerId,
-        op: op,
-        entity: 'categories',
-        entityId: category.id,
-        payloadJson: jsonEncode(payload),
-        hlc: Hlc.now(Id.uuidV7()).toString(),
-        deviceId: 'local_device',
-      ),
-    );
+  Future<void> _enqueueSync({
+    required String op,
+    required Map<String, dynamic> payload,
+  }) async {
+    await database
+        .into(database.syncOutbox)
+        .insert(
+          SyncOutboxCompanion.insert(
+            userId: ownerId,
+            op: op,
+            entity: 'categories',
+            entityId: category.id,
+            payloadJson: jsonEncode(payload),
+            hlc: Hlc.now(Id.uuidV7()).toString(),
+            deviceId: 'local_device',
+          ),
+        );
   }
 }
 
@@ -777,7 +1072,9 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.category?.name ?? '');
-    _descController = TextEditingController(text: widget.category?.description ?? '');
+    _descController = TextEditingController(
+      text: widget.category?.description ?? '',
+    );
     _iconController = TextEditingController(text: widget.category?.icon ?? '');
     _baseXpController = TextEditingController(
       text: widget.category?.baseXp.toString() ?? '100',
@@ -850,7 +1147,9 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    _isEditing ? 'EDIT $typeLabel CATEGORY' : 'NEW $typeLabel CATEGORY',
+                    _isEditing
+                        ? 'EDIT $typeLabel CATEGORY'
+                        : 'NEW $typeLabel CATEGORY',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -863,7 +1162,11 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
                   // Name *
                   const Text(
                     'CATEGORY NAME *',
-                    style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   TextFormField(
@@ -880,14 +1183,20 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
                         borderSide: const BorderSide(color: Colors.white12),
                       ),
                     ),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Please enter name' : null,
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? 'Please enter name'
+                        : null,
                   ),
                   const SizedBox(height: 14),
 
                   // Icon
                   const Text(
                     'ICON (OPTIONAL)',
-                    style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   TextFormField(
@@ -895,7 +1204,10 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
                     style: const TextStyle(color: Colors.white, fontSize: 18),
                     decoration: InputDecoration(
                       hintText: 'e.g. 🎯 or ⚡ or 🧠',
-                      hintStyle: const TextStyle(color: Colors.white24, fontSize: 13),
+                      hintStyle: const TextStyle(
+                        color: Colors.white24,
+                        fontSize: 13,
+                      ),
                       filled: true,
                       fillColor: Colors.white.withValues(alpha: 0.04),
                       border: OutlineInputBorder(
@@ -909,7 +1221,11 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
                   // Description
                   const Text(
                     'DESCRIPTION (OPTIONAL)',
-                    style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   TextFormField(
@@ -929,38 +1245,52 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
                   ),
                   const SizedBox(height: 14),
 
-                  // Base XP
                   const Text(
-                    'BASE XP REWARD (SCD TYPE-2 RULE VERSIONED)',
-                    style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                      'BASE XP REWARD (SCD TYPE-2 RULE VERSIONED)',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
                   ),
                   const SizedBox(height: 6),
                   TextFormField(
-                    controller: _baseXpController,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: '100',
-                      hintStyle: const TextStyle(color: Colors.white24),
-                      suffixText: 'XP',
-                      suffixStyle: const TextStyle(color: Color(0xFFC6F135), fontWeight: FontWeight.bold),
-                      filled: true,
-                      fillColor: Colors.white.withValues(alpha: 0.04),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white12),
+                      controller: _baseXpController,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: '100',
+                        hintStyle: const TextStyle(color: Colors.white24),
+                        suffixText: 'XP',
+                        suffixStyle: const TextStyle(
+                          color: Color(0xFFC6F135),
+                          fontWeight: FontWeight.bold,
+                        ),
+                        filled: true,
+                        fillColor: Colors.white.withValues(alpha: 0.04),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.white12),
+                        ),
                       ),
-                    ),
-                    validator: (v) {
-                      final n = int.tryParse(v ?? '');
-                      if (n == null || n < 0) return 'Must be a positive integer';
-                      return null;
-                    },
+                      validator: (v) {
+                        final n = int.tryParse(v ?? '');
+                        if (n == null || n < 0) {
+                          return 'Must be a positive integer';
+                        }
+                        return null;
+                      },
                   ),
 
                   if (_error != null) ...[
                     const SizedBox(height: 12),
-                    Text(_error!, style: const TextStyle(color: Color(0xFFFF3B30), fontSize: 12)),
+                    Text(
+                      _error!,
+                      style: const TextStyle(
+                        color: Color(0xFFFF3B30),
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
 
                   const SizedBox(height: 24),
@@ -973,7 +1303,9 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
                             foregroundColor: Colors.white70,
                             side: const BorderSide(color: Colors.white24),
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           child: const Text('Cancel'),
                         ),
@@ -987,17 +1319,26 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
                             backgroundColor: const Color(0xFFC6F135),
                             foregroundColor: const Color(0xFF020302),
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           child: _isSaving
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF020302)),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Color(0xFF020302),
+                                  ),
                                 )
                               : Text(
-                                  _isEditing ? 'SAVE CHANGES' : 'CREATE CATEGORY',
-                                  style: const TextStyle(fontWeight: FontWeight.w900),
+                                  _isEditing
+                                      ? 'SAVE CHANGES'
+                                      : 'CREATE CATEGORY',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                  ),
                                 ),
                         ),
                       ),
@@ -1051,22 +1392,24 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
           versionHlc: hlc,
         );
 
-        await widget.database.into(widget.database.syncOutbox).insert(
-          SyncOutboxCompanion.insert(
-            userId: widget.ownerId,
-            op: 'update',
-            entity: 'categories',
-            entityId: catId,
-            payloadJson: jsonEncode({
-              'name': name,
-              'description': desc,
-              'icon': icon,
-              'base_xp': baseXp,
-            }),
-            hlc: hlc,
-            deviceId: 'local_device',
-          ),
-        );
+        await widget.database
+            .into(widget.database.syncOutbox)
+            .insert(
+              SyncOutboxCompanion.insert(
+                userId: widget.ownerId,
+                op: 'update',
+                entity: 'categories',
+                entityId: catId,
+                payloadJson: jsonEncode({
+                  'name': name,
+                  'description': desc,
+                  'icon': icon,
+                  'base_xp': baseXp,
+                }),
+                hlc: hlc,
+                deviceId: 'local_device',
+              ),
+            );
       } else {
         final catId = Id.uuidV7().value;
 
@@ -1089,39 +1432,40 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
           );
 
           // Freeze initial rule version snapshot (Invariant #9)
-          final snapshot = {
-            'base_xp': baseXp,
-            'actions': [],
-          };
-          await widget.database.into(widget.database.categoryXpRuleVersions).insert(
-            CategoryXpRuleVersionsCompanion(
-              id: drift.Value(Id.uuidV7().value),
-              categoryId: drift.Value(catId),
-              snapshot: drift.Value(jsonEncode(snapshot)),
-              effectiveFrom: drift.Value(now),
-              createdAt: drift.Value(now),
-            ),
-          );
+          final snapshot = {'base_xp': baseXp, 'actions': []};
+          await widget.database
+              .into(widget.database.categoryXpRuleVersions)
+              .insert(
+                CategoryXpRuleVersionsCompanion(
+                  id: drift.Value(Id.uuidV7().value),
+                  categoryId: drift.Value(catId),
+                  snapshot: drift.Value(jsonEncode(snapshot)),
+                  effectiveFrom: drift.Value(now),
+                  createdAt: drift.Value(now),
+                ),
+              );
 
-          await widget.database.into(widget.database.syncOutbox).insert(
-            SyncOutboxCompanion.insert(
-              userId: widget.ownerId,
-              op: 'upsert',
-              entity: 'categories',
-              entityId: catId,
-              payloadJson: jsonEncode({
-                'id': catId,
-                'owner_id': widget.ownerId,
-                'name': name,
-                'category_type': widget.categoryType,
-                'description': desc,
-                'icon': icon,
-                'base_xp': baseXp,
-              }),
-              hlc: hlc,
-              deviceId: 'local_device',
-            ),
-          );
+          await widget.database
+              .into(widget.database.syncOutbox)
+              .insert(
+                SyncOutboxCompanion.insert(
+                  userId: widget.ownerId,
+                  op: 'upsert',
+                  entity: 'categories',
+                  entityId: catId,
+                  payloadJson: jsonEncode({
+                    'id': catId,
+                    'owner_id': widget.ownerId,
+                    'name': name,
+                    'category_type': widget.categoryType,
+                    'description': desc,
+                    'icon': icon,
+                    'base_xp': baseXp,
+                  }),
+                  hlc: hlc,
+                  deviceId: 'local_device',
+                ),
+              );
         });
       }
 

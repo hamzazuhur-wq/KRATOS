@@ -1,9 +1,9 @@
 // Wave 6 tests: Progression calculator, level curves, tier thresholds, and compound gates.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kratos/domain/ids.dart';
-import 'package:kratos/features/progression/domain/progression_calculator.dart';
-import 'package:kratos/features/progression/domain/progression_models.dart';
+import 'package:kratos_app/domain/ids.dart';
+import 'package:kratos_app/features/progression/domain/progression_calculator.dart';
+import 'package:kratos_app/features/progression/domain/progression_models.dart';
 
 void main() {
   group('ProgressionCalculator — Curves and Tiers', () {

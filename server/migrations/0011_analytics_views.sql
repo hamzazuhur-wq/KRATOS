@@ -21,7 +21,7 @@ GROUP BY l.owner_id, DATE(l.created_at), al.life_area_id;
 CREATE OR REPLACE VIEW category_xp_breakdown AS
 SELECT
   l.owner_id AS user_id,
-  COALESCE(c.id, 'uncategorized') AS category_id,
+  COALESCE(c.id::text, 'uncategorized') AS category_id,
   COALESCE(c.name, 'General') AS category_name,
   SUM(l.points) AS total_xp,
   COUNT(l.id) AS action_count

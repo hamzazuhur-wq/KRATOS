@@ -65,7 +65,7 @@ class _SemanticSearchBarState extends State<SemanticSearchBar> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: widget.results.length,
-              separatorBuilder: (_, __) => const Divider(color: Colors.white10, height: 1),
+              separatorBuilder: (_, _) => const Divider(color: Colors.white10, height: 1),
               itemBuilder: (context, index) {
                 final item = widget.results[index];
                 final matchPct = (item.similarityScore * 100).toInt();

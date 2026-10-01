@@ -1,0 +1,36 @@
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless
+  Access-Control-Allow-Origin: *
+
+/index.html
+  Content-Type: text/html; charset=utf-8
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless
+
+/*.html
+  Content-Type: text/html; charset=utf-8
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless
+
+/*.js
+  Content-Type: application/javascript; charset=utf-8
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless
+
+/*.wasm
+  Content-Type: application/wasm
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless
+
+/*.json
+  Content-Type: application/json; charset=utf-8
+
+/*.png
+  Content-Type: image/png
+
+/*.otf
+  Content-Type: font/otf
+
+/*.ttf
+  Content-Type: font/ttf

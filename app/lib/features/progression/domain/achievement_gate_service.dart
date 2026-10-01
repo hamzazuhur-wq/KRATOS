@@ -7,13 +7,13 @@
 //
 // Invariant #15: All data reads are per-user; no cross-user data access.
 
+import 'dart:convert';
 import '../../../data/drift/app_database.dart';
+import 'package:drift/drift.dart';
 import '../../../domain/ids.dart';
 import '../../streaks/data/streaks_dao.dart';
 import '../data/progression_dao.dart';
 import '../domain/achievement_gate_models.dart';
-import '../domain/progression_calculator.dart';
-import '../domain/progression_models.dart';
 
 /// Evaluates whether a Life Area is eligible for level promotion.
 ///
@@ -224,6 +224,29 @@ class StreakSocietyService {
               createdAt: Value(now),
             ),
           );
+
+      // Record immutable activity_event for achievement_unlocked (Phase 7)
+      try {
+        await _db.into(_db.activityEvents).insert(
+          ActivityEventsCompanion.insert(
+            id: Id.uuidV7().value,
+            ownerId: userId,
+            eventType: 'achievement_unlocked',
+            entityType: 'achievement',
+            entityId: Value(achievementId),
+            lifeAreaId: Value(lifeAreaId),
+            metadata: Value(
+              jsonEncode({
+                'kind': kindKey,
+                'life_area_id': lifeAreaId,
+              }),
+            ),
+            occurredAt: now,
+            versionHlc: versionHlc,
+            createdAt: now,
+          ),
+        );
+      } catch (_) {}
 
       // Add bonus freeze tokens to inventory
       final inventory =

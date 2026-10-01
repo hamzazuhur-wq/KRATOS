@@ -5,6 +5,9 @@
 // Every coaching analysis generates an audit record in `ai_artifacts`.
 
 import '../../../data/drift/app_database.dart';
+
+import 'package:drift/drift.dart';
+
 import '../../../domain/ids.dart';
 import '../domain/coach_models.dart';
 
@@ -45,15 +48,13 @@ class BurnoutDetectionService {
       risk = BurnoutRiskLevel.moderate;
       action = CoachActionKind.reduceDailyLoad;
       headline = 'Pacing Advisory';
-      explanation =
-          'Great consistency, but session frequency is rising rapidly. Keep sessions under 45 minutes to maintain sustained focus.';
+      explanation = 'Great consistency, but session frequency is rising rapidly. Keep sessions under 45 minutes to maintain sustained focus.';
       actionLabel = 'Set Pacing Limit';
     } else {
       risk = BurnoutRiskLevel.low;
       action = CoachActionKind.maintainMomentum;
       headline = 'Optimal Flow State';
-      explanation =
-          'Your velocity is well-balanced across your life areas with steady recovery intervals. Keep up the disciplined momentum!';
+      explanation = 'Your velocity is well-balanced across your life areas with steady recovery intervals. Keep up the disciplined momentum!';
       actionLabel = 'Continue Schedule';
     }
 
@@ -68,7 +69,9 @@ class BurnoutDetectionService {
     );
 
     // Audit in ai_artifacts (Invariant #11)
-    await _db.into(_db.aiArtifacts).insert(
+    await _db
+        .into(_db.aiArtifacts)
+        .insert(
           AiArtifactsCompanion(
             id: Value(Id.uuidV7().value),
             ownerId: Value(userId),

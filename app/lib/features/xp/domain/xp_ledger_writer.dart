@@ -33,6 +33,7 @@ abstract class XpLedgerWriter {
     int latePenalty = 0,
     int streakBonus = 0,
     Id? categoryRuleVersionId,
+    bool enqueueSync = true,
   });
 
   /// Create a compensating reversal event for an existing ledger event.

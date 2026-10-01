@@ -10,8 +10,10 @@ class StreakInfo {
   final int longestStreak;
   final int freezeTokensAvailable;
   final DateTime? lastActiveDate;
-  final bool isWeeklyBonusActive; // currentStreak >= 7 (+20% bonus ADR-005)
-  final bool isStreakSociety; // currentStreak >= 100
+  @Deprecated(
+    'Phase 3 uses a separate daily streak XP event, not a multiplier.',
+  )
+  bool get isWeeklyBonusActive => false;
 
   const StreakInfo({
     required this.userId,
@@ -20,8 +22,6 @@ class StreakInfo {
     required this.longestStreak,
     required this.freezeTokensAvailable,
     this.lastActiveDate,
-    required this.isWeeklyBonusActive,
-    required this.isStreakSociety,
   });
 
   /// Factory calculating derived milestone attributes.
@@ -40,14 +40,6 @@ class StreakInfo {
       longestStreak: longestStreak,
       freezeTokensAvailable: freezeTokensAvailable,
       lastActiveDate: lastActiveDate,
-      isWeeklyBonusActive: currentStreak >= 7,
-      isStreakSociety: currentStreak >= 100,
     );
-  }
-
-  /// Calculates the +20% streak modifier in points for positive XP (ADR-005).
-  int calculateStreakBonus(int basePoints) {
-    if (!isWeeklyBonusActive || basePoints <= 0) return 0;
-    return (basePoints * 0.20).round();
   }
 }

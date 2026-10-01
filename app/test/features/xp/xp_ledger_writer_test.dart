@@ -1,10 +1,10 @@
 // Wave 5 tests: XpLedgerEvent entity invariants and RPC payload validation.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kratos/domain/errors.dart';
-import 'package:kratos/domain/hlc.dart';
-import 'package:kratos/domain/ids.dart';
-import 'package:kratos/features/xp/domain/xp_ledger_event.dart';
+import 'package:kratos_app/domain/errors.dart';
+import 'package:kratos_app/domain/hlc.dart';
+import 'package:kratos_app/domain/ids.dart';
+import 'package:kratos_app/features/xp/domain/xp_ledger_event.dart';
 
 void main() {
   final ownerId = Id.uuidV7();

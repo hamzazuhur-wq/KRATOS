@@ -1,9 +1,8 @@
 // Wave 16: Unit tests for Sync Engine models, backoff math, and Notification Service.
 
 import 'package:test/test.dart';
-import '../../lib/features/notifications/domain/notification_service.dart';
-import '../../lib/features/sync/domain/sync_engine.dart';
-import '../../lib/features/sync/domain/sync_models.dart';
+import 'package:kratos_app/features/notifications/domain/notification_service.dart';
+import 'package:kratos_app/features/sync/domain/sync_models.dart';
 
 void main() {
   group('Sync Models & Batch Payloads', () {
@@ -65,8 +64,10 @@ void main() {
       service = NotificationService();
     });
 
-    tearDown(() {
-      service.dispose();
+    tearDown(() async {
+      // NotificationService is an application singleton; reset its in-memory
+      // queue between cases instead of closing the shared stream.
+      await service.clearAll();
     });
 
     test('scheduleStreakReminder enqueues correct notification', () async {

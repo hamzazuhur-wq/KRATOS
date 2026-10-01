@@ -3,7 +3,6 @@
 
 import 'package:drift/drift.dart';
 import '../../../data/drift/app_database.dart';
-import '../domain/collaboration_models.dart';
 
 part 'collaboration_dao.g.dart';
 

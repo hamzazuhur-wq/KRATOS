@@ -19,7 +19,7 @@ class SyncStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (color, label, icon) = switch (state) {
-      SyncConnectionState.online => (
+      SyncConnectionState.online || SyncConnectionState.idle => (
           const Color(0xFFC6F135),
           'SYNCED',
           Icons.cloud_done_outlined,
@@ -33,6 +33,11 @@ class SyncStatusBadge extends StatelessWidget {
           const Color(0xFFFF9500),
           'OFFLINE',
           Icons.cloud_off_outlined,
+        ),
+      SyncConnectionState.partialFailure => (
+          const Color(0xFFFF9500),
+          'PARTIAL',
+          Icons.warning_amber_rounded,
         ),
       SyncConnectionState.error => (
           const Color(0xFFFF3B30),

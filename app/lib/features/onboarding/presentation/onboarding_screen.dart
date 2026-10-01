@@ -163,15 +163,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: const Color(0xFFC6F135).withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFC6F135).withValues(alpha: 0.5), width: 2),
-            ),
-            child: const Icon(Icons.bolt, color: Color(0xFFC6F135), size: 44),
+          Image.asset(
+            'assets/branding/kratos_logo.png',
+            width: 84,
+            height: 84,
+            fit: BoxFit.contain,
           ),
           const SizedBox(height: 28),
           const Text(

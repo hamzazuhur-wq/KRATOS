@@ -31,6 +31,7 @@ class Goal {
   final String title;
   final String? description;
   final Id? lifeAreaId;
+  final Id? categoryId;
   final GoalStatus status;
   final int? xpTarget;
   final double progress;
@@ -56,6 +57,7 @@ class Goal {
     this.parentId,
     this.description,
     this.lifeAreaId,
+    this.categoryId,
     this.status = GoalStatus.active,
     this.xpTarget,
     this.progress = 0.0,
@@ -92,6 +94,39 @@ class Goal {
       title: newTitle,
       description: description,
       lifeAreaId: lifeAreaId,
+      categoryId: categoryId,
+      status: status,
+      xpTarget: xpTarget,
+      progress: progress,
+      progressHlc: progressHlc,
+      dueDate: dueDate,
+      completedAt: completedAt,
+      deletedAt: deletedAt,
+      versionHlc: newHlc,
+      createdAt: createdAt,
+      updatedAt: Iso8601Timestamp.now(),
+    );
+  }
+
+  Goal updateDetails({
+    required String newTitle,
+    String? newDescription,
+    Id? newLifeAreaId,
+    Id? newCategoryId,
+    required Hlc newHlc,
+  }) {
+    _requireActive();
+    return Goal(
+      id: id,
+      ownerId: ownerId,
+      parentId: parentId,
+      rootId: rootId,
+      path: path,
+      depth: depth,
+      title: newTitle,
+      description: newDescription ?? description,
+      lifeAreaId: newLifeAreaId ?? lifeAreaId,
+      categoryId: newCategoryId ?? categoryId,
       status: status,
       xpTarget: xpTarget,
       progress: progress,
@@ -123,6 +158,7 @@ class Goal {
       title: title,
       description: description,
       lifeAreaId: lifeAreaId,
+      categoryId: categoryId,
       status: status,
       xpTarget: xpTarget,
       progress: newProgress,
@@ -150,6 +186,7 @@ class Goal {
       title: title,
       description: description,
       lifeAreaId: lifeAreaId,
+      categoryId: categoryId,
       status: GoalStatus.abandoned,
       xpTarget: xpTarget,
       progress: progress,
@@ -169,11 +206,8 @@ class Goal {
   }
 
   void _requireActive() {
-    if (isDeleted) {
-      throw ConflictError('Cannot modify a deleted Goal');
-    }
-    if (isCompleted) {
-      throw ConflictError('Cannot modify a completed Goal');
+    if (isDeleted || status != GoalStatus.active) {
+      throw ConflictError('Cannot modify an archived or completed Goal');
     }
   }
 }

@@ -58,8 +58,11 @@ class ActivityEntity {
   final Id id;
   final Id ownerId;
   final Id? lifeAreaId;
+  final Id? categoryId;
   final String name;
   final String? description;
+  final int? targetDurationMinutes;
+  final int difficulty;
   final ActivityXpRule? xpRule;
   final Iso8601Timestamp? archivedAt;
   final Iso8601Timestamp? deletedAt;
@@ -75,13 +78,19 @@ class ActivityEntity {
     required this.createdAt,
     required this.updatedAt,
     this.lifeAreaId,
+    this.categoryId,
     this.description,
+    this.targetDurationMinutes,
+    this.difficulty = 5,
     this.xpRule,
     this.archivedAt,
     this.deletedAt,
   }) {
     if (name.trim().isEmpty) {
       throw ValidationError('name', 'Activity name must not be blank');
+    }
+    if (difficulty < 1 || difficulty > 10) {
+      throw ValidationError('difficulty', 'Difficulty must be between 1 and 10');
     }
   }
 
@@ -95,8 +104,11 @@ class ActivityEntity {
       id: id,
       ownerId: ownerId,
       lifeAreaId: lifeAreaId,
+      categoryId: categoryId,
       name: newName,
       description: description,
+      targetDurationMinutes: targetDurationMinutes,
+      difficulty: difficulty,
       xpRule: xpRule,
       archivedAt: archivedAt,
       deletedAt: deletedAt,

@@ -1,7 +1,7 @@
 // Wave 19: Unit tests for Semantic Search & Cosine Similarity Ranking.
 
 import 'package:test/test.dart';
-import '../../lib/features/search/domain/semantic_search_models.dart';
+import 'package:kratos_app/features/search/domain/semantic_search_models.dart';
 
 void main() {
   group('Cosine Similarity Algorithm', () {

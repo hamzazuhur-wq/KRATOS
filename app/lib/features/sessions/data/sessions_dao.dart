@@ -7,7 +7,6 @@ import 'package:drift/drift.dart';
 
 import '../../../data/drift/app_database.dart';
 import '../../../data/drift/core_tables.dart';
-import '../../../domain/ids.dart';
 
 part 'sessions_dao.g.dart';
 

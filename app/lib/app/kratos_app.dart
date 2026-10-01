@@ -114,6 +114,7 @@ class _KratosAppState extends State<KratosApp> {
             builder: (context, snapshot) {
               final state = snapshot.data;
 
+              print('[AUTH-TRACE] KratosApp stream builder state: AuthAuthenticated');
               if (state is AuthAuthenticated) {
                 if (_checkedUserId != state.user.id.value &&
                     !_checkingOnboarding) {
@@ -163,7 +164,14 @@ class _KratosAppState extends State<KratosApp> {
                 );
               }
 
-              // Unauthenticated or Loading
+              if (state is AuthLoading) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              // Unauthenticated
+              print('[AUTH-TRACE] KratosApp returning LoginScreen');
               return LoginScreen(
                 authService: _authService,
                 onLoginSuccess: () {
@@ -183,3 +191,4 @@ class _KratosAppState extends State<KratosApp> {
     );
   }
 }
+

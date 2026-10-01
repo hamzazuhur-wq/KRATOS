@@ -17,7 +17,7 @@ class AttachmentsDao extends DatabaseAccessor<AppDatabase>
   // ─── Attachment Links ─────────────────────────────────────────────────
 
   /// All attachment links for an entity (e.g. a Task, Goal, or Session).
-  Future<List<AttachmentLinkData>> attachmentsForEntity(
+  Future<List<AttachmentLink>> attachmentsForEntity(
           String entityId, String entityKind) =>
       (select(db.attachmentLinks)
             ..where((a) =>
@@ -36,7 +36,7 @@ class AttachmentsDao extends DatabaseAccessor<AppDatabase>
 
   // ─── Files ────────────────────────────────────────────────────────────
 
-  Future<FileData?> findFileById(String id) =>
+  Future<File?> findFileById(String id) =>
       (select(db.files)..where((f) => f.id.equals(id))).getSingleOrNull();
 
   Future<void> upsertFile(FilesCompanion companion) =>
@@ -54,7 +54,7 @@ class AttachmentsDao extends DatabaseAccessor<AppDatabase>
 
   // ─── Links (URLs) ─────────────────────────────────────────────────────
 
-  Future<List<LinkData>> allLinks(String ownerId) =>
+  Future<List<Link>> allLinks(String ownerId) =>
       (select(db.links)
             ..where((l) => l.ownerId.equals(ownerId) & l.deletedAt.isNull())
             ..orderBy([(l) => OrderingTerm.desc(l.createdAt)]))

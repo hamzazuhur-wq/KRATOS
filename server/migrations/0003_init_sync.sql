@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS sync_outbox (
 );
 
 CREATE INDEX IF NOT EXISTS idx_outbox_pending
-  ON sync_outbox (user_id, seq) WHERE status = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= now());
+  -- Partial-index predicates must be IMMUTABLE; now() is not.
+  ON sync_outbox (user_id, seq, next_attempt_at) WHERE status = 'pending';
 
 -- ── sync_cursors ───────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS sync_cursors (

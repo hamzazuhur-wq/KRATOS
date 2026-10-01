@@ -3,7 +3,6 @@
 
 import 'package:drift/drift.dart';
 import '../../../data/drift/app_database.dart';
-import '../domain/crdt_models.dart';
 
 class CollaborativeNotes extends Table {
   TextColumn get id => text()();

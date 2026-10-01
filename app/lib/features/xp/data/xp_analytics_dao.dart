@@ -38,13 +38,14 @@ class XpAnalyticsDao extends DatabaseAccessor<AppDatabase>
         db.xpLedger,
         db.xpLedger.id.equalsExp(db.xpAllocationLines.ledgerId),
       ),
-    ])
-      ..where(db.xpLedger.ownerId.equals(ownerId));
+    ])..where(db.xpLedger.ownerId.equals(ownerId));
     final rows = await query
-        .map((row) => (
-              lifeAreaId: row.readTable(db.xpAllocationLines).lifeAreaId,
-              points: row.readTable(db.xpAllocationLines).allocatedPoints,
-            ))
+        .map(
+          (row) => (
+            lifeAreaId: row.readTable(db.xpAllocationLines).lifeAreaId,
+            points: row.readTable(db.xpAllocationLines).allocatedPoints,
+          ),
+        )
         .get();
     final result = <String, int>{};
     for (final r in rows) {
@@ -62,12 +63,13 @@ class XpAnalyticsDao extends DatabaseAccessor<AppDatabase>
   /// Filtering out reversal rows (reversalEventId.isNull()) would inflate
   /// totals because the compensating deduction would be invisible.
   Future<List<XpLedgerData>> recentXpEvents(String ownerId, int days) {
-    final since =
-        DateTime.now().toUtc().subtract(Duration(days: days));
+    final since = DateTime.now().toUtc().subtract(Duration(days: days));
     return (select(db.xpLedger)
-          ..where((e) =>
-              e.ownerId.equals(ownerId) &
-              e.createdAt.isBiggerThanValue(since))
+          ..where(
+            (e) =>
+                e.ownerId.equals(ownerId) &
+                e.createdAt.isBiggerThanValue(since),
+          )
           ..orderBy([(e) => OrderingTerm.desc(e.createdAt)]))
         .get();
   }
@@ -79,9 +81,9 @@ class XpAnalyticsDao extends DatabaseAccessor<AppDatabase>
   /// NOTE: All rows (original + reversal) are included so the SUM nets
   /// correctly. Excluding reversals would inflate XP per source type.
   Future<Map<String, int>> xpBySourceType(String ownerId) async {
-    final rows = await (select(db.xpLedger)
-          ..where((e) => e.ownerId.equals(ownerId)))
-        .get();
+    final rows = await (select(
+      db.xpLedger,
+    )..where((e) => e.ownerId.equals(ownerId))).get();
     final result = <String, int>{};
     for (final r in rows) {
       result[r.sourceType] = (result[r.sourceType] ?? 0) + r.points;
@@ -91,13 +93,23 @@ class XpAnalyticsDao extends DatabaseAccessor<AppDatabase>
 
   // ─── Streak Bonus Earned ──────────────────────────────────────────────
 
-  /// Total streak bonus XP earned for an owner.
+  /// Total separately-recorded daily streak XP plus any legacy streak modifier.
   Future<int> totalStreakBonusXp(String ownerId) async {
-    final query = selectOnly(db.xpLedger)
+    final legacyQuery = selectOnly(db.xpLedger)
       ..addColumns([db.xpLedger.streakBonus.sum()])
       ..where(db.xpLedger.ownerId.equals(ownerId));
-    final row = await query.getSingleOrNull();
-    return row?.read(db.xpLedger.streakBonus.sum()) ?? 0;
+    final legacyRow = await legacyQuery.getSingleOrNull();
+
+    final dailyQuery = selectOnly(db.xpLedger)
+      ..addColumns([db.xpLedger.points.sum()])
+      ..where(
+        db.xpLedger.ownerId.equals(ownerId) &
+            db.xpLedger.sourceType.equals('streak'),
+      );
+    final dailyRow = await dailyQuery.getSingleOrNull();
+
+    return (legacyRow?.read(db.xpLedger.streakBonus.sum()) ?? 0) +
+        (dailyRow?.read(db.xpLedger.points.sum()) ?? 0);
   }
 
   // ─── Daily XP Totals (last 7 days) ────────────────────────────────────
@@ -105,7 +117,9 @@ class XpAnalyticsDao extends DatabaseAccessor<AppDatabase>
   /// Returns a list of (date, xp) pairs for the last [days] days.
   /// Used for the sparkline / bar chart on the dashboard.
   Future<List<({DateTime date, int xp})>> dailyXpTotals(
-      String ownerId, int days) async {
+    String ownerId,
+    int days,
+  ) async {
     final rows = await recentXpEvents(ownerId, days);
     final map = <String, int>{};
     for (final r in rows) {
@@ -124,9 +138,9 @@ class XpAnalyticsDao extends DatabaseAccessor<AppDatabase>
     final areaXp = await xpByLifeArea(ownerId);
     if (areaXp.isEmpty) return {};
 
-    final areas = await (select(db.lifeAreas)
-          ..where((a) => a.ownerId.equals(ownerId)))
-        .get();
+    final areas = await (select(
+      db.lifeAreas,
+    )..where((a) => a.ownerId.equals(ownerId))).get();
     final nameMap = {for (final a in areas) a.id: a.name};
 
     final result = <String, int>{};
@@ -181,4 +195,3 @@ class XpDashboardMetrics {
     );
   }
 }
-

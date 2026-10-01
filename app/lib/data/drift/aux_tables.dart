@@ -97,6 +97,7 @@ class Files extends Table {
   TextColumn get id => text()();
   TextColumn get ownerId => text()();
   TextColumn get storageKey => text()();
+  TextColumn get filename => text().nullable()();
   TextColumn get mime => text().nullable()();
   IntColumn get sizeBytes => integer()();
   TextColumn get sha256 => text().nullable()();
@@ -148,8 +149,10 @@ class Skills extends Table {
   TextColumn get ownerId => text()();
   TextColumn get name => text()();
   TextColumn get description => text().nullable()();
+  TextColumn get groupId => text().nullable()();
   IntColumn get xpTotal => integer()();
   IntColumn get level => integer()();
+  IntColumn get masteryLevel => integer().withDefault(const Constant(1))();
   TextColumn get icon => text().nullable()();
   DateTimeColumn get archivedAt => dateTime().nullable()();
   DateTimeColumn get deletedAt => dateTime().nullable()();
@@ -161,6 +164,36 @@ class Skills extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+/// Local Drift mirror of `skill_groups` (migration 0022).
+class SkillGroups extends Table {
+  TextColumn get id => text()();
+  TextColumn get ownerId => text()();
+  TextColumn get name => text()();
+  TextColumn get description => text().nullable()();
+  DateTimeColumn get archivedAt => dateTime().nullable()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
+  TextColumn get deletedReason => text().nullable()();
+  TextColumn get versionHlc => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Explicit Skill ↔ Life Area relationship (migration 0022).
+class SkillLifeAreaLinks extends Table {
+  TextColumn get ownerId => text()();
+  TextColumn get skillId => text()();
+  TextColumn get lifeAreaId => text()();
+  TextColumn get versionHlc => text()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {skillId, lifeAreaId};
 }
 
 /// Local Drift mirror of `tools` (migration 0004).

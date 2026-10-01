@@ -4,10 +4,11 @@
 // Shows live document editor with partner sync indicators, CRDT delta logging,
 // and Acid Lime highlights.
 
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
+import '../../../data/drift/app_database.dart';
 import '../data/collaborative_notes_dao.dart';
 import '../domain/crdt_models.dart';
-import '../../../data/drift/app_database.dart';
 
 class CollaborativeNoteScreen extends StatefulWidget {
   final String noteId;
@@ -100,8 +101,20 @@ class _CollaborativeNoteScreenState extends State<CollaborativeNoteScreen> {
     }
 
     _currentText = newText;
+    // Log CRDT delta
+    await widget.notesDao.appendDelta(
+      CollaborativeNoteDeltasCompanion(
+        id: Value(delta.id),
+        noteId: Value(delta.noteId),
+        authorId: Value(delta.authorId),
+        deltaOp: Value(delta.toJson().toString()),
+        clientSequence: Value(delta.sequence),
+        versionHlc: Value(delta.versionHlc),
+        appliedAt: Value(delta.appliedAt),
+      ),
+    );
 
-    // Persist updated text and delta
+    // Persist updated text
     await widget.notesDao.updatePlainText(
       noteId: widget.noteId,
       plainText: newText,

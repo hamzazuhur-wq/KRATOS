@@ -3,7 +3,7 @@
 
 import 'package:test/test.dart';
 
-import '../../lib/features/sessions/domain/session_models.dart';
+import 'package:kratos_app/features/sessions/domain/session_models.dart';
 
 void main() {
   // ─── ActivityXpRule analytics scenarios ───────────────────────────────

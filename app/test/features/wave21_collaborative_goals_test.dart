@@ -1,9 +1,7 @@
 // Wave 21: Unit tests for Collaborative Goals & Accountability.
 
-import 'package:drift/native.dart';
 import 'package:test/test.dart';
-import '../../lib/data/drift/app_database.dart';
-import '../../lib/features/collaboration/domain/collaboration_models.dart';
+import 'package:kratos_app/features/collaboration/domain/collaboration_models.dart';
 
 void main() {
   group('Partner Roles and Collaboration Models', () {

@@ -94,18 +94,18 @@ class XpLedgerEvent {
         (basePoints ?? 0) + bonusPoints - latePenalty + streakBonus;
 
     if (computedPoints == 0) {
-      throw ValidationError('Total XP points cannot be zero');
+      throw ValidationError('points', 'Total XP points cannot be zero');
     }
 
     if (lines.isEmpty) {
-      throw ValidationError('At least one allocation line is required');
+      throw ValidationError('lines', 'At least one allocation line is required');
     }
 
     final sumAllocated =
         lines.fold<int>(0, (sum, line) => sum + line.allocatedPoints);
     if (sumAllocated != computedPoints) {
       throw InvariantViolation(
-        'Allocation lines sum ($sumAllocated) does not match total points ($computedPoints) (Invariant #2)',
+        'allocation_sum', 'Allocation lines sum ($sumAllocated) does not match total points ($computedPoints) (Invariant #2)',
       );
     }
 

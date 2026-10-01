@@ -43,22 +43,25 @@ class ProjectsRepository {
     String? goalId,
     String? skillId,
   }) {
-    final triggerStream = database.customSelect(
-      'SELECT 1',
-      readsFrom: {
-        database.projects,
-        database.projectPhases,
-        database.tasks,
-        database.activities,
-        database.attachmentLinks,
-        database.skills,
-        database.files,
-        database.notes,
-        database.links,
-        database.lifeAreas,
-        database.goals,
-      },
-    ).watch();
+    final triggerStream = database
+        .customSelect(
+          'SELECT 1',
+          readsFrom: {
+            database.projects,
+            database.projectPhases,
+            database.tasks,
+            database.activities,
+            database.attachmentLinks,
+            database.skills,
+            database.files,
+            database.notes,
+            database.links,
+            database.ideas,
+            database.lifeAreas,
+            database.goals,
+          },
+        )
+        .watch();
 
     return (() async* {
       yield await getProjectsWithDetails(
@@ -114,7 +117,8 @@ class ProjectsRepository {
       if (query != null && query.trim().isNotEmpty) {
         final q = query.trim().toLowerCase();
         final matchTitle = project.title.toLowerCase().contains(q);
-        final matchDesc = project.description?.toLowerCase().contains(q) ?? false;
+        final matchDesc =
+            project.description?.toLowerCase().contains(q) ?? false;
         if (!matchTitle && !matchDesc) continue;
       }
 
@@ -134,22 +138,25 @@ class ProjectsRepository {
 
   /// Reactive stream for a single project workspace.
   Stream<ProjectWithDetails?> watchProjectWithDetails(String projectId) {
-    final triggerStream = database.customSelect(
-      'SELECT 1',
-      readsFrom: {
-        database.projects,
-        database.projectPhases,
-        database.tasks,
-        database.activities,
-        database.attachmentLinks,
-        database.skills,
-        database.files,
-        database.notes,
-        database.links,
-        database.lifeAreas,
-        database.goals,
-      },
-    ).watch();
+    final triggerStream = database
+        .customSelect(
+          'SELECT 1',
+          readsFrom: {
+            database.projects,
+            database.projectPhases,
+            database.tasks,
+            database.activities,
+            database.attachmentLinks,
+            database.skills,
+            database.files,
+            database.notes,
+            database.links,
+            database.ideas,
+            database.lifeAreas,
+            database.goals,
+          },
+        )
+        .watch();
 
     return (() async* {
       yield await getProjectWithDetails(projectId);
@@ -165,24 +172,24 @@ class ProjectsRepository {
     // Life Area
     LifeArea? lifeArea;
     if (project.lifeAreaId != null) {
-      lifeArea = await (database.select(database.lifeAreas)
-            ..where((a) => a.id.equals(project.lifeAreaId!)))
-          .getSingleOrNull();
+      lifeArea = await (database.select(
+        database.lifeAreas,
+      )..where((a) => a.id.equals(project.lifeAreaId!))).getSingleOrNull();
     }
 
     // Goal & Sub-goal
     Goal? goal;
     Goal? subGoal;
     if (project.goalId != null) {
-      final goalRow = await (database.select(database.goals)
-            ..where((g) => g.id.equals(project.goalId!)))
-          .getSingleOrNull();
+      final goalRow = await (database.select(
+        database.goals,
+      )..where((g) => g.id.equals(project.goalId!))).getSingleOrNull();
       if (goalRow != null) {
         if (goalRow.parentId != null) {
           subGoal = goalRow;
-          goal = await (database.select(database.goals)
-                ..where((g) => g.id.equals(goalRow.parentId!)))
-              .getSingleOrNull();
+          goal = await (database.select(
+            database.goals,
+          )..where((g) => g.id.equals(goalRow.parentId!))).getSingleOrNull();
         } else {
           goal = goalRow;
         }
@@ -192,16 +199,19 @@ class ProjectsRepository {
     // Level
     String? levelName;
     if (project.levelId != null) {
-      final curve = await (database.select(database.levelCurves)
-            ..where((c) => c.level.equals(project.levelId!)))
-          .getSingleOrNull();
+      final curve = await (database.select(
+        database.levelCurves,
+      )..where((c) => c.level.equals(project.levelId!))).getSingleOrNull();
       if (curve != null) {
         levelName = curve.name ?? 'Level ${curve.level}';
       }
     }
 
     // Skills
-    final skillLinks = await _attachmentLinksDao.forEntity(projectId, 'project');
+    final skillLinks = await _attachmentLinksDao.forEntity(
+      projectId,
+      'project',
+    );
     final skillIds = skillLinks
         .where((l) => l.attachmentKind == 'skill')
         .map((l) => l.attachmentId)
@@ -210,9 +220,9 @@ class ProjectsRepository {
     final skills = <Skill>[];
     if (skillIds.isNotEmpty) {
       skills.addAll(
-        await (database.select(database.skills)
-              ..where((s) => s.id.isIn(skillIds) & s.deletedAt.isNull()))
-            .get(),
+        await (database.select(
+          database.skills,
+        )..where((s) => s.id.isIn(skillIds) & s.deletedAt.isNull())).get(),
       );
     }
 
@@ -220,48 +230,72 @@ class ProjectsRepository {
     final phases = await _projectsDao.phasesForProject(projectId);
 
     // Tasks
-    final tasks = await (database.select(database.tasks)
-          ..where((t) => t.projectId.equals(projectId) & t.deletedAt.isNull()))
-        .get();
+    final tasks =
+        await (database.select(database.tasks)..where(
+              (t) => t.projectId.equals(projectId) & t.deletedAt.isNull(),
+            ))
+            .get();
 
     // Activities
-    final activities = await (database.select(database.activities)
-          ..where((a) => a.projectId.equals(projectId) & a.deletedAt.isNull()))
-        .get();
+    final activities =
+        await (database.select(database.activities)..where(
+              (a) => a.projectId.equals(projectId) & a.deletedAt.isNull(),
+            ))
+            .get();
 
     // Files
-    final fileLinks = skillLinks.where((l) => l.attachmentKind == 'file').toList();
+    final fileLinks = skillLinks
+        .where((l) => l.attachmentKind == 'file')
+        .toList();
     final fileIds = fileLinks.map((l) => l.attachmentId).toSet();
     final files = <File>[];
     if (fileIds.isNotEmpty) {
       files.addAll(
-        await (database.select(database.files)
-              ..where((f) => f.id.isIn(fileIds) & f.deletedAt.isNull()))
-            .get(),
+        await (database.select(
+          database.files,
+        )..where((f) => f.id.isIn(fileIds) & f.deletedAt.isNull())).get(),
       );
     }
 
     // Notes
-    final noteLinks = skillLinks.where((l) => l.attachmentKind == 'note').toList();
+    final noteLinks = skillLinks
+        .where((l) => l.attachmentKind == 'note')
+        .toList();
     final noteIds = noteLinks.map((l) => l.attachmentId).toSet();
     final notes = <Note>[];
     if (noteIds.isNotEmpty) {
       notes.addAll(
-        await (database.select(database.notes)
-              ..where((n) => n.id.isIn(noteIds) & n.deletedAt.isNull()))
-            .get(),
+        await (database.select(
+          database.notes,
+        )..where((n) => n.id.isIn(noteIds) & n.deletedAt.isNull())).get(),
       );
     }
 
     // Links
-    final linkLinks = skillLinks.where((l) => l.attachmentKind == 'link').toList();
+    final linkLinks = skillLinks
+        .where((l) => l.attachmentKind == 'link')
+        .toList();
     final linkIds = linkLinks.map((l) => l.attachmentId).toSet();
     final links = <Link>[];
     if (linkIds.isNotEmpty) {
       links.addAll(
-        await (database.select(database.links)
-              ..where((l) => l.id.isIn(linkIds) & l.deletedAt.isNull()))
-            .get(),
+        await (database.select(
+          database.links,
+        )..where((l) => l.id.isIn(linkIds) & l.deletedAt.isNull())).get(),
+      );
+    }
+
+    // Ideas
+    final ideaLinks = skillLinks
+        .where((l) => l.attachmentKind == 'idea')
+        .toList();
+    final ideaIds = ideaLinks.map((l) => l.attachmentId).toSet();
+    final ideas = <DriftIdea>[];
+    if (ideaIds.isNotEmpty) {
+      ideas.addAll(
+        await (database.select(
+          database.ideas,
+        )..where((i) => i.id.isIn(ideaIds) & i.deletedAt.isNull())).get(),
       );
     }
 
@@ -301,6 +335,7 @@ class ProjectsRepository {
       phases: phases,
       tasks: tasks,
       activities: activities,
+      ideas: ideas,
       files: files,
       notes: notes,
       links: links,
@@ -331,7 +366,9 @@ class ProjectsRepository {
       id: id.value,
       ownerId: ownerId,
       title: title.trim(),
-      description: Value(description?.trim().isEmpty == true ? null : description?.trim()),
+      description: Value(
+        description?.trim().isEmpty == true ? null : description?.trim(),
+      ),
       status: 'active',
       difficulty: Value(difficulty.clamp(1, 10)),
       lifeAreaId: Value(lifeAreaId),
@@ -395,9 +432,13 @@ class ProjectsRepository {
     final hlc = Hlc.now(Id.uuidV7());
 
     await _projectsDao.upsert(
-      existing.toCompanion(true).copyWith(
+      existing
+          .toCompanion(true)
+          .copyWith(
             title: Value(title.trim()),
-            description: Value(description?.trim().isEmpty == true ? null : description?.trim()),
+            description: Value(
+              description?.trim().isEmpty == true ? null : description?.trim(),
+            ),
             difficulty: Value(difficulty.clamp(1, 10)),
             lifeAreaId: Value(lifeAreaId),
             goalId: Value(goalId),
@@ -437,92 +478,117 @@ class ProjectsRepository {
     required String ownerId,
   }) async {
     final project = await _projectsDao.findById(projectId);
-    if (project == null || project.status == 'completed') return null;
+    if (project == null) return null;
+    final alreadyCompleted = project.status == 'completed';
+    if (alreadyCompleted) {
+      final completionEvent =
+          await (database.select(database.xpLedger)..where(
+                (event) => event.idempotencyKey.equals(
+                  'project_completion_bonus_$projectId',
+                ),
+              ))
+              .getSingleOrNull();
+      if (completionEvent != null) return null;
+    }
 
     final now = DateTime.now().toUtc();
     final hlc = Hlc.now(Id.uuidV7());
 
-    // 1. Mark completed
-    await _projectsDao.complete(projectId, hlc.toString());
-    await _enqueueSync(
-      ownerId: ownerId,
-      op: 'update',
-      entity: 'projects',
-      entityId: projectId,
-      payload: {'id': projectId, 'status': 'completed', 'updated_at': now.toIso8601String()},
-    );
+    if (!alreadyCompleted) {
+      // 1. Mark completed
+      await _projectsDao.complete(projectId, hlc.toString());
+      await _enqueueSync(
+        ownerId: ownerId,
+        op: 'update',
+        entity: 'projects',
+        entityId: projectId,
+        payload: {
+          'id': projectId,
+          'status': 'completed',
+          'updated_at': now.toIso8601String(),
+        },
+      );
 
-    // 2. Check if Main Goal (+30% bonus)
-    var isMainGoal = false;
-    if (project.goalId != null) {
-      final goal = await (database.select(database.goals)
-            ..where((g) => g.id.equals(project.goalId!)))
-          .getSingleOrNull();
-      if (goal != null && goal.parentId == null) {
-        isMainGoal = true;
-      }
+      // Record immutable activity_event for project_completed (Phase 7)
+      try {
+        await database.into(database.activityEvents).insert(
+          ActivityEventsCompanion.insert(
+            id: Id.uuidV7().value,
+            ownerId: ownerId,
+            eventType: 'project_completed',
+            entityType: 'project',
+            entityId: Value(projectId),
+            lifeAreaId: Value(project.lifeAreaId),
+            metadata: Value(
+              jsonEncode({
+                'title': project.title,
+                'difficulty': project.difficulty,
+                'goal_id': project.goalId,
+              }),
+            ),
+            occurredAt: now,
+            versionHlc: hlc.toString(),
+            createdAt: now,
+          ),
+        );
+      } catch (_) {}
     }
 
     final xpBreakdown = ProjectDifficultyXpCalculator.calculateXp(
       difficulty: project.difficulty,
-      isMainGoal: isMainGoal,
     );
 
     // 3. Resolve Life Area for XP allocation
     String? targetLifeAreaId = project.lifeAreaId;
     if (targetLifeAreaId == null && project.goalId != null) {
-      final goal = await (database.select(database.goals)
-            ..where((g) => g.id.equals(project.goalId!)))
-          .getSingleOrNull();
+      final goal = await (database.select(
+        database.goals,
+      )..where((g) => g.id.equals(project.goalId!))).getSingleOrNull();
       targetLifeAreaId = goal?.lifeAreaId;
     }
     if (targetLifeAreaId == null) {
-      final firstArea = await (database.select(database.lifeAreas)
-            ..where((a) => a.ownerId.equals(ownerId) & a.deletedAt.isNull())
-            ..limit(1))
-          .getSingleOrNull();
+      final firstArea =
+          await (database.select(database.lifeAreas)
+                ..where((a) => a.ownerId.equals(ownerId) & a.deletedAt.isNull())
+                ..limit(1))
+              .getSingleOrNull();
       targetLifeAreaId = firstArea?.id;
     }
 
     // 4. Award XP via Point Ledger
-    if (targetLifeAreaId != null && xpBreakdown.totalXp > 0) {
-      final idempotencyKey = Id('proj_comp_${project.id}');
-      try {
-        final streakService = StreakService(database);
-        final streakInfo = await streakService.getStreakForLifeArea(
-          userId: Id(ownerId),
-          lifeAreaId: Id(targetLifeAreaId),
-        );
-        final streakBonus = streakInfo.calculateStreakBonus(xpBreakdown.baseXp);
-
-        await xpLedgerWriter.recordEvent(
-          ownerId: Id(ownerId),
-          idempotencyKey: idempotencyKey,
-          sourceType: 'project',
-          sourceId: Id(project.id),
-          action: 'project_completed',
-          basePoints: xpBreakdown.baseXp,
-          bonusPoints: xpBreakdown.bonusPoints,
-          streakBonus: streakBonus,
-          allocationRatios: [
-            AllocationRatio(
-              lifeAreaId: Id(targetLifeAreaId),
-              percentage: 100.0,
-            ),
-          ],
-          clock: hlc,
-          deviceId: Id(deviceId),
-        );
-
-        await streakService.logActivity(
-          userId: Id(ownerId),
-          lifeAreaId: Id(targetLifeAreaId),
-          activityDate: now,
-          versionHlc: hlc.toString(),
-        );
-      } catch (_) {
-        // Idempotency check handled inside writer
+    if (targetLifeAreaId != null) {
+      if (xpBreakdown.totalXp > 0) {
+        final idempotencyKey = Id('project_completion_bonus_${project.id}');
+        try {
+          await xpLedgerWriter.recordEvent(
+            ownerId: Id(ownerId),
+            idempotencyKey: idempotencyKey,
+            sourceType: 'project',
+            sourceId: Id(project.id),
+            action: 'project_completed',
+            basePoints: xpBreakdown.baseXp,
+            bonusPoints: xpBreakdown.bonusPoints,
+            allocationRatios: [
+              AllocationRatio(
+                lifeAreaId: Id(targetLifeAreaId),
+                percentage: 100.0,
+              ),
+            ],
+            clock: hlc,
+            deviceId: Id(deviceId),
+          );
+        } catch (_) {
+          // Idempotency check handled inside writer
+        }
       }
+      await StreakService(database).recordQualifyingCompletion(
+        userId: Id(ownerId),
+        sourceId: Id(project.id),
+        lifeAreaId: Id(targetLifeAreaId),
+        completedAt: now,
+        versionHlc: hlc.toString(),
+        deviceId: Id(deviceId),
+      );
     }
 
     return xpBreakdown;
@@ -537,7 +603,10 @@ class ProjectsRepository {
       op: 'delete',
       entity: 'projects',
       entityId: projectId,
-      payload: {'id': projectId, 'deleted_at': DateTime.now().toUtc().toIso8601String()},
+      payload: {
+        'id': projectId,
+        'deleted_at': DateTime.now().toUtc().toIso8601String(),
+      },
     );
   }
 
@@ -559,7 +628,9 @@ class ProjectsRepository {
       id: id.value,
       projectId: projectId,
       name: name.trim(),
-      description: Value(description?.trim().isEmpty == true ? null : description?.trim()),
+      description: Value(
+        description?.trim().isEmpty == true ? null : description?.trim(),
+      ),
       sortOrder: Value(sortOrder),
       status: const Value('active'),
       progress: const Value(0.0),
@@ -605,12 +676,18 @@ class ProjectsRepository {
     final now = DateTime.now().toUtc();
     final hlc = Hlc.now(Id.uuidV7());
     final newStatus = status ?? existing.status;
-    final completedAt = newStatus == 'completed' ? (existing.completedAt ?? now) : null;
+    final completedAt = newStatus == 'completed'
+        ? (existing.completedAt ?? now)
+        : null;
 
     await _projectsDao.upsertPhase(
-      existing.toCompanion(true).copyWith(
+      existing
+          .toCompanion(true)
+          .copyWith(
             name: Value(name.trim()),
-            description: Value(description?.trim().isEmpty == true ? null : description?.trim()),
+            description: Value(
+              description?.trim().isEmpty == true ? null : description?.trim(),
+            ),
             status: Value(newStatus),
             completedAt: Value(completedAt),
             sortOrder: Value(sortOrder ?? existing.sortOrder),
@@ -637,34 +714,46 @@ class ProjectsRepository {
   }
 
   /// Soft deletes a Phase.
-  Future<void> softDeletePhase(String phaseId, String projectId, String ownerId) async {
+  Future<void> softDeletePhase(
+    String phaseId,
+    String projectId,
+    String ownerId,
+  ) async {
     final hlc = Hlc.now(Id.uuidV7());
     await _projectsDao.softDeletePhase(phaseId, ownerId, hlc.toString());
 
     // Unlink any tasks attached to this phase
-    await (database.update(database.tasks)..where((t) => t.phaseId.equals(phaseId))).write(
-      const TasksCompanion(phaseId: Value(null)),
-    );
+    await (database.update(database.tasks)
+          ..where((t) => t.phaseId.equals(phaseId)))
+        .write(const TasksCompanion(phaseId: Value(null)));
 
     await _enqueueSync(
       ownerId: ownerId,
       op: 'delete',
       entity: 'project_phases',
       entityId: phaseId,
-      payload: {'id': phaseId, 'deleted_at': DateTime.now().toUtc().toIso8601String()},
+      payload: {
+        'id': phaseId,
+        'deleted_at': DateTime.now().toUtc().toIso8601String(),
+      },
     );
 
     await recalculateProjectProgress(projectId);
   }
 
   /// Reorders phases in sequence.
-  Future<void> reorderPhases(String projectId, List<String> phaseIdsInOrder) async {
+  Future<void> reorderPhases(
+    String projectId,
+    List<String> phaseIdsInOrder,
+  ) async {
     final hlc = Hlc.now(Id.uuidV7());
     final now = DateTime.now().toUtc();
 
     for (var i = 0; i < phaseIdsInOrder.length; i++) {
       final pId = phaseIdsInOrder[i];
-      await (database.update(database.projectPhases)..where((p) => p.id.equals(pId))).write(
+      await (database.update(
+        database.projectPhases,
+      )..where((p) => p.id.equals(pId))).write(
         ProjectPhasesCompanion(
           sortOrder: Value(i),
           versionHlc: Value(hlc.toString()),
@@ -678,9 +767,11 @@ class ProjectsRepository {
   /// and updates the Project aggregate progress in the database.
   Future<double> recalculateProjectProgress(String projectId) async {
     final phases = await _projectsDao.phasesForProject(projectId);
-    final tasks = await (database.select(database.tasks)
-          ..where((t) => t.projectId.equals(projectId) & t.deletedAt.isNull()))
-        .get();
+    final tasks =
+        await (database.select(database.tasks)..where(
+              (t) => t.projectId.equals(projectId) & t.deletedAt.isNull(),
+            ))
+            .get();
 
     final tasksByPhase = <String, List<Task>>{};
     final unphasedTasks = <Task>[];
@@ -701,16 +792,23 @@ class ProjectsRepository {
         phaseTasks: pTasks,
         phaseStatus: phase.status,
       );
-      final isAllDone = pTasks.isNotEmpty && pTasks.every((t) => t.status == 'completed');
+      final isAllDone =
+          pTasks.isNotEmpty && pTasks.every((t) => t.status == 'completed');
       final targetStatus = isAllDone ? 'completed' : phase.status;
       final statusChanged = targetStatus != phase.status;
 
       if ((phase.progress - computed).abs() > 0.001 || statusChanged) {
         await _projectsDao.upsertPhase(
-          phase.toCompanion(true).copyWith(
+          phase
+              .toCompanion(true)
+              .copyWith(
                 progress: Value(computed),
                 status: Value(targetStatus),
-                completedAt: Value(targetStatus == 'completed' ? (phase.completedAt ?? DateTime.now().toUtc()) : null),
+                completedAt: Value(
+                  targetStatus == 'completed'
+                      ? (phase.completedAt ?? DateTime.now().toUtc())
+                      : null,
+                ),
                 versionHlc: Value(hlc.toString()),
                 updatedAt: Value(DateTime.now().toUtc()),
               ),
@@ -725,16 +823,26 @@ class ProjectsRepository {
       unphasedProjectTasks: unphasedTasks,
     );
 
-    await _projectsDao.updateProgress(projectId, projectProgress, hlc.toString());
+    await _projectsDao.updateProgress(
+      projectId,
+      projectProgress,
+      hlc.toString(),
+    );
     return projectProgress;
   }
 
   // ─── Tasks & Activities Linking ──────────────────────────────────────────
 
   /// Links a Task to a Project and optional Phase.
-  Future<void> linkTaskToProject(String taskId, String projectId, {String? phaseId}) async {
+  Future<void> linkTaskToProject(
+    String taskId,
+    String projectId, {
+    String? phaseId,
+  }) async {
     final hlc = Hlc.now(Id.uuidV7());
-    await (database.update(database.tasks)..where((t) => t.id.equals(taskId))).write(
+    await (database.update(
+      database.tasks,
+    )..where((t) => t.id.equals(taskId))).write(
       TasksCompanion(
         projectId: Value(projectId),
         phaseId: Value(phaseId),
@@ -746,9 +854,14 @@ class ProjectsRepository {
   }
 
   /// Links an Activity to a Project.
-  Future<void> linkActivityToProject(String activityId, String projectId) async {
+  Future<void> linkActivityToProject(
+    String activityId,
+    String projectId,
+  ) async {
     final hlc = Hlc.now(Id.uuidV7());
-    await (database.update(database.activities)..where((a) => a.id.equals(activityId))).write(
+    await (database.update(
+      database.activities,
+    )..where((a) => a.id.equals(activityId))).write(
       ActivitiesCompanion(
         projectId: Value(projectId),
         versionHlc: Value(hlc.toString()),
@@ -823,7 +936,9 @@ class ProjectsRepository {
         ownerId: ownerId,
         url: url.trim(),
         title: Value(title?.trim().isEmpty == true ? null : title?.trim()),
-        description: Value(description?.trim().isEmpty == true ? null : description?.trim()),
+        description: Value(
+          description?.trim().isEmpty == true ? null : description?.trim(),
+        ),
         versionHlc: hlc.toString(),
         createdAt: now,
       ),
@@ -895,6 +1010,82 @@ class ProjectsRepository {
     return fileId.value;
   }
 
+  /// Adds a new Idea linked directly to a Project.
+  Future<String> addIdea({
+    required String ownerId,
+    required String projectId,
+    required String title,
+    String? contentJson,
+  }) async {
+    final hlc = Hlc.now(Id.uuidV7()).toString();
+    final ideaId = Id.uuidV7().value;
+    final now = DateTime.now().toUtc();
+    await database.ideasDao.insertIdea(
+      IdeasCompanion(
+        id: Value(ideaId),
+        ownerId: Value(ownerId),
+        title: Value(title),
+        contentJson: Value(contentJson ?? '[]'),
+        versionHlc: Value(hlc),
+        createdAt: Value(now),
+        updatedAt: Value(now),
+      ),
+    );
+    final linkId = Id.uuidV7().value;
+    await _attachmentLinksDao.upsert(
+      AttachmentLinksCompanion.insert(
+        id: linkId,
+        attachmentId: ideaId,
+        attachmentKind: 'idea',
+        entityId: projectId,
+        entityKind: 'project',
+        versionHlc: hlc,
+        createdAt: now,
+      ),
+    );
+    return ideaId;
+  }
+
+  /// Links an existing Idea to a Project via attachment_links.
+  Future<void> linkExistingIdea({
+    required String ownerId,
+    required String projectId,
+    required String ideaId,
+  }) async {
+    final hlc = Hlc.now(Id.uuidV7()).toString();
+    final linkId = Id.uuidV7().value;
+    await _attachmentLinksDao.upsert(
+      AttachmentLinksCompanion.insert(
+        id: linkId,
+        attachmentId: ideaId,
+        attachmentKind: 'idea',
+        entityId: projectId,
+        entityKind: 'project',
+        versionHlc: hlc,
+        createdAt: DateTime.now().toUtc(),
+      ),
+    );
+  }
+
+  /// Unlinks an Idea from a Project.
+  Future<void> unlinkIdea({
+    required String projectId,
+    required String ideaId,
+  }) async {
+    final links =
+        await (database.select(database.attachmentLinks)..where(
+              (l) =>
+                  l.entityId.equals(projectId) &
+                  l.entityKind.equals('project') &
+                  l.attachmentId.equals(ideaId) &
+                  l.attachmentKind.equals('idea'),
+            ))
+            .get();
+    for (final l in links) {
+      await _attachmentLinksDao.remove(l.id);
+    }
+  }
+
   /// Deletes an attachment (removes junction link and soft deletes the attachment).
   Future<void> deleteAttachment({
     required String attachmentId,
@@ -904,9 +1095,9 @@ class ProjectsRepository {
     final hlc = Hlc.now(Id.uuidV7());
 
     // 1. Remove junction link
-    final links = await (database.select(database.attachmentLinks)
-          ..where((l) => l.attachmentId.equals(attachmentId)))
-        .get();
+    final links = await (database.select(
+      database.attachmentLinks,
+    )..where((l) => l.attachmentId.equals(attachmentId))).get();
     for (final l in links) {
       await _attachmentLinksDao.remove(l.id);
     }
@@ -915,9 +1106,23 @@ class ProjectsRepository {
     if (attachmentKind == 'note') {
       await _notesDao.softDeleteNote(attachmentId, ownerId, hlc.toString());
     } else if (attachmentKind == 'file') {
-      await _attachmentsDao.softDeleteFile(attachmentId, ownerId, hlc.toString());
+      await _attachmentsDao.softDeleteFile(
+        attachmentId,
+        ownerId,
+        hlc.toString(),
+      );
     } else if (attachmentKind == 'link') {
-      await _attachmentsDao.softDeleteLink(attachmentId, ownerId, hlc.toString());
+      await _attachmentsDao.softDeleteLink(
+        attachmentId,
+        ownerId,
+        hlc.toString(),
+      );
+    } else if (attachmentKind == 'idea') {
+      await database.ideasDao.softDeleteIdea(
+        attachmentId,
+        ownerId,
+        hlc.toString(),
+      );
     }
   }
 
@@ -930,55 +1135,66 @@ class ProjectsRepository {
   ) async {
     switch (type) {
       case ProjectAssignmentType.lifeArea:
-        final areas = await (database.select(database.lifeAreas)
-              ..where((a) => a.ownerId.equals(ownerId) & a.deletedAt.isNull())
-              ..orderBy([(a) => OrderingTerm.asc(a.sortOrder)]))
-            .get();
+        final areas =
+            await (database.select(database.lifeAreas)
+                  ..where(
+                    (a) => a.ownerId.equals(ownerId) & a.deletedAt.isNull(),
+                  )
+                  ..orderBy([(a) => OrderingTerm.asc(a.sortOrder)]))
+                .get();
         return areas
-            .map((a) => ProjectAssignmentTarget(
-                  id: a.id,
-                  title: a.name,
-                  colorHex: a.color,
-                  type: ProjectAssignmentType.lifeArea,
-                ))
+            .map(
+              (a) => ProjectAssignmentTarget(
+                id: a.id,
+                title: a.name,
+                colorHex: a.color,
+                type: ProjectAssignmentType.lifeArea,
+              ),
+            )
             .toList();
 
       case ProjectAssignmentType.goal:
-        final goals = await (database.select(database.goals)
-              ..where(
-                (g) =>
-                    g.ownerId.equals(ownerId) &
-                    g.parentId.isNull() &
-                    g.deletedAt.isNull(),
-              )
-              ..orderBy([(g) => OrderingTerm.asc(g.title)]))
-            .get();
+        final goals =
+            await (database.select(database.goals)
+                  ..where(
+                    (g) =>
+                        g.ownerId.equals(ownerId) &
+                        g.parentId.isNull() &
+                        g.deletedAt.isNull(),
+                  )
+                  ..orderBy([(g) => OrderingTerm.asc(g.title)]))
+                .get();
         return goals
-            .map((g) => ProjectAssignmentTarget(
-                  id: g.id,
-                  title: g.title,
-                  subtitle: 'Main Goal',
-                  type: ProjectAssignmentType.goal,
-                ))
+            .map(
+              (g) => ProjectAssignmentTarget(
+                id: g.id,
+                title: g.title,
+                subtitle: 'Main Goal',
+                type: ProjectAssignmentType.goal,
+              ),
+            )
             .toList();
 
       case ProjectAssignmentType.subGoal:
-        final subGoals = await (database.select(database.goals)
-              ..where(
-                (g) =>
-                    g.ownerId.equals(ownerId) &
-                    g.parentId.isNotNull() &
-                    g.deletedAt.isNull(),
-              )
-              ..orderBy([(g) => OrderingTerm.asc(g.title)]))
-            .get();
+        final subGoals =
+            await (database.select(database.goals)
+                  ..where(
+                    (g) =>
+                        g.ownerId.equals(ownerId) &
+                        g.parentId.isNotNull() &
+                        g.deletedAt.isNull(),
+                  )
+                  ..orderBy([(g) => OrderingTerm.asc(g.title)]))
+                .get();
         return subGoals
-            .map((g) => ProjectAssignmentTarget(
-                  id: g.id,
-                  title: g.title,
-                  subtitle: 'Sub-goal',
-                  type: ProjectAssignmentType.subGoal,
-                ))
+            .map(
+              (g) => ProjectAssignmentTarget(
+                id: g.id,
+                title: g.title,
+                subtitle: 'Sub-goal',
+                type: ProjectAssignmentType.subGoal,
+              ),
+            )
             .toList();
 
       case ProjectAssignmentType.level:
@@ -988,7 +1204,8 @@ class ProjectsRepository {
         final tierMap = {for (final t in tiers) t.ordinal: t};
 
         return curves.map((c) {
-          final tier = tierMap[((c.level - 1) ~/ 10) + 1] ??
+          final tier =
+              tierMap[((c.level - 1) ~/ 10) + 1] ??
               (tiers.isNotEmpty ? tiers.first : null);
           final tierName = c.tierName ?? tier?.name ?? 'Tier';
           final name = c.name?.isNotEmpty == true
@@ -1041,7 +1258,9 @@ class ProjectsRepository {
     required Map<String, dynamic> payload,
   }) async {
     final hlc = Hlc.now(Id.uuidV7());
-    await database.into(database.syncOutbox).insert(
+    await database
+        .into(database.syncOutbox)
+        .insert(
           SyncOutboxCompanion.insert(
             userId: ownerId,
             op: op,

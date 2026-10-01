@@ -9,6 +9,10 @@ class LevelCurves extends Table {
   IntColumn get level => integer()();
   IntColumn get deltaXp => integer()();
   IntColumn get cumulativeXpRequired => integer()();
+  TextColumn get name => text().nullable()();
+  TextColumn get description => text().nullable()();
+  TextColumn get categoryId => text().nullable()();
+  TextColumn get tierName => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {level};

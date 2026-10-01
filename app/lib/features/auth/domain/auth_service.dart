@@ -1,28 +1,54 @@
-// ignore_for_file: public_member_api_docs
-// Wave 15: Abstract AuthService interface.
-// Follows DI and Riverpod decoupling patterns: UI interacts exclusively through this interface.
-
 import 'auth_models.dart';
 
+/// Safe, user-facing authentication failure. Raw provider details are not exposed.
+class AuthFailure extends StateError {
+  AuthFailure(super.message);
+}
+
 abstract class AuthService {
-  /// Stream of authentication state changes.
+  bool get isDevBypassEnabled;
+
   Stream<AuthState> get authStateStream;
-
-  /// Current authentication state.
   AuthState get currentState;
-
-  /// Current authenticated user, or null if unauthenticated.
   KratosUser? get currentUser;
 
-  /// Sign in via Google OAuth.
+  /// True only when Supabase has a usable current session.
+  bool get hasValidSession;
+
   Future<void> signInWithGoogle({String? redirectTo});
 
-  /// Sign in with email and password or magic link.
+  /// Sends a passwordless email OTP. This is not a magic-link flow.
   Future<void> signInWithEmail(String email, {String? password});
 
-  /// Sign in using instant developer bypass (active in debug/mock modes).
-  Future<void> signInWithDevBypass({String? userId, String? displayName});
+  Future<void> verifyEmailOtp(String email, String token);
 
-  /// Sign out current session.
+  /// Resends an OTP subject to the service-level cooldown.
+  Future<void> resendEmailOtp(String email);
+
+  /// Invalidates a pending email-code attempt without removing server limits.
+  void cancelEmailOtpAttempt() {}
+
+  /// Creates a new account with email + password.
+  /// Supabase sends a 6-digit OTP to the email; call [verifySignUpOtp] next.
+  Future<void> signUpWithPassword({
+    required String email,
+    required String password,
+    required String displayName,
+  });
+
+  /// Confirms a sign-up with the 6-digit OTP sent to the email.
+  Future<void> verifySignUpOtp({
+    required String email,
+    required String token,
+  });
+
+  /// Signs in with email + password (no OTP step).
+  Future<void> signInWithPassword({
+    required String email,
+    required String password,
+  });
+
+  Future<void> signInWithDevBypass({String? userId, String? displayName});
+  Future<void> updatePassword(String newPassword);
   Future<void> signOut();
 }

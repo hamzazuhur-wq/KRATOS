@@ -50,8 +50,8 @@ BEGIN
   WHERE lo.level = p_target_level
     AND NOT EXISTS (
       SELECT 1 FROM achievements a
-      WHERE a.user_id = p_user_id
-        AND a.kind = lo.objective_kind
+      WHERE a.owner_id = p_user_id
+        AND a.kind = lo.title
     );
 
   IF v_missing_objectives > 0 THEN
@@ -63,13 +63,14 @@ BEGIN
   END IF;
 
   -- 4. Gate passed! Record promotion achievement
-  INSERT INTO achievements (id, user_id, kind, title, description, created_at)
+  INSERT INTO achievements (id, owner_id, kind, level, awarded_at, version_hlc, created_at)
   VALUES (
     gen_random_uuid(),
     p_user_id,
     'level_promotion',
-    'Promoted to Level ' || p_target_level,
-    'Compound gate passed for LifeArea ' || p_life_area_id::text,
+    p_target_level,
+    now(),
+    'promotion:' || p_target_level::text || ':' || extract(epoch FROM now())::bigint,
     now()
   );
 

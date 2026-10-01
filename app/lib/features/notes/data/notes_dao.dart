@@ -16,7 +16,7 @@ class NotesDao extends DatabaseAccessor<AppDatabase> with _$NotesDaoMixin {
 
   // ─── Notes ──────────────────────────────────────────────────────────
 
-  Future<List<NoteData>> allNotes(String ownerId) =>
+  Future<List<Note>> allNotes(String ownerId) =>
       (select(db.notes)
             ..where((n) => n.ownerId.equals(ownerId) & n.deletedAt.isNull())
             ..orderBy([
@@ -25,7 +25,7 @@ class NotesDao extends DatabaseAccessor<AppDatabase> with _$NotesDaoMixin {
             ]))
           .get();
 
-  Future<NoteData?> findNoteById(String id) =>
+  Future<Note?> findNoteById(String id) =>
       (select(db.notes)..where((n) => n.id.equals(id))).getSingleOrNull();
 
   Future<void> upsertNote(NotesCompanion companion) =>
@@ -54,14 +54,14 @@ class NotesDao extends DatabaseAccessor<AppDatabase> with _$NotesDaoMixin {
   // ─── AI Artifacts ────────────────────────────────────────────────────
 
   /// All AI interactions for an owner (newest first).
-  Future<List<AiArtifactData>> allAiArtifacts(String ownerId) =>
+  Future<List<AiArtifact>> allAiArtifacts(String ownerId) =>
       (select(db.aiArtifacts)
             ..where((a) => a.ownerId.equals(ownerId))
             ..orderBy([(a) => OrderingTerm.desc(a.createdAt)]))
           .get();
 
   /// AI interactions related to a specific entity (e.g. a Goal or Task).
-  Future<List<AiArtifactData>> artifactsForEntity(
+  Future<List<AiArtifact>> artifactsForEntity(
           String entityId, String entityKind) =>
       (select(db.aiArtifacts)
             ..where((a) =>

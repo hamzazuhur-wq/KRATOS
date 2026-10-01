@@ -18,8 +18,11 @@ class Id {
   const Id(this.value);
 
   factory Id.fromString(String raw) {
-    if (!Id(raw).isUuidV7) throw FormatException('Not a UUID v7: $raw');
-    return Id(raw);
+    final candidate = Id(raw);
+    if (!candidate.isUuidV7) {
+      throw FormatException('Invalid UUID format: $raw');
+    }
+    return candidate;
   }
 
   factory Id.uuidV7() {

@@ -8,14 +8,13 @@
 //   5. Wave 27: Live Activity ticker countdown and progress monitoring
 //   6. Cross-system workflow: session execution -> habit velocity check -> janitor audit
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kratos_app/data/drift/app_database.dart';
 import 'package:kratos_app/features/ai/data/burnout_detection_service.dart';
 import 'package:kratos_app/features/ai/domain/coach_models.dart';
 import 'package:kratos_app/features/collaboration/data/collaborative_notes_dao.dart';
-import 'package:kratos_app/features/collaboration/domain/crdt_models.dart';
 import 'package:kratos_app/features/maintenance/domain/janitor_service.dart';
 import 'package:kratos_app/features/sessions/domain/live_activity_service.dart';
 

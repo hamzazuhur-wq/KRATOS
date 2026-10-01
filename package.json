@@ -1,0 +1,20 @@
+{
+  "name": "kratos-web",
+  "version": "1.0.0",
+  "description": "KRATOS Production Web Preview Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "serve": "node server.js",
+    "web": "node server.js"
+  },
+  "keywords": [
+    "kratos",
+    "flutter",
+    "web",
+    "drift",
+    "sqlite"
+  ],
+  "author": "KRATOS",
+  "license": "UNLICENSED"
+}

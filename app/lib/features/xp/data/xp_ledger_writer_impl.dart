@@ -2,11 +2,14 @@
 // Coordinates local append-only ledger writes, outbox queuing, and idempotency caching.
 
 import 'dart:convert';
+
 import 'package:drift/drift.dart';
+
 import '../../../data/drift/app_database.dart';
 import '../../../domain/errors.dart';
 import '../../../domain/hlc.dart';
 import '../../../domain/ids.dart';
+import '../../progression/domain/progression_calculator.dart';
 import '../domain/xp_allocation_math.dart';
 import '../domain/xp_ledger_event.dart';
 import '../domain/xp_ledger_writer.dart';
@@ -41,10 +44,10 @@ class DriftXpLedgerWriter implements XpLedgerWriter {
     int latePenalty = 0,
     int streakBonus = 0,
     Id? categoryRuleVersionId,
+    bool enqueueSync = true,
   }) async {
     // 1. Idempotency Check: if key already executed, return existing event
-    final existingRow =
-        await _dao.findByIdempotencyKey(idempotencyKey.value);
+    final existingRow = await _dao.findByIdempotencyKey(idempotencyKey.value);
     if (existingRow != null) {
       final existingLines = await _dao.linesForLedger(existingRow.id);
       return _rowToDomain(existingRow, existingLines);
@@ -53,7 +56,7 @@ class DriftXpLedgerWriter implements XpLedgerWriter {
     // 2. Compute Net Points
     final netPoints = basePoints + bonusPoints - latePenalty + streakBonus;
     if (netPoints == 0) {
-      throw ValidationError('Net XP points cannot be zero');
+      throw ValidationError('points', 'Net XP points cannot be zero');
     }
 
     // 3. Proportional apportionment via Hamilton-Hare method (Invariant #2)
@@ -97,24 +100,26 @@ class DriftXpLedgerWriter implements XpLedgerWriter {
     // 4. Atomic Drift transaction for Ledger + Allocations + Outbox + Cache (Invariant #13)
     await _db.transaction(() async {
       // a. Insert parent xp_ledger row
-      await _dao.insertLedgerRow(XpLedgerCompanion(
-        id: Value(event.id.value),
-        ownerId: Value(event.ownerId.value),
-        idempotencyKey: Value(event.idempotencyKey.value),
-        sourceType: Value(event.sourceType),
-        sourceId: Value(event.sourceId.value),
-        action: Value(event.action),
-        points: Value(event.points),
-        basePoints: Value(event.basePoints),
-        bonusPoints: Value(event.bonusPoints),
-        latePenalty: Value(event.latePenalty),
-        streakBonus: Value(event.streakBonus),
-        categoryRuleVersionId: Value(event.categoryRuleVersionId?.value),
-        reversalEventId: Value(event.reversalEventId?.value),
-        versionHlc: Value(event.versionHlc.toString()),
-        deviceId: Value(event.deviceId.value),
-        createdAt: Value(event.createdAt),
-      ));
+      await _dao.insertLedgerRow(
+        XpLedgerCompanion(
+          id: Value(event.id.value),
+          ownerId: Value(event.ownerId.value),
+          idempotencyKey: Value(event.idempotencyKey.value),
+          sourceType: Value(event.sourceType),
+          sourceId: Value(event.sourceId.value),
+          action: Value(event.action),
+          points: Value(event.points),
+          basePoints: Value(event.basePoints),
+          bonusPoints: Value(event.bonusPoints),
+          latePenalty: Value(event.latePenalty),
+          streakBonus: Value(event.streakBonus),
+          categoryRuleVersionId: Value(event.categoryRuleVersionId?.value),
+          reversalEventId: Value(event.reversalEventId?.value),
+          versionHlc: Value(event.versionHlc.toString()),
+          deviceId: Value(event.deviceId.value),
+          createdAt: Value(event.createdAt),
+        ),
+      );
 
       // b. Insert child xp_allocation_lines
       final companions = event.lines.map((l) {
@@ -130,21 +135,98 @@ class DriftXpLedgerWriter implements XpLedgerWriter {
       }).toList();
       await _dao.insertAllocationLines(companions);
 
-      // c. Enqueue into sync_outbox (same transaction)
-      await _db.into(_db.syncOutbox).insert(SyncOutboxCompanion(
-        userId: Value(event.ownerId.value),
-        op: const Value('INSERT'),
-        entity: const Value('xp_ledger'),
-        entityId: Value(event.id.value),
-        payloadJson: Value(jsonEncode(event.toRpcPayload())),
-        hlc: Value(event.versionHlc.toString()),
-        deviceId: Value(event.deviceId.value),
-        idempotencyKey: Value(event.idempotencyKey.value),
-        status: const Value('pending'),
-      ));
+      // Phase 3 streak rewards remain local until the backend accepts their
+      // distinct source/action classification in a later server phase.
+      if (enqueueSync) {
+        await _db
+            .into(_db.syncOutbox)
+            .insert(
+              SyncOutboxCompanion(
+                userId: Value(event.ownerId.value),
+                op: const Value('INSERT'),
+                entity: const Value('xp_ledger'),
+                entityId: Value(event.id.value),
+                payloadJson: Value(jsonEncode(event.toRpcPayload())),
+                hlc: Value(event.versionHlc.toString()),
+                deviceId: Value(event.deviceId.value),
+                idempotencyKey: Value(event.idempotencyKey.value),
+                status: const Value('pending'),
+              ),
+            );
+      }
 
       // d. Record in local idempotency key fast lookup cache
-      await _dao.markKeyProcessed(event.idempotencyKey.value, event.ownerId.value);
+      await _dao.markKeyProcessed(
+        event.idempotencyKey.value,
+        event.ownerId.value,
+      );
+
+      // e. Record immutable activity_event for xp_earned
+      final activityEventId = Id.uuidV7().value;
+      await _db.into(_db.activityEvents).insert(
+        ActivityEventsCompanion.insert(
+          id: activityEventId,
+          ownerId: event.ownerId.value,
+          eventType: 'xp_earned',
+          entityType: event.sourceType,
+          entityId: Value(event.sourceId.value),
+          lifeAreaId: Value(
+            event.lines.isNotEmpty ? event.lines.first.lifeAreaId.value : null,
+          ),
+          metadata: Value(
+            jsonEncode({
+              'points': event.points,
+              'action': event.action,
+              'idempotency_key': event.idempotencyKey.value,
+            }),
+          ),
+          occurredAt: event.createdAt,
+          versionHlc: event.versionHlc.toString(),
+          createdAt: event.createdAt,
+        ),
+      );
+
+      // f. Evaluate Level-Up per affected Life Area (Invariant #3)
+      for (final line in event.lines) {
+        final query = _db.selectOnly(_db.xpAllocationLines)
+          ..addColumns([_db.xpAllocationLines.allocatedPoints.sum()])
+          ..where(
+            _db.xpAllocationLines.lifeAreaId.equals(line.lifeAreaId.value) &
+                _db.xpAllocationLines.id.isNotValue(line.id.value),
+          );
+        final row = await query.getSingleOrNull();
+        final prevXp =
+            row?.read(_db.xpAllocationLines.allocatedPoints.sum()) ?? 0;
+        final newXp = prevXp + line.allocatedPoints;
+
+        final prevLevel = ProgressionCalculator.calculate(totalXp: prevXp).level;
+        final newLevel = ProgressionCalculator.calculate(totalXp: newXp).level;
+
+        if (newLevel > prevLevel) {
+          final levelUpEventId = Id.uuidV7().value;
+          await _db.into(_db.activityEvents).insert(
+            ActivityEventsCompanion.insert(
+              id: levelUpEventId,
+              ownerId: event.ownerId.value,
+              eventType: 'level_up',
+              entityType: 'life_area',
+              entityId: Value(line.lifeAreaId.value),
+              lifeAreaId: Value(line.lifeAreaId.value),
+              metadata: Value(
+                jsonEncode({
+                  'from_level': prevLevel,
+                  'to_level': newLevel,
+                  'total_xp': newXp,
+                  'life_area_id': line.lifeAreaId.value,
+                }),
+              ),
+              occurredAt: event.createdAt,
+              versionHlc: event.versionHlc.toString(),
+              createdAt: event.createdAt,
+            ),
+          );
+        }
+      }
     });
 
     return event;
@@ -162,18 +244,25 @@ class DriftXpLedgerWriter implements XpLedgerWriter {
     final originalRow = await _dao.findById(originalEventId.value);
     if (originalRow == null) {
       throw ValidationError(
-          'Cannot reverse non-existent ledger event: ${originalEventId.value}');
+        'originalEventId',
+        'Cannot reverse non-existent ledger event: ${originalEventId.value}',
+      );
     }
 
     if (originalRow.action == 'reversal') {
-      throw ValidationError('Cannot reverse an existing reversal event');
+      throw ValidationError(
+        'originalEventId',
+        'Cannot reverse an existing reversal event',
+      );
     }
 
     // 2. Fetch original allocation lines
     final originalLines = await _dao.linesForLedger(originalEventId.value);
     if (originalLines.isEmpty) {
       throw InvariantViolation(
-          'Original event ${originalEventId.value} has no allocation lines');
+        'ledger_allocations',
+        'Original event ${originalEventId.value} has no allocation lines',
+      );
     }
 
     final reversalId = Id.uuidV7();
@@ -199,7 +288,9 @@ class DriftXpLedgerWriter implements XpLedgerWriter {
       sourceType: 'reversal',
       sourceId: originalEventId,
       action: 'reversal',
-      basePoints: originalRow.basePoints != null ? -originalRow.basePoints! : null,
+      basePoints: originalRow.basePoints != null
+          ? -originalRow.basePoints!
+          : null,
       bonusPoints: -originalRow.bonusPoints,
       latePenalty: -originalRow.latePenalty,
       streakBonus: -originalRow.streakBonus,
@@ -215,25 +306,28 @@ class DriftXpLedgerWriter implements XpLedgerWriter {
 
     // 5. Atomic write
     await _db.transaction(() async {
-      await _dao.insertLedgerRow(XpLedgerCompanion(
-        id: Value(compensatingEvent.id.value),
-        ownerId: Value(compensatingEvent.ownerId.value),
-        idempotencyKey: Value(compensatingEvent.idempotencyKey.value),
-        sourceType: Value(compensatingEvent.sourceType),
-        sourceId: Value(compensatingEvent.sourceId.value),
-        action: Value(compensatingEvent.action),
-        points: Value(compensatingEvent.points),
-        basePoints: Value(compensatingEvent.basePoints),
-        bonusPoints: Value(compensatingEvent.bonusPoints),
-        latePenalty: Value(compensatingEvent.latePenalty),
-        streakBonus: Value(compensatingEvent.streakBonus),
-        categoryRuleVersionId:
-            Value(compensatingEvent.categoryRuleVersionId?.value),
-        reversalEventId: Value(compensatingEvent.reversalEventId?.value),
-        versionHlc: Value(compensatingEvent.versionHlc.toString()),
-        deviceId: Value(compensatingEvent.deviceId.value),
-        createdAt: Value(compensatingEvent.createdAt),
-      ));
+      await _dao.insertLedgerRow(
+        XpLedgerCompanion(
+          id: Value(compensatingEvent.id.value),
+          ownerId: Value(compensatingEvent.ownerId.value),
+          idempotencyKey: Value(compensatingEvent.idempotencyKey.value),
+          sourceType: Value(compensatingEvent.sourceType),
+          sourceId: Value(compensatingEvent.sourceId.value),
+          action: Value(compensatingEvent.action),
+          points: Value(compensatingEvent.points),
+          basePoints: Value(compensatingEvent.basePoints),
+          bonusPoints: Value(compensatingEvent.bonusPoints),
+          latePenalty: Value(compensatingEvent.latePenalty),
+          streakBonus: Value(compensatingEvent.streakBonus),
+          categoryRuleVersionId: Value(
+            compensatingEvent.categoryRuleVersionId?.value,
+          ),
+          reversalEventId: Value(compensatingEvent.reversalEventId?.value),
+          versionHlc: Value(compensatingEvent.versionHlc.toString()),
+          deviceId: Value(compensatingEvent.deviceId.value),
+          createdAt: Value(compensatingEvent.createdAt),
+        ),
+      );
 
       final companions = compensatingEvent.lines.map((l) {
         return XpAllocationLinesCompanion(
@@ -248,31 +342,60 @@ class DriftXpLedgerWriter implements XpLedgerWriter {
       }).toList();
       await _dao.insertAllocationLines(companions);
 
-      await _db.into(_db.syncOutbox).insert(SyncOutboxCompanion(
-        userId: Value(compensatingEvent.ownerId.value),
-        op: const Value('INSERT'),
-        entity: const Value('xp_ledger'),
-        entityId: Value(compensatingEvent.id.value),
-        payloadJson: Value(jsonEncode(compensatingEvent.toRpcPayload())),
-        hlc: Value(compensatingEvent.versionHlc.toString()),
-        deviceId: Value(compensatingEvent.deviceId.value),
-        idempotencyKey: Value(compensatingEvent.idempotencyKey.value),
-        status: const Value('pending'),
-      ));
+      await _db
+          .into(_db.syncOutbox)
+          .insert(
+            SyncOutboxCompanion(
+              userId: Value(compensatingEvent.ownerId.value),
+              op: const Value('INSERT'),
+              entity: const Value('xp_ledger'),
+              entityId: Value(compensatingEvent.id.value),
+              payloadJson: Value(jsonEncode(compensatingEvent.toRpcPayload())),
+              hlc: Value(compensatingEvent.versionHlc.toString()),
+              deviceId: Value(compensatingEvent.deviceId.value),
+              idempotencyKey: Value(compensatingEvent.idempotencyKey.value),
+              status: const Value('pending'),
+            ),
+          );
 
       await _dao.markKeyProcessed(
         compensatingEvent.idempotencyKey.value,
         compensatingEvent.ownerId.value,
+      );
+
+      // Record immutable activity_event for xp_reversed
+      final activityEventId = Id.uuidV7().value;
+      await _db.into(_db.activityEvents).insert(
+        ActivityEventsCompanion.insert(
+          id: activityEventId,
+          ownerId: compensatingEvent.ownerId.value,
+          eventType: 'xp_reversed',
+          entityType: compensatingEvent.sourceType,
+          entityId: Value(compensatingEvent.sourceId.value),
+          lifeAreaId: Value(
+            compensatingEvent.lines.isNotEmpty
+                ? compensatingEvent.lines.first.lifeAreaId.value
+                : null,
+          ),
+          metadata: Value(
+            jsonEncode({
+              'points': compensatingEvent.points,
+              'reason': reason,
+              'original_event_id': originalEventId.value,
+              'idempotency_key': idempotencyKey.value,
+            }),
+          ),
+          occurredAt: compensatingEvent.createdAt,
+          versionHlc: compensatingEvent.versionHlc.toString(),
+          createdAt: compensatingEvent.createdAt,
+        ),
       );
     });
 
     return compensatingEvent;
   }
 
-  XpLedgerEvent _rowToDomain(
-    XpLedgerData row,
-    List<XpAllocationLine> lines,
-  ) {
+  XpLedgerEvent _rowToDomain(XpLedgerData row, List<XpAllocationLine> lines) {
     return XpLedgerEvent.create(
       id: Id(row.id),
       ownerId: Id(row.ownerId),
@@ -287,8 +410,9 @@ class DriftXpLedgerWriter implements XpLedgerWriter {
       categoryRuleVersionId: row.categoryRuleVersionId != null
           ? Id(row.categoryRuleVersionId!)
           : null,
-      reversalEventId:
-          row.reversalEventId != null ? Id(row.reversalEventId!) : null,
+      reversalEventId: row.reversalEventId != null
+          ? Id(row.reversalEventId!)
+          : null,
       versionHlc: Hlc.parse(row.versionHlc),
       deviceId: Id(row.deviceId),
       createdAt: row.createdAt,

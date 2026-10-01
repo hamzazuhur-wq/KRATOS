@@ -1,142 +1,897 @@
-// Wave 18: AppShell — Main Navigation & Shell Architecture.
-// Unites all KRATOS modules into a futuristic Liquid Glass navigation experience.
+import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import '../../domain/ids.dart';
+
+import '../data/drift/app_database.dart';
+import '../domain/ids.dart';
+import 'kratos_motion.dart';
+import 'kratos_main_bar.dart';
+import 'number_pop_in.dart';
+import 'kratos_visuals.dart';
 import '../features/activities/presentation/activities_screen.dart';
-import '../features/attachments/presentation/evidence_hub_screen.dart';
-import '../features/notes/presentation/ai_notes_screen.dart';
-import '../features/progression/presentation/progression_settings_screen.dart';
+import '../features/activities/presentation/activity_detail_screen.dart';
+import '../features/goals/presentation/goals_screen.dart';
+import '../features/home/data/due_today_repository.dart';
+import '../features/home/presentation/due_today_screen.dart';
+import '../features/home/presentation/home_dashboard_screen.dart';
+import '../features/ideas/presentation/ideas_dashboard_screen.dart';
+import '../features/levels/presentation/levels_dashboard_screen.dart';
+import '../features/life_areas/presentation/life_areas_screen.dart';
+import '../features/profile/data/profile_repository.dart';
+import '../features/profile/domain/profile_models.dart';
+import '../features/profile/presentation/profile_screen.dart';
 import '../features/projects/presentation/projects_screen.dart';
-import '../features/sessions/presentation/session_timer_screen.dart';
+import '../features/sessions/presentation/global_active_session_mini_player.dart';
+import '../features/sessions/presentation/global_timer_banner.dart';
+import '../features/settings/presentation/settings_screen.dart';
 import '../features/skills/presentation/skills_registry_screen.dart';
 import '../features/streaks/domain/streak_models.dart';
-import '../features/streaks/presentation/streak_badge_widget.dart';
+import '../features/streaks/data/streaks_dao.dart';
+import '../features/streaks/domain/streak_config.dart';
+import '../features/streaks/presentation/streak_screen.dart';
+import '../features/sync/domain/sync_engine.dart';
 import '../features/sync/domain/sync_models.dart';
 import '../features/sync/presentation/sync_status_badge.dart';
-import '../features/tasks/presentation/tasks_placeholder_screen.dart';
-import '../features/tools/presentation/tools_registry_screen.dart';
-import '../features/xp/presentation/xp_dashboard_screen.dart';
+import '../features/tasks/presentation/tasks_screen.dart';
+import '../features/analytics/presentation/analytics_screen.dart';
+import '../features/notifications/domain/deadline_notification_scheduler.dart';
+import '../features/notifications/domain/notification_service.dart';
+import '../features/notifications/domain/notification_models.dart';
+import '../features/notifications/presentation/notifications_screen.dart';
 
 class AppShell extends StatefulWidget {
   final VoidCallback? onSignOut;
+  final AppDatabase database;
+  final String userId;
+  final SyncTransport? syncTransport;
 
-  const AppShell({super.key, this.onSignOut});
+  const AppShell({
+    super.key,
+    required this.database,
+    required this.userId,
+    this.syncTransport,
+    this.onSignOut,
+  });
 
   @override
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
-  int _currentIndex = 0;
-
-  // Mock header telemetry for seamless UI demonstration
-  final _mockStreak = StreakInfo.create(
-    userId: const Id('usr_seed_dev_01'),
-    lifeAreaId: const Id('la_health'),
-    currentStreak: 12,
-    longestStreak: 28,
-    freezeTokensAvailable: 2,
+class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
+  int _currentIndex = 0; // 0 = Home
+  final GlobalKey<ScaffoldState> _mobileScaffoldKey =
+      GlobalKey<ScaffoldState>();
+  late final DeadlineNotificationScheduler _notificationScheduler;
+  SyncEngine? _syncEngine;
+  StreamSubscription<SyncConnectionState>? _syncSubscription;
+  SyncConnectionState _syncState = SyncConnectionState.offline;
+  final List<Widget?> _tabScreens = List<Widget?>.filled(6, null);
+  StreakInfo _streakInfo = StreakInfo.create(
+    userId: Id(''),
+    lifeAreaId: Id('overall'),
+    currentStreak: 0,
+    longestStreak: 0,
+    freezeTokensAvailable: 0,
   );
+  late final Stream<UserProfileData> _profileStream;
 
-  final List<Widget> _tabs = [
-    const XpDashboardScreen(),
-    const ProjectsScreen(),
-    const SessionTimerScreen(contextLabel: 'Deep Work Block', estimatedXp: 150),
-    const SkillsRegistryScreen(),
-    const AiNotesScreen(),
-    const ProgressionSettingsScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _notificationScheduler = DeadlineNotificationScheduler(widget.database);
+    _profileStream = ProfileRepository(database: widget.database)
+        .watchProfile(widget.userId)
+        .asBroadcastStream();
+    _startSync();
+    _loadStreak();
+    NotificationService().scanAllAlerts(
+      db: widget.database,
+      ownerId: widget.userId,
+      dispatchSystem: false,
+    );
+    _notificationScheduler.bootstrap(ownerId: widget.userId);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Coming back from the background is exactly when a slipped deadline should
+    // surface as a real OS notification.
+    if (state == AppLifecycleState.resumed) {
+      _notificationScheduler.bootstrap(ownerId: widget.userId);
+    }
+  }
+
+  Future<void> _startSync() async {
+    final transport = widget.syncTransport;
+    if (transport == null) return;
+    try {
+      var profile = await (widget.database.select(
+        widget.database.users,
+      )..where((row) => row.id.equals(widget.userId))).getSingleOrNull();
+      if (profile == null) {
+        final deviceId = Id.uuidV7().value;
+        final now = DateTime.now().toUtc();
+        await widget.database
+            .into(widget.database.users)
+            .insertOnConflictUpdate(
+              UsersCompanion.insert(
+                id: widget.userId,
+                deviceId: deviceId,
+                timezone: 'UTC',
+                createdAt: now,
+                updatedAt: now,
+              ),
+            );
+        profile = await (widget.database.select(
+          widget.database.users,
+        )..where((row) => row.id.equals(widget.userId))).getSingle();
+      }
+      if (!mounted) return;
+      final engine = SyncEngine(
+        outbox: widget.database.syncDao,
+        transport: transport,
+        userId: widget.userId,
+        deviceId: profile.deviceId,
+        database: widget.database,
+      );
+      _syncEngine = engine;
+      _syncSubscription = engine.stateStream.listen((state) {
+        if (mounted) setState(() => _syncState = state);
+      });
+      engine.start();
+    } catch (_) {
+      if (mounted) setState(() => _syncState = SyncConnectionState.error);
+    }
+  }
+
+  Future<void> _loadStreak() async {
+    try {
+      final streaks = await widget.database.streaksDao.allStreaksForUser(
+        widget.userId,
+      );
+      final global = streaks.where(
+        (streak) => streak.lifeAreaId == StreaksDao.globalStreakKey,
+      );
+      if (!mounted) return;
+      final globalStreak = global.isEmpty ? null : global.first;
+      final visibleStreaks = globalStreak == null ? streaks : [globalStreak];
+      int currentStreak = 0;
+      int longestStreak = 0;
+      for (final s in visibleStreaks) {
+        currentStreak = s.currentStreak > currentStreak
+            ? s.currentStreak
+            : currentStreak;
+        longestStreak = s.longestStreak > longestStreak
+            ? s.longestStreak
+            : longestStreak;
+      }
+      final freezeCount = globalStreak == null
+          ? StreakConfig.maxFreezes
+          : await widget.database.streaksDao.globalFreezesAvailable(
+              widget.userId,
+            );
+      if (!mounted) return;
+      setState(() {
+        _streakInfo = StreakInfo.create(
+          userId: Id(widget.userId),
+          lifeAreaId: Id(StreaksDao.globalStreakKey),
+          currentStreak: currentStreak,
+          longestStreak: longestStreak,
+          freezeTokensAvailable: freezeCount,
+        );
+      });
+    } catch (_) {
+      // Keep default zero state if DB not ready yet
+    }
+  }
+
+  void _nextTab() {
+    setState(() {
+      _currentIndex = (_currentIndex + 1) % 6;
+    });
+  }
+
+  void _prevTab() {
+    setState(() {
+      _currentIndex = (_currentIndex - 1 + 6) % 6;
+    });
+  }
+
+  @override
+  void dispose() {
+    KratosPageRoute.globalHeaderBuilder = null;
+    WidgetsBinding.instance.removeObserver(this);
+    _syncSubscription?.cancel();
+    _syncEngine?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Row(
-          children: [
-            const Icon(Icons.bolt, color: Color(0xFFC6F135), size: 24),
-            const SizedBox(width: 8),
-            const Text(
-              'KRATOS',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2.5,
-                fontSize: 16,
-              ),
+    final isDesktop = MediaQuery.of(context).size.width >= 840;
+    KratosPageRoute.globalHeaderBuilder = (routeContext) =>
+        _buildGlobalMainBar(context, isMobile: !isDesktop);
+
+    if (isDesktop) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          const KratosEnvironment(),
+          Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Row(
+              children: [
+                Container(
+                  width: 270,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF0D0F0D),
+                    border: Border(
+                      right: BorderSide(color: Colors.white12, width: 0.5),
+                    ),
+                  ),
+                  child: Material(
+                    color: const Color(0xFF0D0F0D),
+                    child: SafeArea(
+                      child: _buildSidebarContent(context, isDrawer: false),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Scaffold(
+                    backgroundColor: Colors.transparent,
+                    appBar: PreferredSize(
+                      preferredSize: const Size.fromHeight(64),
+                      child: _buildGlobalMainBar(context, isMobile: false),
+                    ),
+                    body: Stack(
+                      children: [
+                        Column(
+                          children: [
+                            GlobalTimerBanner(
+                              database: widget.database,
+                              ownerId: widget.userId,
+                            ),
+                            Expanded(
+                              child: KratosTabTransition(
+                                currentIndex: _currentIndex,
+                                onSwipeLeft: _nextTab,
+                                onSwipeRight: _prevTab,
+                                children: _buildTabScreens(),
+                              ),
+                            ),
+                          ],
+                        ),
+                        GlobalActiveSessionMiniPlayer(
+                          database: widget.database,
+                          ownerId: widget.userId,
+                          onOpenDetail: (type, id) {
+                            if (type == 'activity') {
+                              Navigator.of(context).push(
+                                KratosMaterialPageRoute(
+                                  builder: (_) => ActivityDetailScreen(
+                                    database: widget.database,
+                                    ownerId: widget.userId,
+                                    activityId: id,
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const Spacer(),
-            StreakBadgeWidget(streakInfo: _mockStreak),
-            const SizedBox(width: 10),
-            const SyncStatusBadge(state: SyncConnectionState.online),
-          ],
-        ),
-        actions: [
-          if (widget.onSignOut != null)
-            IconButton(
-              icon: const Icon(Icons.logout, color: Colors.white38, size: 20),
-              tooltip: 'Sign Out',
-              onPressed: widget.onSignOut,
-            ),
+          ),
         ],
-      ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _tabs,
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF141414).withValues(alpha: 0.95),
-          border: const Border(
-            top: BorderSide(color: Colors.white12, width: 0.5),
+      );
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const KratosEnvironment(),
+        Scaffold(
+          key: _mobileScaffoldKey,
+          backgroundColor: Colors.transparent,
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(64),
+            child: _buildGlobalMainBar(context, isMobile: true),
+          ),
+          drawer: Drawer(
+            backgroundColor: const Color(0xFF0D0F0D),
+            child: SafeArea(
+              child: _buildSidebarContent(context, isDrawer: true),
+            ),
+          ),
+          body: Stack(
+            children: [
+              Column(
+                children: [
+                  GlobalTimerBanner(
+                    database: widget.database,
+                    ownerId: widget.userId,
+                  ),
+                  Expanded(
+                    child: KratosTabTransition(
+                      currentIndex: _currentIndex,
+                      onSwipeLeft: _nextTab,
+                      onSwipeRight: _prevTab,
+                      children: _buildTabScreens(),
+                    ),
+                  ),
+                ],
+              ),
+              GlobalActiveSessionMiniPlayer(
+                database: widget.database,
+                ownerId: widget.userId,
+                onOpenDetail: (type, id) {
+                  if (type == 'activity') {
+                    Navigator.of(context).push(
+                      KratosPageRoute(
+                        page: ActivityDetailScreen(
+                          database: widget.database,
+                          ownerId: widget.userId,
+                          activityId: id,
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+          bottomNavigationBar: KratosGlassBottomBar(
+            currentIndex: _currentIndex,
+            onTap: (index) => setState(() => _currentIndex = index),
+            items: const [
+              KratosNavItem(
+                icon: Icons.dashboard_outlined,
+                activeIcon: Icons.dashboard,
+                label: 'Home',
+              ),
+              KratosNavItem(
+                icon: Icons.checklist_outlined,
+                activeIcon: Icons.checklist,
+                label: 'Tasks',
+              ),
+              KratosNavItem(
+                icon: Icons.track_changes_outlined,
+                activeIcon: Icons.track_changes,
+                label: 'Goals',
+              ),
+              KratosNavItem(
+                icon: Icons.repeat,
+                activeIcon: Icons.repeat,
+                label: 'Activities',
+              ),
+              KratosNavItem(
+                icon: Icons.lightbulb_outline,
+                activeIcon: Icons.lightbulb,
+                label: 'Ideas',
+              ),
+              KratosNavItem(
+                icon: Icons.analytics_outlined,
+                activeIcon: Icons.analytics,
+                label: 'Stats',
+              ),
+            ],
           ),
         ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color(0xFFC6F135),
-          unselectedItemColor: Colors.white38,
-          selectedFontSize: 11,
-          unselectedFontSize: 11,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.8),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined),
-              activeIcon: Icon(Icons.dashboard),
-              label: 'XP',
+      ],
+    );
+  }
+
+  Widget _buildGlobalMainBar(BuildContext context, {required bool isMobile}) {
+    return StreamBuilder<List<KratosNotification>>(
+      stream: NotificationService().notificationsStream,
+      initialData: NotificationService().currentNotifications,
+      builder: (context, snapshot) {
+        final alerts = snapshot.data ?? const <KratosNotification>[];
+        final unread = alerts.where((a) => !a.isRead && !a.isDismissed).length;
+        final urgent = alerts.any(
+          (a) =>
+              !a.isRead &&
+              !a.isDismissed &&
+              a.severity == NotificationSeverity.urgent,
+        );
+        // AppShell links KratosMainBar (hosting StreakBadgeWidget) with Navigation and Sync
+        return KratosMainBar(
+          database: widget.database,
+          ownerId: widget.userId,
+          streakInfo: _streakInfo,
+          notificationCount: unread,
+          hasUrgentNotification: urgent,
+          onMenu: _openGlobalMenu,
+          onNotifications: () => _openNotifications(context),
+          onStreak: () => Navigator.of(context).push(
+            KratosPageRoute(
+              page: StreakScreen(
+                database: widget.database,
+                userId: widget.userId,
+                streakInfo: _streakInfo,
+              ),
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.task_alt_outlined),
-              activeIcon: Icon(Icons.task_alt),
-              label: 'Projects',
+          ),
+        );
+      },
+    );
+  }
+
+  void _openGlobalMenu() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.popUntil((route) => route.isFirst);
+    }
+    if (MediaQuery.of(context).size.width >= 840) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _mobileScaffoldKey.currentState?.openDrawer();
+    });
+  }
+
+  void _openNotifications(BuildContext context) {
+    Navigator.of(context).push(
+      KratosPageRoute(
+        page: NotificationsScreen(
+          database: widget.database,
+          ownerId: widget.userId,
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildTabScreens() {
+    _tabScreens[_currentIndex] ??= switch (_currentIndex) {
+      0 => HomeDashboardScreen(
+        database: widget.database,
+        ownerId: widget.userId,
+        useRichCaption: true,
+        onNavigateTab: (index) => setState(() => _currentIndex = index),
+      ),
+      1 => TasksScreen(database: widget.database, ownerId: widget.userId),
+      2 => GoalsScreen(database: widget.database, ownerId: widget.userId),
+      3 => ActivitiesScreen(database: widget.database, ownerId: widget.userId),
+      4 => IdeasDashboardScreen(
+        database: widget.database,
+        ownerId: widget.userId,
+      ),
+      _ => AnalyticsScreen(
+        ownerId: widget.userId,
+        database: widget.database,
+      ),
+    };
+    return _tabScreens
+        .map((screen) => screen ?? const SizedBox.shrink())
+        .toList(growable: false);
+  }
+
+  Widget _buildSidebarContent(BuildContext context, {required bool isDrawer}) {
+    return Column(
+      children: [
+        // 1. Profile Header (Visually distinct, clickable to open ProfileScreen)
+        StreamBuilder<UserProfileData>(
+          stream: _profileStream,
+          builder: (context, snapshot) {
+            final profile = snapshot.data;
+            final displayName = profile?.displayName ?? 'Operative';
+            final caption =
+                (profile?.caption != null && profile!.caption!.isNotEmpty)
+                ? profile.caption!
+                : 'Who you are and who you want to be';
+            final avatarUrl = profile?.avatarUrl;
+            final hasImage = avatarUrl != null && avatarUrl.isNotEmpty;
+
+            return InkWell(
+              onTap: () {
+                final nav = Navigator.of(context);
+                if (isDrawer) {
+                  nav.pop();
+                }
+                nav.push(
+                  KratosPageRoute(
+                    page: ProfileScreen(
+                      database: widget.database,
+                      userId: widget.userId,
+                      onSignOut: widget.onSignOut,
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.035),
+                  border: const Border(
+                    bottom: BorderSide(color: Colors.white12, width: 0.5),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFFC6F135)
+                                  .withValues(alpha: 0.6),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: ClipOval(
+                            child: hasImage
+                                ? (avatarUrl.startsWith('data:image')
+                                      ? Image.memory(
+                                          base64Decode(
+                                            avatarUrl.split(',').last,
+                                          ),
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (ctx, err, stack) =>
+                                              _buildFallbackInitial(
+                                                displayName,
+                                              ),
+                                        )
+                                      : Image.network(
+                                          avatarUrl,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (ctx, err, stack) =>
+                                              _buildFallbackInitial(
+                                                displayName,
+                                              ),
+                                        ))
+                                : _buildFallbackInitial(displayName),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                displayName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                caption,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFFC6F135),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right,
+                          color: Colors.white30,
+                          size: 18,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'User: ${widget.userId}',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white38,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SyncStatusBadge(state: _syncState),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+
+        // Flat List of 10 items in exact required order (NO categories / NO section headers / NO dividers)
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            children: [
+              _buildSidebarTile(
+                icon: Icons.dashboard_outlined,
+                title: 'Home',
+                isSelected: _currentIndex == 0,
+                onTap: () {
+                  setState(() => _currentIndex = 0);
+                  if (isDrawer) Navigator.of(context).pop();
+                },
+              ),
+              _buildSidebarTile(
+                icon: Icons.notification_important_outlined,
+                title: 'Due Today',
+                trailing: _buildDueBadge(),
+                onTap: () {
+                  final nav = Navigator.of(context);
+                  if (isDrawer) nav.pop();
+                  nav.push(
+                    KratosPageRoute(
+                      page: DueTodayScreen(
+                        database: widget.database,
+                        ownerId: widget.userId,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              _buildSidebarTile(
+                icon: Icons.checklist_outlined,
+                title: 'Tasks',
+                isSelected: _currentIndex == 1,
+                onTap: () {
+                  setState(() => _currentIndex = 1);
+                  if (isDrawer) Navigator.of(context).pop();
+                },
+              ),
+              _buildSidebarTile(
+                icon: Icons.track_changes_outlined,
+                title: 'Goals',
+                isSelected: _currentIndex == 2,
+                onTap: () {
+                  setState(() => _currentIndex = 2);
+                  if (isDrawer) Navigator.of(context).pop();
+                },
+              ),
+              _buildSidebarTile(
+                icon: Icons.repeat,
+                title: 'Activities',
+                isSelected: _currentIndex == 3,
+                onTap: () {
+                  setState(() => _currentIndex = 3);
+                  if (isDrawer) Navigator.of(context).pop();
+                },
+              ),
+              _buildSidebarTile(
+                icon: Icons.lightbulb_outline,
+                title: 'Idea Capture',
+                isSelected: _currentIndex == 4,
+                onTap: () {
+                  setState(() => _currentIndex = 4);
+                  if (isDrawer) Navigator.of(context).pop();
+                },
+              ),
+              _buildSidebarTile(
+                icon: Icons.analytics_outlined,
+                title: 'Stats',
+                isSelected: _currentIndex == 5,
+                onTap: () {
+                  setState(() => _currentIndex = 5);
+                  if (isDrawer) Navigator.of(context).pop();
+                },
+              ),
+              _buildSidebarTile(
+                icon: Icons.military_tech_outlined,
+                title: 'Levels',
+                onTap: () {
+                  final nav = Navigator.of(context);
+                  if (isDrawer) nav.pop();
+                  nav.push(
+                    KratosPageRoute(
+                      page: LevelsDashboardScreen(
+                        database: widget.database,
+                        ownerId: widget.userId,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              _buildSidebarTile(
+                icon: Icons.visibility_outlined,
+                title: 'Life Areas',
+                onTap: () {
+                  final nav = Navigator.of(context);
+                  if (isDrawer) nav.pop();
+                  nav.push(
+                    KratosPageRoute(
+                      page: LifeAreasScreen(
+                        database: widget.database,
+                        ownerId: widget.userId,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              _buildSidebarTile(
+                icon: Icons.psychology_outlined,
+                title: 'Skills',
+                onTap: () {
+                  final nav = Navigator.of(context);
+                  if (isDrawer) nav.pop();
+                  nav.push(
+                    KratosPageRoute(
+                      page: SkillsRegistryScreen(
+                        database: widget.database,
+                        ownerId: widget.userId,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              _buildSidebarTile(
+                icon: Icons.task_alt_outlined,
+                title: 'Projects',
+                onTap: () {
+                  final nav = Navigator.of(context);
+                  if (isDrawer) nav.pop();
+                  nav.push(
+                    KratosPageRoute(
+                      page: ProjectsScreen(
+                        database: widget.database,
+                        ownerId: widget.userId,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              _buildSidebarTile(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                onTap: () {
+                  final nav = Navigator.of(context);
+                  if (isDrawer) nav.pop();
+                  nav.push(
+                    KratosPageRoute(
+                      page: SettingsScreen(
+                        database: widget.database,
+                        ownerId: widget.userId,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+
+        // Sign Out Footer
+        if (widget.onSignOut != null)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Colors.white12, width: 0.5),
+              ),
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.timer_outlined),
-              activeIcon: Icon(Icons.timer),
-              label: 'Focus',
+            child: Material(
+              color: Colors.transparent,
+              child: ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                tileColor: Colors.white.withValues(alpha: 0.03),
+                leading: const Icon(
+                  Icons.logout,
+                  color: Color(0xFFFF3B30),
+                  size: 20,
+                ),
+                title: const Text(
+                  'Sign Out',
+                  style: TextStyle(
+                    color: Color(0xFFFF3B30),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                onTap: () {
+                  if (isDrawer) Navigator.of(context).pop();
+                  widget.onSignOut!();
+                },
+              ),
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.psychology_outlined),
-              activeIcon: Icon(Icons.psychology),
-              label: 'Skills',
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSidebarTile({
+    required IconData icon,
+    required String title,
+    bool isSelected = false,
+    Widget? trailing,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Material(
+        color: isSelected
+            ? const Color(0xFFC6F135).withValues(alpha: 0.12)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: ListTile(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          leading: Icon(
+            icon,
+            color: isSelected ? const Color(0xFFC6F135) : Colors.white60,
+            size: 20,
+          ),
+          title: Text(
+            title,
+            style: TextStyle(
+              color: isSelected ? const Color(0xFFC6F135) : Colors.white,
+              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
+              fontSize: 13,
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.note_alt_outlined),
-              activeIcon: Icon(Icons.note_alt),
-              label: 'Notes',
+          ),
+          trailing: trailing,
+          onTap: onTap,
+        ),
+      ),
+    );
+  }
+
+  /// Live overdue badge for the Due Today navigation entry.
+  Widget _buildDueBadge() {
+    return StreamBuilder<DueOverview>(
+      stream: DueTodayRepository(widget.database)
+          .watchDueOverview(widget.userId),
+      builder: (context, snapshot) {
+        final count = snapshot.data?.overdueCount ?? 0;
+        if (count == 0) return const SizedBox.shrink();
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFF3B30).withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(
+              color: const Color(0xFFFF3B30).withValues(alpha: 0.6),
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.tune_outlined),
-              activeIcon: Icon(Icons.tune),
-              label: 'Tiers',
+          ),
+          child: KratosNumberPopIn(
+            '$count',
+            style: const TextStyle(
+              color: Color(0xFFFF3B30),
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
             ),
-          ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFallbackInitial(String name) {
+    final initial = name.trim().isNotEmpty
+        ? name.trim().substring(0, 1).toUpperCase()
+        : 'K';
+    return Container(
+      color: const Color(0xFF1E281E),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: const TextStyle(
+          color: Color(0xFFC6F135),
+          fontWeight: FontWeight.w900,
+          fontSize: 18,
         ),
       ),
     );

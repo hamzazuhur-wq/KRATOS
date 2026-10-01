@@ -1,300 +1,496 @@
-// Wave 12: Skills & Tools full UX — SkillDetail + ToolDetail screens.
-// Links skills ↔ tools via skill_tools junction.
-// ADR-004: Tools are inventory; Skills are graded competencies.
+﻿import 'package:flutter/material.dart';
+import 'package:drift/drift.dart' hide Column;
 
-import 'package:flutter/material.dart';
+import '../../../app/kratos_visuals.dart';
+import '../../../data/drift/app_database.dart';
+import '../data/skills_repository.dart';
+import '../domain/skill_models.dart';
 
-/// Skill detail screen — shows XP attribution, linked tools, and level progress.
 class SkillDetailScreen extends StatefulWidget {
-  final String skillName;
-  final String icon;
-  final int xpTotal;
-  final int level;
-  final List<String> linkedTools;
-
+  final AppDatabase database;
+  final String ownerId;
+  final String skillId;
   const SkillDetailScreen({
     super.key,
-    required this.skillName,
-    required this.icon,
-    required this.xpTotal,
-    required this.level,
-    required this.linkedTools,
+    required this.database,
+    required this.ownerId,
+    required this.skillId,
   });
-
   @override
   State<SkillDetailScreen> createState() => _SkillDetailScreenState();
 }
 
 class _SkillDetailScreenState extends State<SkillDetailScreen> {
-  late final List<String> _tools;
+  late final DriftSkillsRepository _repository;
+  Skill? _skill;
+  SkillGroup? _group;
+  List<String> _lifeAreas = const [];
+  List<_Usage> _usage = const [];
+  bool _loading = true;
+  Object? _error;
 
   @override
   void initState() {
     super.initState();
-    _tools = List.from(widget.linkedTools);
+    _repository = DriftSkillsRepository(widget.database);
+    _load();
   }
 
-  void _showLinkToolDialog() {
-    final controller = TextEditingController();
-    showDialog<void>(
+  Future<void> _load() async {
+    try {
+      final skill = await widget.database.skillsDao.findById(widget.skillId);
+      if (skill == null) throw StateError('Skill not found');
+      final groups = await _repository.listGroups(widget.ownerId);
+      final links = await widget.database.skillsDao.lifeAreasForSkill(
+        widget.skillId,
+      );
+      final areas = await widget.database
+          .select(widget.database.lifeAreas)
+          .get();
+      final areaNames = links
+          .map(
+            (link) => areas
+                .where((area) => area.id == link.lifeAreaId)
+                .map((area) => area.name)
+                .firstOrNull,
+          )
+          .whereType<String>()
+          .toList();
+      final attachmentLinks = await widget.database.attachmentLinksDao
+          .forAttachment(widget.skillId, 'skill');
+      final usage = <_Usage>[];
+      final linkedActivityIds = <String>{};
+      final linkedTaskIds = <String>{};
+      for (final link in attachmentLinks) {
+        String? title;
+        switch (link.entityKind) {
+          case 'goal':
+            title =
+                (await (widget.database.select(widget.database.goals)
+                          ..where((row) => row.id.equals(link.entityId)))
+                        .getSingleOrNull())
+                    ?.title;
+            break;
+          case 'project':
+            title =
+                (await (widget.database.select(widget.database.projects)
+                          ..where((row) => row.id.equals(link.entityId)))
+                        .getSingleOrNull())
+                    ?.title;
+            break;
+          case 'task':
+            linkedTaskIds.add(link.entityId);
+            title =
+                (await (widget.database.select(widget.database.tasks)
+                          ..where((row) => row.id.equals(link.entityId)))
+                        .getSingleOrNull())
+                    ?.title;
+            break;
+          case 'activity':
+            linkedActivityIds.add(link.entityId);
+            title =
+                (await (widget.database.select(widget.database.activities)
+                          ..where((row) => row.id.equals(link.entityId)))
+                        .getSingleOrNull())
+                    ?.name;
+            break;
+          case 'session':
+            title = 'Session ${link.entityId.substring(0, 8)}';
+            break;
+        }
+        usage.add(_Usage(link.entityKind, title ?? link.entityId));
+      }
+      // Sessions inherit Skill attribution through their existing Task or
+      // Activity parent. This keeps one session model and avoids inventing a
+      // second XP/attribution system just for Skills.
+      if (linkedActivityIds.isNotEmpty || linkedTaskIds.isNotEmpty) {
+        final sessions =
+            await (widget.database.select(widget.database.sessions)
+                  ..where(
+                    (session) =>
+                        session.ownerId.equals(widget.ownerId) &
+                        session.deletedAt.isNull(),
+                  )
+                  ..orderBy([
+                    (session) => OrderingTerm.desc(session.startedAt),
+                  ]))
+                .get();
+        for (final session in sessions) {
+          if ((session.activityId != null &&
+                  linkedActivityIds.contains(session.activityId)) ||
+              (session.taskId != null &&
+                  linkedTaskIds.contains(session.taskId))) {
+            final duration = session.durationMs == null
+                ? ''
+                : ' Â· ${(session.durationMs! / 60000).round()} min';
+            usage.add(
+              _Usage(
+                'session',
+                'Session ${session.id.substring(0, 8)}$duration',
+              ),
+            );
+          }
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _skill = skill;
+          _group = groups
+              .where((group) => group.id == skill.groupId)
+              .firstOrNull;
+          _lifeAreas = areaNames;
+          _usage = usage;
+          _loading = false;
+          _error = null;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _error = error;
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _edit() async {
+    final skill = _skill;
+    if (skill == null) return;
+    final draft = await showDialog<_EditDraft>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text('Link Tool to Skill', style: TextStyle(color: Color(0xFFC6F135), fontSize: 16, fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'Tool name (e.g. Flutter, Neovim, Figma)',
-            hintStyle: const TextStyle(color: Colors.white38),
-            filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.05),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-          ),
-        ),
+      builder: (_) => _EditDialog(skill: skill),
+    );
+    if (draft == null) return;
+    await _repository.updateSkill(
+      skill: skill,
+      name: draft.name,
+      description: draft.description,
+      groupId: skill.groupId,
+      masteryLevel: draft.masteryLevel,
+    );
+    await _load();
+  }
+
+  Future<void> _toggleArchive() async {
+    final skill = _skill;
+    if (skill == null) return;
+    if (skill.archivedAt == null) {
+      await _repository.archiveSkill(skill);
+    } else {
+      await _repository.restoreSkill(skill);
+    }
+    await _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final skill = _skill;
+    return Scaffold(
+      backgroundColor: const Color(0xFF020302),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: Text(skill?.name.toUpperCase() ?? 'SKILL'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white38)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final name = controller.text.trim();
-              if (name.isNotEmpty && !_tools.contains(name)) {
-                setState(() => _tools.add(name));
-              }
-              Navigator.of(ctx).pop();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFC6F135),
-              foregroundColor: const Color(0xFF0D0D0D),
+          if (skill != null)
+            IconButton(
+              onPressed: _edit,
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit',
             ),
-            child: const Text('Link'),
+          if (skill != null)
+            IconButton(
+              onPressed: _toggleArchive,
+              icon: Icon(
+                skill.archivedAt == null
+                    ? Icons.archive_outlined
+                    : Icons.unarchive_outlined,
+              ),
+              tooltip: skill.archivedAt == null ? 'Archive' : 'Restore',
+            ),
+        ],
+      ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const KratosEnvironment(),
+          _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+          ? Center(
+              child: Text(
+                'Unable to load this skill.',
+                style: const TextStyle(color: Colors.white70),
+              ),
+            )
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                if (skill != null)
+                  _Hero(skill: skill, group: _group, lifeAreas: _lifeAreas),
+                const SizedBox(height: 16),
+                if (skill != null) _MasterySection(level: skill.masteryLevel),
+                const SizedBox(height: 16),
+                _UsageSection(usage: _usage),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Hero extends StatelessWidget {
+  final Skill skill;
+  final SkillGroup? group;
+  final List<String> lifeAreas;
+  const _Hero({
+    required this.skill,
+    required this.group,
+    required this.lifeAreas,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final mastery = SkillMastery.fromValue(skill.masteryLevel);
+    final color = _masteryColor(skill.masteryLevel);
+    return KratosGlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            skill.name.toUpperCase(),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 24,
+              letterSpacing: 1.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            [if (group != null) group!.name, ...lifeAreas].join(' Â· '),
+            style: const TextStyle(color: Colors.white54),
+          ),
+          if (skill.description != null) ...[
+            const SizedBox(height: 16),
+            Text(
+              skill.description!,
+              style: const TextStyle(color: Colors.white70),
+            ),
+          ],
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Text(
+                mastery.roman,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 34,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                mastery.label,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+}
 
+class _MasterySection extends StatelessWidget {
+  final int level;
+  const _MasterySection({required this.level});
   @override
-  Widget build(BuildContext context) {
-    const nextLevelXp = 500;
-    final inLevelXp = widget.xpTotal % 500;
-    final progressFraction = inLevelXp / nextLevelXp;
-
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFFC6F135)),
-        title: Text(
-          widget.skillName.toUpperCase(),
-          style: const TextStyle(
-            color: Color(0xFFC6F135),
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2.0,
-            fontSize: 14,
+  Widget build(BuildContext context) => KratosGlassCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'MASTERY',
+          style: TextStyle(
+            color: Colors.white38,
+            fontSize: 11,
+            letterSpacing: 1.5,
           ),
         ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          // Level hero
-          Center(
-            child: Column(
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFC6F135).withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                        color: const Color(0xFFC6F135).withValues(alpha: 0.5),
-                        width: 2),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(widget.icon, style: const TextStyle(fontSize: 36)),
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                        colors: [Color(0xFFC6F135), Color(0xFF8BC34A)]),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text(
-                    'LEVEL ${widget.level}',
-                    style: const TextStyle(
-                      color: Color(0xFF0D0D0D),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // XP Progress
-          _DetailSection(
-            label: 'XP ATTRIBUTION',
-            child: Column(
-              children: [
-                Row(
+        const SizedBox(height: 14),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: SkillMastery.values
+              .map(
+                (mastery) => Column(
                   children: [
                     Text(
-                      '$inLevelXp / $nextLevelXp XP to next level',
-                      style: const TextStyle(
-                          color: Colors.white54, fontSize: 12),
+                      mastery.roman,
+                      style: TextStyle(
+                        color: mastery.value == level
+                            ? _masteryColor(level)
+                            : Colors.white38,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                      ),
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 5),
                     Text(
-                      '${widget.xpTotal} total',
-                      style: const TextStyle(
-                        color: Color(0xFFC6F135),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                      mastery.label,
+                      style: TextStyle(
+                        color: mastery.value == level
+                            ? Colors.white70
+                            : Colors.white24,
+                        fontSize: 9,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(5),
-                  child: LinearProgressIndicator(
-                    value: progressFraction,
-                    backgroundColor: Colors.white.withValues(alpha: 0.08),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFFC6F135)),
-                    minHeight: 8,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'XP shown is attribution only — earned through LifeArea tasks and sessions.',
-                  style: TextStyle(color: Colors.white24, fontSize: 10),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Linked Tools
-          _DetailSection(
-            label: 'LINKED TOOLS',
-            action: TextButton(
-              onPressed: _showLinkToolDialog,
-              child: const Text(
-                '+ Link Tool',
-                style: TextStyle(
-                    color: Color(0xFFC6F135),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
-            child: _tools.isEmpty
-                ? const Text(
-                    'No tools linked yet.',
-                    style: TextStyle(color: Colors.white38, fontSize: 13),
-                  )
-                : Column(
-                    children: _tools
-                        .map((t) => _ToolChip(
-                              name: t,
-                              onRemove: () => setState(() => _tools.remove(t)),
-                            ))
-                        .toList(),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
+              )
+              .toList(),
+        ),
+      ],
+    ),
+  );
 }
 
-class _ToolChip extends StatelessWidget {
+class _UsageSection extends StatelessWidget {
+  final List<_Usage> usage;
+  const _UsageSection({required this.usage});
+  @override
+  Widget build(BuildContext context) => KratosGlassCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'USED IN',
+          style: TextStyle(
+            color: Colors.white38,
+            fontSize: 11,
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (usage.isEmpty)
+          const Text(
+            'No linked goals, projects, tasks, activities or sessions yet.',
+            style: TextStyle(color: Colors.white54),
+          )
+        else
+          ...usage.map(
+            (item) => ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.link, color: Color(0xFFEEFF08)),
+              title: Text(
+                item.title,
+                style: const TextStyle(color: Colors.white70),
+              ),
+              subtitle: Text(
+                item.kind.toUpperCase(),
+                style: const TextStyle(color: Colors.white38, fontSize: 10),
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+class _Usage {
+  final String kind;
+  final String title;
+  const _Usage(this.kind, this.title);
+}
+
+class _EditDraft {
   final String name;
-  final VoidCallback? onRemove;
-  const _ToolChip({required this.name, this.onRemove});
+  final String? description;
+  final int masteryLevel;
+  const _EditDraft(this.name, this.description, this.masteryLevel);
+}
+
+class _EditDialog extends StatefulWidget {
+  final Skill skill;
+  const _EditDialog({required this.skill});
+  @override
+  State<_EditDialog> createState() => _EditDialogState();
+}
+
+class _EditDialogState extends State<_EditDialog> {
+  late final TextEditingController _name;
+  late final TextEditingController _description;
+  late int _mastery;
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.skill.name);
+    _description = TextEditingController(text: widget.skill.description ?? '');
+    _mastery = widget.skill.masteryLevel;
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.build_circle, color: Color(0xFF7B68EE), size: 16),
-          const SizedBox(width: 10),
-          Text(name,
-              style: const TextStyle(color: Colors.white70, fontSize: 13)),
-          const Spacer(),
-          if (onRemove != null)
-            GestureDetector(
-              onTap: onRemove,
-              child: const Icon(Icons.close, color: Colors.white38, size: 14),
+  void dispose() {
+    _name.dispose();
+    _description.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('EDIT SKILL'),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          controller: _name,
+          decoration: const InputDecoration(labelText: 'Name'),
+        ),
+        TextField(
+          controller: _description,
+          decoration: const InputDecoration(labelText: 'Description'),
+        ),
+        const SizedBox(height: 12),
+        SegmentedButton<int>(
+          segments: [
+            ...SkillMastery.values.map(
+              (m) => ButtonSegment(value: m.value, label: Text(m.roman)),
             ),
-        ],
+          ],
+          selected: {_mastery},
+          onSelectionChanged: (s) => setState(() => _mastery = s.first),
+        ),
+      ],
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
       ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// _DetailSection — reusable section header
-// ---------------------------------------------------------------------------
-
-class _DetailSection extends StatelessWidget {
-  final String label;
-  final Widget child;
-  final Widget? action;
-
-  const _DetailSection(
-      {required this.label, required this.child, this.action});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white38,
-                  fontSize: 10,
-                  letterSpacing: 2.0,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (action != null) ...[const Spacer(), action!],
-            ],
+      FilledButton(
+        onPressed: () => Navigator.pop(
+          context,
+          _EditDraft(
+            _name.text.trim(),
+            _description.text.trim().isEmpty ? null : _description.text.trim(),
+            _mastery,
           ),
-          const SizedBox(height: 12),
-          child,
-        ],
+        ),
+        child: const Text('Save'),
       ),
-    );
-  }
+    ],
+  );
 }
+
+Color _masteryColor(int level) => const [
+  Color(0xFFB87333),
+  Color(0xFFC0C0C0),
+  Color(0xFFFFD700),
+  Color(0xFFB9EAF5),
+  Color(0xFFB9F2FF),
+][level.clamp(1, 5) - 1];
+

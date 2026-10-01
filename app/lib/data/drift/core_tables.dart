@@ -6,7 +6,11 @@ class Users extends Table {
   TextColumn get id => text()();
   TextColumn get deviceId => text()();
   TextColumn get displayName => text().nullable()();
+  TextColumn get caption => text().nullable()();
+  TextColumn get avatarUrl => text().nullable()();
+  TextColumn get email => text().nullable()();
   TextColumn get timezone => text()();
+  TextColumn get versionHlc => text().withDefault(const Constant(''))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -19,6 +23,7 @@ class LifeAreas extends Table {
   TextColumn get ownerId => text()();
   TextColumn get name => text()();
   TextColumn get description => text().nullable()();
+  TextColumn get categoryId => text().nullable()();
   TextColumn get color => text().nullable()();
   TextColumn get icon => text().nullable()();
   IntColumn get sortOrder => integer()();
@@ -38,6 +43,9 @@ class Categories extends Table {
   TextColumn get id => text()();
   TextColumn get ownerId => text()();
   TextColumn get name => text()();
+  TextColumn get categoryType => text().withDefault(const Constant('goal'))();
+  TextColumn get description => text().nullable()();
+  TextColumn get icon => text().nullable()();
   IntColumn get baseXp => integer()();
   BoolColumn get isImmutable => boolean()();
   DateTimeColumn get archivedAt => dateTime().nullable()();
@@ -85,6 +93,7 @@ class Goals extends Table {
   TextColumn get title => text()();
   TextColumn get description => text().nullable()();
   TextColumn get lifeAreaId => text().nullable()();
+  TextColumn get categoryId => text().nullable()();
   TextColumn get status => text()();
   IntColumn get xpTarget => integer().nullable()();
   RealColumn get progress => real()();
@@ -110,8 +119,33 @@ class Projects extends Table {
   TextColumn get title => text()();
   TextColumn get description => text().nullable()();
   TextColumn get status => text()();
+  IntColumn get difficulty => integer().withDefault(const Constant(1))();
+  IntColumn get levelId => integer().nullable()();
+  TextColumn get coverImagePath => text().nullable()();
+  RealColumn get progress => real().withDefault(const Constant(0.0))();
   DateTimeColumn get dueDate => dateTime().nullable()();
+  DateTimeColumn get completedAt => dateTime().nullable()();
   TextColumn get memberIds => text()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
+  TextColumn get deletedReason => text().nullable()();
+  TextColumn get versionHlc => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class ProjectPhases extends Table {
+  TextColumn get id => text()();
+  TextColumn get projectId => text()();
+  TextColumn get name => text()();
+  TextColumn get description => text().nullable()();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  TextColumn get status => text().withDefault(const Constant('active'))();
+  RealColumn get progress => real().withDefault(const Constant(0.0))();
+  DateTimeColumn get completedAt => dateTime().nullable()();
   DateTimeColumn get deletedAt => dateTime().nullable()();
   TextColumn get deletedBy => text().nullable()();
   TextColumn get deletedReason => text().nullable()();
@@ -127,7 +161,12 @@ class Tasks extends Table {
   TextColumn get id => text()();
   TextColumn get ownerId => text()();
   TextColumn get projectId => text().nullable()();
+  TextColumn get phaseId => text().nullable()();
+
+  /// Optional for legacy rows; New Task requires a Life Area before saving.
+  TextColumn get lifeAreaId => text().nullable()();
   TextColumn get primaryGoalId => text().nullable()();
+  TextColumn get categoryId => text().nullable()();
   TextColumn get title => text()();
   TextColumn get notes => text().nullable()();
   DateTimeColumn get dueDate => dateTime().nullable()();
@@ -164,9 +203,13 @@ class TaskGoalLinks extends Table {
 class Activities extends Table {
   TextColumn get id => text()();
   TextColumn get ownerId => text()();
+  TextColumn get projectId => text().nullable()();
   TextColumn get lifeAreaId => text().nullable()();
+  TextColumn get categoryId => text().nullable()();
   TextColumn get name => text()();
   TextColumn get description => text().nullable()();
+  IntColumn get targetDurationMinutes => integer().nullable()();
+  IntColumn get difficulty => integer().withDefault(const Constant(5))();
   TextColumn get xpRule => text().nullable()();
   DateTimeColumn get archivedAt => dateTime().nullable()();
   DateTimeColumn get deletedAt => dateTime().nullable()();
@@ -196,6 +239,44 @@ class Sessions extends Table {
   TextColumn get versionHlc => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class Decisions extends Table {
+  TextColumn get id => text()();
+  TextColumn get ownerId => text()();
+  TextColumn get title => text()();
+  TextColumn get content => text().nullable()();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+  TextColumn get goalId => text().nullable()();
+  TextColumn get projectId => text().nullable()();
+  TextColumn get lifeAreaId => text().nullable()();
+  TextColumn get categoryId => text().nullable()();
+  DateTimeColumn get resolvedAt => dateTime().nullable()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  TextColumn get deletedBy => text().nullable()();
+  TextColumn get deletedReason => text().nullable()();
+  TextColumn get versionHlc => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class ActivityEvents extends Table {
+  TextColumn get id => text()();
+  TextColumn get ownerId => text()();
+  TextColumn get eventType => text()();
+  TextColumn get entityType => text()();
+  TextColumn get entityId => text().nullable()();
+  TextColumn get lifeAreaId => text().nullable()();
+  TextColumn get metadata => text().withDefault(const Constant('{}'))();
+  DateTimeColumn get occurredAt => dateTime()();
+  TextColumn get versionHlc => text()();
+  DateTimeColumn get createdAt => dateTime()();
 
   @override
   Set<Column> get primaryKey => {id};

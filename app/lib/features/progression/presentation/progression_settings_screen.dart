@@ -3,8 +3,14 @@
 // and interactive tier/level thresholds management with interactive slider controls.
 
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
+
+import '../../../app/kratos_motion.dart';
+
 import 'package:drift/drift.dart' hide Column;
+
+import '../../../app/kratos_dropdown.dart';
 import '../../../data/drift/app_database.dart';
 import '../../../domain/hlc.dart';
 import '../../../domain/ids.dart';
@@ -48,32 +54,43 @@ class _ProgressionSettingsScreenState extends State<ProgressionSettingsScreen> {
     if (dbTiers.isNotEmpty && mounted) {
       setState(() {
         _currentTiers = dbTiers
-            .map((t) => TierDefinitionSnapshot(
-                  name: t.name,
-                  entryXp: t.entryXp,
-                  ordinal: t.ordinal,
-                  icon: t.icon ?? '',
-                  color: t.color ?? '#C6F135',
-                ))
+            .map(
+              (t) => TierDefinitionSnapshot(
+                name: t.name,
+                entryXp: t.entryXp,
+                ordinal: t.ordinal,
+                icon: t.icon ?? '',
+                color: t.color ?? '#C6F135',
+              ),
+            )
             .toList();
       });
     }
   }
 
-  Future<List<({String name, ProgressionInfo info})>> _loadProgressions() async {
-    final areas = await (widget.database.select(widget.database.lifeAreas)
-          ..where((area) => area.ownerId.equals(widget.ownerId) &
-              area.archivedAt.isNull() &
-              area.deletedAt.isNull())
-          ..orderBy([(area) => OrderingTerm.asc(area.sortOrder)]))
-        .get();
+  Future<List<({String name, ProgressionInfo info})>>
+  _loadProgressions() async {
+    final areas =
+        await (widget.database.select(widget.database.lifeAreas)
+              ..where(
+                (area) =>
+                    area.ownerId.equals(widget.ownerId) &
+                    area.archivedAt.isNull() &
+                    area.deletedAt.isNull(),
+              )
+              ..orderBy([(area) => OrderingTerm.asc(area.sortOrder)]))
+            .get();
     final service = LifeAreaProgressionService(widget.database);
-    return Future.wait(areas.map((area) async => (
+    return Future.wait(
+      areas.map(
+        (area) async => (
           name: area.name,
           info: await service.getProgressionForLifeArea(
             lifeAreaId: Id(area.id),
           ),
-        )));
+        ),
+      ),
+    );
   }
 
   @override
@@ -97,7 +114,7 @@ class _ProgressionSettingsScreenState extends State<ProgressionSettingsScreen> {
             tooltip: 'Category Settings',
             icon: const Icon(Icons.tune_outlined, color: Colors.white70),
             onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
+              KratosMaterialPageRoute<void>(
                 builder: (_) => CategoriesScreen(
                   database: widget.database,
                   ownerId: widget.ownerId,
@@ -165,14 +182,18 @@ class _ProgressionSettingsScreenState extends State<ProgressionSettingsScreen> {
                     children: [
                       TextButton.icon(
                         onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
+                          KratosMaterialPageRoute<void>(
                             builder: (_) => CreateLevelScreen(
                               database: widget.database,
                               ownerId: widget.ownerId,
                             ),
                           ),
                         ),
-                        icon: const Icon(Icons.add_circle_outline, size: 16, color: Color(0xFFC6F135)),
+                        icon: const Icon(
+                          Icons.add_circle_outline,
+                          size: 16,
+                          color: Color(0xFFC6F135),
+                        ),
                         label: const Text(
                           'New Level',
                           style: TextStyle(
@@ -184,7 +205,11 @@ class _ProgressionSettingsScreenState extends State<ProgressionSettingsScreen> {
                       ),
                       TextButton.icon(
                         onPressed: () => _openTierEditor(),
-                        icon: const Icon(Icons.tune, size: 16, color: Colors.white70),
+                        icon: const Icon(
+                          Icons.tune,
+                          size: 16,
+                          color: Colors.white70,
+                        ),
                         label: const Text(
                           'Edit Tier',
                           style: TextStyle(
@@ -247,11 +272,16 @@ class _ProgressionSettingsScreenState extends State<ProgressionSettingsScreen> {
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFC6F135).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFC6F135).withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: const Color(0xFFC6F135).withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Text(
                   '${_simulatorXp.round()} XP',
@@ -310,8 +340,14 @@ class _ProgressionSettingsScreenState extends State<ProgressionSettingsScreen> {
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('0 XP (Level 1)', style: TextStyle(color: Colors.white24, fontSize: 10)),
-              Text('50,000 XP (High Tier)', style: TextStyle(color: Colors.white24, fontSize: 10)),
+              Text(
+                '0 XP (Level 1)',
+                style: TextStyle(color: Colors.white24, fontSize: 10),
+              ),
+              Text(
+                '50,000 XP (High Tier)',
+                style: TextStyle(color: Colors.white24, fontSize: 10),
+              ),
             ],
           ),
         ],
@@ -345,7 +381,10 @@ class _ProgressionSettingsScreenState extends State<ProgressionSettingsScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFC6F135).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(16),
@@ -369,7 +408,9 @@ class _ProgressionSettingsScreenState extends State<ProgressionSettingsScreen> {
             child: LinearProgressIndicator(
               value: info.progressPct / 100.0,
               backgroundColor: Colors.white12,
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFC6F135)),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFFC6F135),
+              ),
               minHeight: 8,
             ),
           ),
@@ -425,10 +466,7 @@ class _ProgressionSettingsScreenState extends State<ProgressionSettingsScreen> {
                   ),
                   Text(
                     'Entry threshold: ${tier.entryXp} XP',
-                    style: const TextStyle(
-                      color: Colors.white38,
-                      fontSize: 11,
-                    ),
+                    style: const TextStyle(color: Colors.white38, fontSize: 11),
                   ),
                 ],
               ),
@@ -452,7 +490,11 @@ class _ProgressionSettingsScreenState extends State<ProgressionSettingsScreen> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.white60),
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  size: 18,
+                  color: Colors.white60,
+                ),
                 onPressed: () => _openTierEditor(tier: tier, index: index),
               ),
             ],
@@ -488,23 +530,25 @@ class _ProgressionSettingsScreenState extends State<ProgressionSettingsScreen> {
             ),
           );
           final hlc = Hlc.now(Id.uuidV7()).toString();
-          await widget.database.into(widget.database.syncOutbox).insert(
-            SyncOutboxCompanion.insert(
-              userId: widget.ownerId,
-              op: 'upsert',
-              entity: 'tier_definitions',
-              entityId: newTier.name,
-              payloadJson: jsonEncode({
-                'name': newTier.name,
-                'entry_xp': newTier.entryXp,
-                'ordinal': newTier.ordinal,
-                'icon': newTier.icon,
-                'color': newTier.color,
-              }),
-              hlc: hlc,
-              deviceId: 'local_device',
-            ),
-          );
+          await widget.database
+              .into(widget.database.syncOutbox)
+              .insert(
+                SyncOutboxCompanion.insert(
+                  userId: widget.ownerId,
+                  op: 'upsert',
+                  entity: 'tier_definitions',
+                  entityId: newTier.name,
+                  payloadJson: jsonEncode({
+                    'name': newTier.name,
+                    'entry_xp': newTier.entryXp,
+                    'ordinal': newTier.ordinal,
+                    'icon': newTier.icon,
+                    'color': newTier.color,
+                  }),
+                  hlc: hlc,
+                  deviceId: 'local_device',
+                ),
+              );
         },
       ),
     );
@@ -515,10 +559,7 @@ class _TierEditorDialog extends StatefulWidget {
   final TierDefinitionSnapshot? initialTier;
   final ValueChanged<TierDefinitionSnapshot> onSave;
 
-  const _TierEditorDialog({
-    this.initialTier,
-    required this.onSave,
-  });
+  const _TierEditorDialog({this.initialTier, required this.onSave});
 
   @override
   State<_TierEditorDialog> createState() => _TierEditorDialogState();
@@ -587,7 +628,9 @@ class _TierEditorDialogState extends State<_TierEditorDialog> {
             ),
             const SizedBox(height: 16),
             Text(
-              widget.initialTier != null ? 'EDIT LEVEL / TIER' : 'NEW LEVEL / TIER',
+              widget.initialTier != null
+                  ? 'EDIT LEVEL / TIER'
+                  : 'NEW LEVEL / TIER',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w900,
@@ -600,63 +643,63 @@ class _TierEditorDialogState extends State<_TierEditorDialog> {
             // 1. Preset Dropdown
             const Text(
               'RANK PRESET',
-              style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white12),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedRank,
-                  dropdownColor: const Color(0xFF141414),
-                  isExpanded: true,
-                  style: const TextStyle(color: Colors.white),
-                  items: _rankPresets.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() {
-                        _selectedRank = val;
-                        if (_nameController.text.isEmpty || _rankPresets.contains(_nameController.text)) {
-                          _nameController.text = '$val Tier';
-                        }
-                        // Set recommended threshold range
-                        switch (val) {
-                          case 'Bronze':
-                            _xpValue = 1000;
-                            break;
-                          case 'Silver':
-                            _xpValue = 3000;
-                            break;
-                          case 'Gold':
-                            _xpValue = 7000;
-                            break;
-                          case 'Crystal':
-                            _xpValue = 15000;
-                            break;
-                          case 'Diamond':
-                            _xpValue = 30000;
-                            break;
-                          case 'Mythic':
-                            _xpValue = 60000;
-                            break;
-                        }
-                      });
+            KratosDropdown<String>(
+              value: _selectedRank,
+              hint: 'Select Rank Preset',
+              isExpanded: true,
+              items: _rankPresets
+                  .map((r) => KratosDropdownItem(value: r, label: r))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() {
+                    _selectedRank = val;
+                    if (_nameController.text.isEmpty ||
+                        _rankPresets.contains(_nameController.text)) {
+                      _nameController.text = '$val Tier';
                     }
-                  },
-                ),
-              ),
+                    // Set recommended threshold range
+                    switch (val) {
+                      case 'Bronze':
+                        _xpValue = 1000;
+                        break;
+                      case 'Silver':
+                        _xpValue = 3000;
+                        break;
+                      case 'Gold':
+                        _xpValue = 7000;
+                        break;
+                      case 'Crystal':
+                        _xpValue = 15000;
+                        break;
+                      case 'Diamond':
+                        _xpValue = 30000;
+                        break;
+                      case 'Mythic':
+                        _xpValue = 60000;
+                        break;
+                    }
+                  });
+                }
+              },
             ),
             const SizedBox(height: 16),
 
             // 2. Custom Name
             const Text(
               'LEVEL / TIER TITLE *',
-              style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 6),
             TextField(
@@ -667,7 +710,9 @@ class _TierEditorDialogState extends State<_TierEditorDialog> {
                 hintStyle: const TextStyle(color: Colors.white24),
                 filled: true,
                 fillColor: Colors.white.withValues(alpha: 0.04),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -678,10 +723,17 @@ class _TierEditorDialogState extends State<_TierEditorDialog> {
               children: [
                 const Text(
                   'XP THRESHOLD SLIDER',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFC6F135).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
@@ -718,8 +770,14 @@ class _TierEditorDialogState extends State<_TierEditorDialog> {
             const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('100 XP (Starter)', style: TextStyle(color: Colors.white24, fontSize: 10)),
-                Text('75,000 XP (Legendary)', style: TextStyle(color: Colors.white24, fontSize: 10)),
+                Text(
+                  '100 XP (Starter)',
+                  style: TextStyle(color: Colors.white24, fontSize: 10),
+                ),
+                Text(
+                  '75,000 XP (Legendary)',
+                  style: TextStyle(color: Colors.white24, fontSize: 10),
+                ),
               ],
             ),
             const SizedBox(height: 24),
@@ -733,7 +791,9 @@ class _TierEditorDialogState extends State<_TierEditorDialog> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white70,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: const Text('Cancel'),
                   ),
@@ -761,7 +821,9 @@ class _TierEditorDialogState extends State<_TierEditorDialog> {
                       backgroundColor: const Color(0xFFC6F135),
                       foregroundColor: const Color(0xFF020302),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: const Text(
                       'SAVE LEVEL / TIER',

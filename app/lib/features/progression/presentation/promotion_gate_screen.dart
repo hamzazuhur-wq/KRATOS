@@ -122,21 +122,23 @@ class _PromotionGateScreenState extends State<PromotionGateScreen> {
           const SizedBox(height: 16),
           if (result is PromotionGateLocked || result is PromotionGatePendingObjectives)
             _ObjectivesCard(
-              objectives: result is PromotionGateLocked
-                  ? (result as PromotionGateLocked).objectives
-                  : (result as PromotionGatePendingObjectives).objectives,
+              objectives: switch (result) {
+                final PromotionGateLocked r => r.objectives,
+                final PromotionGatePendingObjectives r => r.objectives,
+                _ => const [],
+              },
             ),
-          if (result is PromotionGateReady) ...[
-            _ObjectivesCard(objectives: (result as PromotionGateReady).objectives),
+          if (result case final PromotionGateReady ready) ...[
+            _ObjectivesCard(objectives: ready.objectives),
             const SizedBox(height: 16),
             _PromoteButton(
               promoting: _promoting,
-              nextLevel: (result as PromotionGateReady).nextLevel,
-              onTap: () => _executePromotion((result as PromotionGateReady).nextLevel),
+              nextLevel: ready.nextLevel,
+              onTap: () => _executePromotion(ready.nextLevel),
             ),
           ],
-          if (result is PromotionGatePromoted)
-            _AlreadyPromotedBanner(newLevel: (result as PromotionGatePromoted).newLevel),
+          if (result case final PromotionGatePromoted promoted)
+            _AlreadyPromotedBanner(newLevel: promoted.newLevel),
         ],
       ),
     );

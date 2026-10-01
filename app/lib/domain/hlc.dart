@@ -42,7 +42,11 @@ class Hlc {
       );
     } catch (_) {
       // Graceful fallback — treat as epoch zero
-      return Hlc(wallMs: 0, counter: 0, nodeId: const Id('00000000-0000-7000-8000-000000000000'));
+      return Hlc(
+        wallMs: 0,
+        counter: 0,
+        nodeId: const Id('00000000-0000-7000-8000-000000000000'),
+      );
     }
   }
 
@@ -65,7 +69,11 @@ class Hlc {
     final winner = (maxWall == a.wallMs && maxWall == b.wallMs)
         ? (a.counter >= b.counter ? a : b)
         : (maxWall == a.wallMs ? a : b);
-    return Hlc(wallMs: maxWall, counter: counter, nodeId: winner.nodeId);
+    return Hlc(
+      wallMs: maxWall,
+      counter: counter,
+      nodeId: nodeId ?? winner.nodeId,
+    );
   }
 
   /// Lexicographic total order: by wallMs, then counter, then nodeId.
@@ -86,6 +94,5 @@ class Hlc {
   int get hashCode => Object.hash(wallMs, counter, nodeId.value);
 
   @override
-  String toString() =>
-      'Hlc(wall=$wallMs, c=$counter, node=${nodeId.value.substring(0, 8)})';
+  String toString() => 'Hlc(wall=$wallMs, c=$counter, node=${nodeId.value})';
 }

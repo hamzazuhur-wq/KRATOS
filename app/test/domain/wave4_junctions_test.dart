@@ -2,10 +2,10 @@
 // Tests: Task invariants, TaskGoalRole parsing, AttachmentLink guard, junction uniqueness.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kratos/domain/entities/task.dart';
-import 'package:kratos/domain/hlc.dart';
-import 'package:kratos/domain/ids.dart';
-import 'package:kratos/domain/errors.dart';
+import 'package:kratos_app/domain/entities/task.dart';
+import 'package:kratos_app/domain/hlc.dart';
+import 'package:kratos_app/domain/ids.dart';
+import 'package:kratos_app/domain/errors.dart';
 
 void main() {
   final ownerId = Id.uuidV7();

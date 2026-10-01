@@ -1,0 +1,933 @@
+<USER_REQUEST>
+I need you to perform a COMPLETE AUDIT of the KRATOS XP / EXPERIENCE ENGINE before we connect the application to the backend/server infrastructure.
+
+IMPORTANT:
+THIS IS AN AUDIT ONLY.
+
+DO NOT MODIFY THE CODE.
+DO NOT REFACTOR.
+DO NOT FIX ANYTHING.
+DO NOT CHANGE DATABASE LOGIC.
+DO NOT CHANGE UX.
+DO NOT IMPLEMENT YOUR RECOMMENDATIONS.
+
+Your job is to inspect the existing codebase, trace the entire XP system, and produce a detailed factual report explaining exactly how the current system works.
+
+I want you to discover what is actually implemented, not what the UI appears to imply.
+
+==================================================
+PRIMARY OBJECTIVE
+==================================================
+
+I need to know exactly:
+
+- How XP is earned.
+- From which entities XP is earned.
+- How XP moves between related entities.
+- Whether XP is inherited.
+- Whether XP is multiplied.
+- Whether XP is duplicated.
+- Whether XP can be awarded more than once for the same action.
+- Whether there is a global XP configuration system.
+- Whether the user has centralized control over XP rules.
+- How XP interacts with Goals.
+- How XP interacts with Tasks.
+- How XP interacts with Projects.
+- How XP interacts with Activities.
+- How XP interacts with Skills.
+- How XP interacts with Levels.
+- How XP interacts with Live Areas / Categories.
+- How XP interacts with streaks, completion, progress, or other systems.
+- What is configurable.
+- What is hardcoded.
+- What is derived.
+- What is missing.
+- What will need to exist before backend/server integration.
+
+==================================================
+PART 1 — TRACE THE ENTIRE XP ENGINE
+==================================================
+
+Search the ENTIRE codebase.
+
+Do not rely only on filenames containing:
+
+XP
+Experience
+Level
+
+Also inspect:
+
+- task completion logic
+- activity completion logic
+- goal progress logic
+- project completion logic
+- skill progression
+- level progression
+- tier progression
+- points systems
+- rewards
+- streaks
+- achievements
+- progress calculations
+- percentages
+- score calculations
+- completion handlers
+- create/update/delete operations
+- hooks
+- utilities
+- contexts
+- state management
+- reducers
+- services
+- API functions
+- database calls
+- local persistence
+- derived selectors
+- formulas
+
+Search for concepts and formulas, not only naming.
+
+==================================================
+PART 2 — IDENTIFY EVERY XP SOURCE
+==================================================
+
+Create an exact inventory of every action that can generate XP.
+
+For each source, report:
+
+ENTITY:
+Example:
+Task / Activity / Goal / Project / Skill / etc.
+
+ACTION:
+Example:
+Created
+Completed
+Progressed
+Updated
+Streak reached
+Achievement unlocked
+etc.
+
+XP AMOUNT:
+Exact formula or value.
+
+CONDITIONS:
+What has to happen before XP is awarded?
+
+LIMIT:
+Can it happen once?
+Repeatedly?
+Daily?
+Per completion?
+Per update?
+
+MULTIPLIER:
+Does anything multiply the XP?
+
+DESTINATION:
+Where does the XP go?
+
+SIDE EFFECTS:
+Does the same action also modify:
+- Goal XP
+- Project XP
+- Area XP
+- Level XP
+- total XP
+etc.?
+
+SOURCE OF TRUTH:
+Where is this rule defined?
+
+File:
+Function:
+Component:
+Hook:
+Database:
+Configuration:
+
+==================================================
+PART 3 — TASK → GOAL RELATIONSHIP
+==================================================
+
+This is extremely important.
+
+I specifically need you to investigate:
+
+"If I create or complete a Task inside a Goal, does the Goal gain additional XP?"
+
+Do NOT assume the answer.
+
+Trace the implementation.
+
+Determine exactly:
+
+1. Does completing a Task award XP?
+2. Does that XP automatically contribute to the parent Goal?
+3. Is the Goal XP:
+   - directly awarded
+   - derived from child Tasks
+   - calculated as a percentage
+   - multiplied
+   - copied
+   - accumulated
+4. Is there a relationship multiplier?
+
+For example, I want to know whether the system currently does something like:
+
+Task = 100 XP
+
+Task completed
+→ +100 Task XP
+
+Parent Goal
+→ +30% = +30 Goal XP
+
+Total:
+130 XP
+
+OR:
+
+Task = 100 XP
+
+Task completion
+→ +100
+Goal derives from task
+→ still 100
+
+OR:
+
+Task completion
+→ +100
+Goal
+→ +100
+Total engine
+→ +200
+
+OR anything else.
+
+Find the ACTUAL behavior.
+
+If there is a 30% rule, identify exactly where it is defined.
+
+If there is NO 30% rule, explicitly say so.
+
+Do not invent one.
+
+==================================================
+PART 4 — TASK → PROJECT RELATIONSHIP
+==================================================
+
+Perform the same analysis for Projects.
+
+Determine:
+
+If a Task belongs to a Project:
+
+- Does Task XP contribute to Project XP?
+- Is there a percentage?
+- Is there a multiplier?
+- Is it inherited?
+- Is it derived?
+- Is it independent?
+- Can the same Task completion award XP both to the Task and Project?
+
+Trace the exact implementation.
+
+Example possibilities:
+
+Task = 100 XP
+Project = +30 XP
+
+OR:
+
+Task = 100 XP
+Project = +100 XP
+
+OR:
+
+Project progress is derived from Tasks but no additional XP is awarded.
+
+OR:
+
+The Project has an independent XP system.
+
+Find which one is actually implemented.
+
+==================================================
+PART 5 — ACTIVITY XP
+==================================================
+
+Audit Activities in detail.
+
+Determine:
+
+- How does an Activity earn XP?
+- What are the standards for an Activity?
+- Is XP based on:
+  - completion
+  - duration
+  - difficulty
+  - frequency
+  - quality
+  - category
+  - effort
+  - custom value
+  - other metrics?
+
+Does Activity XP feed into:
+
+- Goal
+- Project
+- Live Area
+- Level
+- Total XP
+- Skill
+- anything else?
+
+Can Activity XP be multiplied?
+
+Can Activity XP be earned repeatedly?
+
+Is there a maximum?
+
+What happens if the same Activity is completed again?
+
+Document the exact behavior.
+
+==================================================
+PART 6 — GOAL XP
+==================================================
+
+Audit Goals.
+
+Determine:
+
+- Can a Goal have direct XP?
+- Can a Goal derive XP from Tasks?
+- Can a Goal derive XP from Activities?
+- Can a Goal derive XP from Projects?
+- Can a Goal receive bonuses?
+- Is XP tied to completion percentage?
+- Is XP tied to milestones?
+- Is XP awarded on completion?
+- Can Goal XP be configured?
+- Can Goal XP be overridden?
+
+Explain the exact formula.
+
+==================================================
+PART 7 — PROJECT XP
+==================================================
+
+Audit Projects.
+
+Determine:
+
+- Does a Project have direct XP?
+- Does it inherit XP from Tasks?
+- Does it inherit XP from Goals?
+- Does it have project-specific XP rules?
+- Does project completion give a bonus?
+- Is there a multiplier?
+- Is project XP independent?
+
+I specifically want you to identify whether Projects currently have their own XP model or whether they are simply aggregating child entities.
+
+==================================================
+PART 8 — SKILL XP
+==================================================
+
+Audit Skills.
+
+Determine:
+
+- How is Skill XP earned?
+- What actions increase it?
+- Can Tasks contribute XP to Skills?
+- Can Activities contribute XP to Skills?
+- Can Projects contribute XP to Skills?
+- Are Skill multipliers available?
+- Are skill gains direct or derived?
+
+==================================================
+PART 9 — LEVEL + TIER XP
+==================================================
+
+Audit Levels and Tiers.
+
+Determine:
+
+- What is the actual XP source for Levels?
+- Is Level XP just total XP?
+- Is Level progression derived from the Experience Engine?
+- Is Tier only a range boundary?
+- Can Levels award XP?
+- Is there a Tier multiplier?
+- Are Tier boundaries hardcoded or configurable?
+- Are XP ranges derived from the Experience Engine?
+- Is there any duplicated concept between Level / Stage Level / Tier?
+
+Trace the formulas.
+
+==================================================
+PART 10 — LIVE AREAS / CATEGORIES
+==================================================
+
+Audit Live Areas and Categories.
+
+Determine whether XP can belong to:
+
+- Professional
+- Mindset
+- Sport
+- Finance
+- Learning
+- Relationships
+- other areas
+
+Determine:
+
+- whether XP is tagged by area
+- whether XP is aggregated by area
+- whether area XP has its own rules
+- whether categories have multipliers
+- whether categories affect XP
+- whether Live Area XP feeds Level XP
+
+==================================================
+PART 11 — CENTRALIZED XP SETTINGS
+==================================================
+
+This is one of the most important questions.
+
+Determine whether KRATOS currently has a CENTRALIZED XP CONFIGURATION SYSTEM.
+
+I need to know whether there is one place where an administrator/system designer can control things such as:
+
+- Task base XP
+- Activity base XP
+- Goal base XP
+- Project base XP
+- Skill XP
+- completion bonuses
+- parent-child multipliers
+- streak bonuses
+- difficulty multipliers
+- tier multipliers
+- category multipliers
+- caps
+- minimums
+- maximums
+- XP decay
+- XP penalties
+- XP cooldowns
+- repeat-completion rules
+- XP inheritance
+- XP aggregation
+- XP formulas
+
+Determine which of these exist.
+
+For each setting:
+
+- Configurable?
+- Hardcoded?
+- Derived?
+- Database driven?
+- UI configurable?
+- Code configurable?
+
+==================================================
+PART 12 — GLOBAL XP ENGINE CONFIGURATION
+==================================================
+
+I want you to determine whether the entire XP system can be controlled from ONE centralized configuration layer.
+
+For example:
+
+XP_ENGINE_CONFIG
+
+with concepts like:
+
+taskXP
+activityXP
+goalXP
+projectXP
+skillXP
+
+parentGoalMultiplier
+parentProjectMultiplier
+
+completionBonus
+streakBonus
+
+tierMultiplier
+
+etc.
+
+DO NOT CREATE THIS.
+
+I only want you to determine whether something equivalent already exists.
+
+If it does not exist, clearly state:
+
+"NO CENTRALIZED XP CONFIGURATION LAYER FOUND."
+
+==================================================
+PART 13 — DUPLICATION / DOUBLE COUNTING AUDIT
+==================================================
+
+This is critical.
+
+Look for situations where one user action may trigger multiple XP awards.
+
+Example:
+
+Complete Task
+→ Task XP
+→ Goal XP
+→ Project XP
+→ Skill XP
+→ Area XP
+→ Total XP
+
+This may be intentional,
+or it may accidentally double-count.
+
+For every chain like this, explicitly map it.
+
+Use a flow like:
+
+COMPLETE TASK
+↓
++100 Task XP
+↓
++30 Goal XP
+↓
++20 Project XP
+↓
++10 Skill XP
+↓
+TOTAL +160 XP
+
+Only show this if the code actually does it.
+
+Do not invent values.
+
+If a chain is derived rather than awarded, clearly distinguish:
+
+AWARDED XP
+
+vs
+
+DERIVED XP
+
+==================================================
+PART 14 — SOURCE OF TRUTH
+==================================================
+
+For every major XP calculation, identify:
+
+- exact file
+- exact function
+- exact hook/service if applicable
+- exact constant/config
+- whether client-side or server-side
+- whether duplicated in multiple locations
+
+I want a source-of-truth map.
+
+Example:
+
+Task XP
+→ src/lib/xp/task.ts
+→ calculateTaskXP()
+
+Goal inheritance
+→ src/lib/xp/goal.ts
+→ calculateGoalContribution()
+
+Do not invent paths.
+Use the real codebase.
+
+==================================================
+PART 15 — CLIENT VS SERVER READINESS
+==================================================
+
+Because we are going to connect the system to servers later, determine:
+
+Which XP logic currently runs:
+
+- in frontend
+- in local state
+- in hooks
+- in services
+- in database
+- nowhere / placeholder
+
+Determine whether the current XP calculations are safe to trust once backend integration is added.
+
+Identify:
+
+- client-side XP calculations
+- server-side XP calculations
+- duplicated logic
+- formulas that would need to become server-authoritative
+- possible race conditions
+- possible duplicate reward execution
+- idempotency concerns
+- repeated-completion exploits
+- client manipulation risks
+
+DO NOT FIX THESE.
+
+Just report them.
+
+==================================================
+PART 16 — IDEMPOTENCY AUDIT
+==================================================
+
+Check whether the same user action can accidentally grant XP more than once.
+
+Examples:
+
+- double click
+- refresh
+- repeated API call
+- retry
+- optimistic update
+- offline sync
+- page reopen
+- duplicate event
+- repeated completion toggle
+
+Determine whether XP awarding is idempotent.
+
+If not, document the risk.
+
+==================================================
+PART 17 — EDGE CASES
+==================================================
+
+Test the logic conceptually against:
+
+1. Task completed once.
+2. Task completed twice.
+3. Task completed → uncompleted → completed again.
+4. Task inside Goal.
+5. Task inside Project.
+6. Task inside Goal inside Project.
+7. Activity repeated.
+8. Activity linked to Goal.
+9. Activity linked to Project.
+10. Goal completed directly.
+11. Project completed directly.
+12. Skill connected to Task.
+13. Skill connected to Activity.
+14. User changes Tier.
+15. User changes Level.
+16. XP range changes.
+17. Task deleted after XP was awarded.
+18. Goal deleted after child XP was awarded.
+19. Project deleted after child XP was awarded.
+20. XP values are changed in configuration.
+
+For each case, determine what the current implementation would do.
+
+==================================================
+PART 18 — CREATE A COMPLETE XP DEPENDENCY MAP
+==================================================
+
+Create a conceptual dependency graph based on the actual code.
+
+Example format:
+
+Activity
+   ↓
+Activity XP
+   ↓
+Goal contribution?
+   ↓
+Project contribution?
+   ↓
+Skill contribution?
+   ↓
+Area XP
+   ↓
+Total XP
+   ↓
+Level
+   ↓
+Tier
+
+But ONLY use relationships that actually exist.
+
+Mark each relationship as:
+
+DIRECT AWARD
+DERIVED
+AGGREGATED
+MULTIPLIED
+CONFIGURABLE
+HARDCODED
+UNKNOWN
+
+==================================================
+PART 19 — NUMERIC EXAMPLES
+==================================================
+
+Create several numeric examples using the actual formulas you discover.
+
+For example:
+
+Task:
+100 XP
+
+Goal contribution:
+30%
+
+Project contribution:
+20%
+
+If this is actually implemented:
+
+Task completion
+→ 100 Task XP
+→ 30 Goal XP
+→ 20 Project XP
+
+Total:
+150 XP
+
+But if these rules do not exist, do NOT fabricate them.
+
+Use REAL VALUES from the code.
+
+For every example clearly state:
+
+FORMULA
+INPUT
+RESULT
+
+==================================================
+PART 20 — WHAT IS CONFIGURABLE TODAY?
+==================================================
+
+Create a table:
+
+SETTING | CURRENT VALUE | CONFIGURABLE? | SOURCE | NOTES
+
+Include every XP-related rule you discover.
+
+Examples:
+
+Task base XP
+Activity base XP
+Goal XP
+Project XP
+Skill XP
+Completion bonus
+Parent Goal multiplier
+Parent Project multiplier
+Tier multiplier
+Streak bonus
+etc.
+
+Only include rules that actually exist.
+
+==================================================
+PART 21 — MISSING SYSTEMS
+==================================================
+
+After the audit, identify missing pieces.
+
+Examples:
+
+- no centralized XP configuration
+- hardcoded XP formulas
+- duplicated formulas
+- no idempotency
+- no server authority
+- no audit log
+- no XP transaction history
+- no rollback strategy
+- no parent inheritance rules
+- unclear Task → Goal relationship
+- unclear Task → Project relationship
+- no configurable Activity standards
+
+Again:
+
+DO NOT FIX THEM.
+
+Just document them.
+
+==================================================
+PART 22 — FINAL REPORT STRUCTURE
+==================================================
+
+Your final response must be structured exactly like this:
+
+# 1. EXECUTIVE SUMMARY
+
+Explain in plain language how the current XP system works.
+
+Maximum 10 bullet points.
+
+# 2. XP SOURCES
+
+Table:
+
+Entity | Action | XP Formula | Destination | Configurable? | Source
+
+# 3. TASK → GOAL
+
+Explain exactly what happens.
+
+Include formula and file/function references.
+
+# 4. TASK → PROJECT
+
+Explain exactly what happens.
+
+# 5. ACTIVITY XP
+
+Explain how Activity XP works and what its standards are.
+
+# 6. GOAL XP
+
+Explain exact logic.
+
+# 7. PROJECT XP
+
+Explain exact logic.
+
+# 8. SKILL XP
+
+Explain exact logic.
+
+# 9. LEVEL / TIER XP
+
+Explain exact logic.
+
+# 10. LIVE AREA / CATEGORY XP
+
+Explain exact logic.
+
+# 11. GLOBAL XP SETTINGS
+
+Explain whether centralized configuration exists.
+
+# 12. DOUBLE-COUNTING RISKS
+
+List all possible XP duplication chains.
+
+# 13. CLIENT / SERVER READINESS
+
+Explain what is currently client-side vs server-side.
+
+# 14. IDEMPOTENCY
+
+Explain whether duplicate XP awards are possible.
+
+# 15. EDGE CASE RESULTS
+
+Summarize the results of the edge-case analysis.
+
+# 16. XP DEPENDENCY MAP
+
+Provide a clear diagram.
+
+# 17. CURRENT CONFIGURATION MATRIX
+
+Table of all XP rules and where they come from.
+
+# 18. MISSING / UNCLEAR AREAS
+
+List anything that is absent, ambiguous, or technically risky.
+
+# 19. RECOMMENDED TARGET ARCHITECTURE
+
+IMPORTANT:
+
+Do NOT implement it.
+
+Only describe what the clean architecture SHOULD look like before server integration.
+
+For example:
+
+XP Event
+→ XP Rule Engine
+→ XP Transaction
+→ Parent Contribution
+→ Aggregation
+→ Level Engine
+
+But adapt the architecture to the actual findings.
+
+# 20. VERDICT
+
+End with:
+
+A. What is already working correctly.
+B. What is unclear.
+C. What is missing.
+D. What MUST be clarified before backend integration.
+E. What could cause incorrect XP calculations.
+
+==================================================
+ABSOLUTE RULES
+==================================================
+
+DO NOT MODIFY CODE.
+
+DO NOT CREATE FILES.
+
+DO NOT INSTALL PACKAGES.
+
+DO NOT CHANGE THE DATABASE.
+
+DO NOT CHANGE THE UI.
+
+DO NOT FIX BUGS.
+
+DO NOT MAKE ASSUMPTIONS.
+
+DO NOT INVENT XP VALUES.
+
+DO NOT ASSUME THE 30% RULE EXISTS.
+
+DO NOT ASSUME PARENT XP INHERITANCE EXISTS.
+
+TRACE THE ACTUAL IMPLEMENTATION.
+
+When something is not found, explicitly say:
+
+"NOT FOUND IN CURRENT CODEBASE"
+
+When something is unclear, say:
+
+"IMPLEMENTATION UNCLEAR"
+
+When something is hardcoded, say:
+
+"HARDCODED"
+
+When something is configurable, identify exactly where.
+
+When something is derived rather than awarded, explicitly label it:
+
+DERIVED XP
+
+When something is directly awarded:
+
+AWARDED XP
+
+The goal is to understand the CURRENT SYSTEM with forensic accuracy before we connect it to the server.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-09-26T21:59:28+03:00.
+</ADDITIONAL_METADATA>

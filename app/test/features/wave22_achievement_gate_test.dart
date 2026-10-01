@@ -11,6 +11,7 @@
 //   8. AchievementGateService.executePromotion() writes achievement row
 //   9. StreakSocietyService.checkAndAward() idempotency
 
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kratos_app/data/drift/app_database.dart';

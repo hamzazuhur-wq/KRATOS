@@ -4,10 +4,10 @@
 
 import 'package:drift/native.dart';
 import 'package:test/test.dart';
-import '../../lib/data/drift/app_database.dart';
-import '../../lib/features/ai/data/omniroute_ai_service.dart';
-import '../../lib/features/ai/domain/ai_models.dart';
-import '../../lib/features/xp/data/xp_analytics_dao.dart';
+import 'package:kratos_app/data/drift/app_database.dart';
+import 'package:kratos_app/features/ai/data/omniroute_ai_service.dart';
+import 'package:kratos_app/features/ai/domain/ai_models.dart';
+import 'package:kratos_app/features/xp/data/xp_analytics_dao.dart';
 
 void main() {
   late AppDatabase db;

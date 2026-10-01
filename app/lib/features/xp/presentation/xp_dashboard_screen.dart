@@ -4,6 +4,9 @@
 
 import 'package:flutter/material.dart';
 
+import '../../../app/kratos_skeleton.dart';
+import '../../../app/number_pop_in.dart';
+import '../../../app/kratos_visuals.dart';
 import '../data/xp_analytics_dao.dart';
 
 /// XP Dashboard — main analytics hub.
@@ -14,12 +17,7 @@ class XpDashboardScreen extends StatefulWidget {
   final XpAnalyticsDao? dao;
   final String? userId;
 
-  const XpDashboardScreen({
-    super.key,
-    this.metrics,
-    this.dao,
-    this.userId,
-  });
+  const XpDashboardScreen({super.key, this.metrics, this.dao, this.userId});
 
   @override
   State<XpDashboardScreen> createState() => _XpDashboardScreenState();
@@ -37,23 +35,7 @@ class _XpDashboardScreenState extends State<XpDashboardScreen> {
     } else if (widget.dao != null && widget.userId != null) {
       _loadData();
     } else {
-      // Default baseline snapshot
-      _data = const XpDashboardMetrics(
-        totalXp: 8740,
-        streakBonusXp: 320,
-        lifeAreaXp: {
-          'Career': 3400,
-          'Health': 2800,
-          'Learning': 1540,
-          'Relationships': 1000,
-        },
-        sourceTypeXp: {
-          'Tasks': 4200,
-          'Sessions': 2900,
-          'Goals': 1640,
-        },
-        dailyXp: [120, 85, 200, 0, 145, 310, 95],
-      );
+      _data = XpDashboardMetrics.empty();
     }
   }
 
@@ -106,27 +88,50 @@ class _XpDashboardScreenState extends State<XpDashboardScreen> {
           ),
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFFC6F135)))
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _HeroXpCard(totalXp: m.totalXp, streakBonus: m.streakBonusXp),
-                const SizedBox(height: 20),
-                const _SectionLabel(label: 'LAST 7 DAYS'),
-                const SizedBox(height: 10),
-                _DailySparkline(dailyXp: m.dailyXp.isEmpty ? const [0, 0, 0, 0, 0, 0, 0] : m.dailyXp),
-                const SizedBox(height: 20),
-                const _SectionLabel(label: 'XP BY LIFE AREA'),
-                const SizedBox(height: 10),
-                _LifeAreaXpList(entries: areaEntries),
-                const SizedBox(height: 20),
-                const _SectionLabel(label: 'XP BY SOURCE'),
-                const SizedBox(height: 10),
-                _XpSourceBreakdown(sources: sourceEntries),
-                const SizedBox(height: 32),
-              ],
-            ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const KratosEnvironment(),
+          SkeletonReveal(
+            loading: _isLoading,
+            skeleton: const XpDashboardSkeleton(),
+            child: _isLoading
+                ? const SizedBox.shrink()
+                : RefreshIndicator(
+                    onRefresh: _loadData,
+                    color: const Color(0xFFC6F135),
+                    backgroundColor: const Color(0xFF1A1A1A),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        _HeroXpCard(
+                          totalXp: m.totalXp,
+                          streakBonus: m.streakBonusXp,
+                        ),
+                        const SizedBox(height: 20),
+                        const _SectionLabel(label: 'LAST 7 DAYS'),
+                        const SizedBox(height: 10),
+                        _DailySparkline(
+                          dailyXp: m.dailyXp.isEmpty
+                              ? const [0, 0, 0, 0, 0, 0, 0]
+                              : m.dailyXp,
+                        ),
+                        const SizedBox(height: 20),
+                        const _SectionLabel(label: 'XP BY LIFE AREA'),
+                        const SizedBox(height: 10),
+                        _LifeAreaXpList(entries: areaEntries),
+                        const SizedBox(height: 20),
+                        const _SectionLabel(label: 'XP BY SOURCE'),
+                        const SizedBox(height: 10),
+                        _XpSourceBreakdown(sources: sourceEntries),
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -138,14 +143,14 @@ class _SectionLabel extends StatelessWidget {
   const _SectionLabel({required this.label});
   @override
   Widget build(BuildContext context) => Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white38,
-          fontSize: 10,
-          letterSpacing: 2.0,
-          fontWeight: FontWeight.bold,
-        ),
-      );
+    label,
+    style: const TextStyle(
+      color: Colors.white38,
+      fontSize: 10,
+      letterSpacing: 2.0,
+      fontWeight: FontWeight.bold,
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -172,7 +177,8 @@ class _HeroXpCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-            color: const Color(0xFFC6F135).withValues(alpha: 0.3)),
+          color: const Color(0xFFC6F135).withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,7 +193,7 @@ class _HeroXpCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          KratosNumberPopIn(
             _formatXp(totalXp),
             style: const TextStyle(
               color: Color(0xFFC6F135),
@@ -199,10 +205,13 @@ class _HeroXpCard extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.local_fire_department,
-                  color: Color(0xFFFF9500), size: 16),
+              const Icon(
+                Icons.local_fire_department,
+                color: Color(0xFFFF9500),
+                size: 16,
+              ),
               const SizedBox(width: 5),
-              Text(
+              KratosNumberPopIn(
                 '+$streakBonus streak bonus XP earned',
                 style: const TextStyle(color: Colors.white54, fontSize: 12),
               ),
@@ -268,9 +277,7 @@ class _DailySparkline extends StatelessWidget {
                     style: TextStyle(
                       color: isToday ? const Color(0xFFC6F135) : Colors.white38,
                       fontSize: 9,
-                      fontWeight: isToday
-                          ? FontWeight.bold
-                          : FontWeight.normal,
+                      fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                 ],
@@ -324,7 +331,9 @@ class _LifeAreaXpList extends StatelessWidget {
                       child: Text(
                         e.name,
                         style: const TextStyle(
-                            color: Colors.white70, fontSize: 13),
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                     Text(
@@ -375,8 +384,7 @@ class _XpSourceBreakdown extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.04),
               borderRadius: BorderRadius.circular(14),
-              border:
-                  Border.all(color: Colors.white.withValues(alpha: 0.07)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
             ),
             child: Column(
               children: [
@@ -393,8 +401,7 @@ class _XpSourceBreakdown extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   s.label,
-                  style: const TextStyle(
-                      color: Colors.white38, fontSize: 11),
+                  style: const TextStyle(color: Colors.white38, fontSize: 11),
                   textAlign: TextAlign.center,
                 ),
               ],

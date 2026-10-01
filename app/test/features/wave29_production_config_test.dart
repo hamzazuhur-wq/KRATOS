@@ -21,6 +21,7 @@ void main() {
       expect(config.appVersion, '1.0.0');
       expect(config.buildNumber, 100);
       expect(config.appName, 'KRATOS');
+      expect(config.hasSupabaseConfiguration, isFalse);
     });
 
     test('staging configuration permits debug bypass for QA testing', () {

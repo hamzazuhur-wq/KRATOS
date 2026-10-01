@@ -6,31 +6,26 @@ import '../hlc.dart';
 import '../errors.dart';
 
 /// Status values for a Task.
-enum TaskStatus { pending, inProgress, completed, cancelled }
+enum TaskStatus { pending, inProgress, paused, completed, cancelled }
 
 /// Role of a task's relationship to a goal.
-enum TaskGoalRole {
-  contributesTo,
-  blocks,
-  inspiredBy,
-  tracks,
-}
+enum TaskGoalRole { contributesTo, blocks, inspiredBy, tracks }
 
 extension TaskGoalRoleJson on TaskGoalRole {
   String toJson() => switch (this) {
-        TaskGoalRole.contributesTo => 'contributes_to',
-        TaskGoalRole.blocks => 'blocks',
-        TaskGoalRole.inspiredBy => 'inspired_by',
-        TaskGoalRole.tracks => 'tracks',
-      };
+    TaskGoalRole.contributesTo => 'contributes_to',
+    TaskGoalRole.blocks => 'blocks',
+    TaskGoalRole.inspiredBy => 'inspired_by',
+    TaskGoalRole.tracks => 'tracks',
+  };
 
   static TaskGoalRole fromJson(String value) => switch (value) {
-        'contributes_to' => TaskGoalRole.contributesTo,
-        'blocks' => TaskGoalRole.blocks,
-        'inspired_by' => TaskGoalRole.inspiredBy,
-        'tracks' => TaskGoalRole.tracks,
-        _ => throw ValidationError('Unknown TaskGoalRole: $value'),
-      };
+    'contributes_to' => TaskGoalRole.contributesTo,
+    'blocks' => TaskGoalRole.blocks,
+    'inspired_by' => TaskGoalRole.inspiredBy,
+    'tracks' => TaskGoalRole.tracks,
+    _ => throw ValidationError('role', 'Unknown TaskGoalRole: $value'),
+  };
 }
 
 /// Immutable domain entity for a Task.
@@ -42,7 +37,10 @@ class Task {
   final int priority;
   final int sortOrder;
   final Id? projectId;
+  final Id? phaseId;
+  final Id? lifeAreaId;
   final Id? primaryGoalId;
+  final Id? categoryId;
   final String? notes;
   final DateTime? dueDate;
   final int? xpReward;
@@ -62,7 +60,10 @@ class Task {
     required this.versionHlc,
     required this.createdAt,
     this.projectId,
+    this.phaseId,
+    this.lifeAreaId,
     this.primaryGoalId,
+    this.categoryId,
     this.notes,
     this.dueDate,
     this.xpReward,
@@ -82,40 +83,47 @@ class Task {
     required Hlc versionHlc,
     required DateTime createdAt,
     Id? projectId,
+    Id? phaseId,
+    Id? lifeAreaId,
     Id? primaryGoalId,
+    Id? categoryId,
     String? notes,
     DateTime? dueDate,
     int? xpReward,
     String? recurringRule,
     DateTime? completedAt,
     DateTime? deletedAt,
-  }) =>
-      Task._(
-        id: id,
-        ownerId: ownerId,
-        title: title,
-        status: status,
-        priority: priority,
-        sortOrder: sortOrder,
-        versionHlc: versionHlc,
-        createdAt: createdAt,
-        projectId: projectId,
-        primaryGoalId: primaryGoalId,
-        notes: notes,
-        dueDate: dueDate,
-        xpReward: xpReward,
-        recurringRule: recurringRule,
-        completedAt: completedAt,
-        deletedAt: deletedAt,
-      );
-
+  }) => Task._(
+    id: id,
+    ownerId: ownerId,
+    title: title,
+    status: status,
+    priority: priority,
+    sortOrder: sortOrder,
+    versionHlc: versionHlc,
+    createdAt: createdAt,
+    projectId: projectId,
+    phaseId: phaseId,
+    lifeAreaId: lifeAreaId,
+    primaryGoalId: primaryGoalId,
+    categoryId: categoryId,
+    notes: notes,
+    dueDate: dueDate,
+    xpReward: xpReward,
+    recurringRule: recurringRule,
+    completedAt: completedAt,
+    deletedAt: deletedAt,
+  );
 
   factory Task.create({
     required Id ownerId,
     required String title,
     required Hlc clock,
     Id? projectId,
+    Id? phaseId,
+    Id? lifeAreaId,
     Id? primaryGoalId,
+    Id? categoryId,
     String? notes,
     DateTime? dueDate,
     int? xpReward,
@@ -123,9 +131,11 @@ class Task {
     int sortOrder = 0,
   }) {
     final trimmed = title.trim();
-    if (trimmed.isEmpty) throw ValidationError('Task title cannot be empty');
+    if (trimmed.isEmpty) {
+      throw ValidationError('title', 'Task title cannot be empty');
+    }
     if (priority < 1 || priority > 5) {
-      throw ValidationError('Priority must be between 1 and 5');
+      throw ValidationError('priority', 'Priority must be between 1 and 5');
     }
     return Task._(
       id: Id.uuidV7(),
@@ -137,7 +147,10 @@ class Task {
       versionHlc: clock,
       createdAt: DateTime.now().toUtc(),
       projectId: projectId,
+      phaseId: phaseId,
+      lifeAreaId: lifeAreaId,
       primaryGoalId: primaryGoalId,
+      categoryId: categoryId,
       notes: notes,
       dueDate: dueDate,
       xpReward: xpReward,
@@ -147,14 +160,16 @@ class Task {
   /// Rename a task (immutable — returns new instance).
   Task rename(String newTitle, {required Hlc clock}) {
     final trimmed = newTitle.trim();
-    if (trimmed.isEmpty) throw ValidationError('Task title cannot be empty');
+    if (trimmed.isEmpty) {
+      throw ValidationError('title', 'Task title cannot be empty');
+    }
     return _copyWith(title: trimmed, versionHlc: clock);
   }
 
   /// Mark as complete. Cancelled tasks cannot be completed.
   Task complete({required Hlc clock}) {
     if (status == TaskStatus.cancelled) {
-      throw ValidationError('Cannot complete a cancelled task');
+      throw ValidationError('status', 'Cannot complete a cancelled task');
     }
     if (status == TaskStatus.completed) return this;
     return _copyWith(
@@ -164,19 +179,31 @@ class Task {
     );
   }
 
+  /// Pause an active task without losing its persisted lifecycle state.
+  Task pause({required Hlc clock}) {
+    if (status == TaskStatus.completed || status == TaskStatus.cancelled) {
+      return this;
+    }
+    if (status == TaskStatus.paused) return this;
+    return _copyWith(status: TaskStatus.paused, versionHlc: clock);
+  }
+
+  /// Resume a paused task.
+  Task resume({required Hlc clock}) {
+    if (status != TaskStatus.paused) return this;
+    return _copyWith(status: TaskStatus.pending, versionHlc: clock);
+  }
+
   /// Soft-delete the task.
   Task delete({required Hlc clock}) {
     if (deletedAt != null) return this;
-    return _copyWith(
-      deletedAt: DateTime.now().toUtc(),
-      versionHlc: clock,
-    );
+    return _copyWith(deletedAt: DateTime.now().toUtc(), versionHlc: clock);
   }
 
   /// Cancel a task. Completed tasks cannot be cancelled (Invariant #8).
   Task cancel({required Hlc clock}) {
     if (status == TaskStatus.completed) {
-      throw ValidationError('Cannot cancel a completed task');
+      throw ValidationError('status', 'Cannot cancel a completed task');
     }
     return _copyWith(status: TaskStatus.cancelled, versionHlc: clock);
   }
@@ -198,7 +225,10 @@ class Task {
       versionHlc: versionHlc ?? this.versionHlc,
       createdAt: createdAt,
       projectId: projectId,
+      phaseId: phaseId,
+      lifeAreaId: lifeAreaId,
       primaryGoalId: primaryGoalId,
+      categoryId: categoryId,
       notes: notes,
       dueDate: dueDate,
       xpReward: xpReward,
@@ -265,16 +295,14 @@ const Set<String> kValidEntityKinds = {
   'goal',
   'task',
   'project',
+  'roadmap_phase',
   'note',
   'session',
   'activity',
 };
 
 /// Valid attachment kinds.
-const Set<String> kValidAttachmentKinds = {
-  'file',
-  'link',
-};
+const Set<String> kValidAttachmentKinds = {'file', 'link', 'skill', 'note'};
 
 /// Polymorphic junction: an Attachment (file or link) linked to any entity.
 class AttachmentLink {
@@ -296,10 +324,13 @@ class AttachmentLink {
     required this.createdAt,
   }) {
     if (!kValidAttachmentKinds.contains(attachmentKind)) {
-      throw ValidationError('Unknown attachmentKind: $attachmentKind');
+      throw ValidationError(
+        'attachmentKind',
+        'Unknown attachmentKind: $attachmentKind',
+      );
     }
     if (!kValidEntityKinds.contains(entityKind)) {
-      throw ValidationError('Unknown entityKind: $entityKind');
+      throw ValidationError('entityKind', 'Unknown entityKind: $entityKind');
     }
   }
 }

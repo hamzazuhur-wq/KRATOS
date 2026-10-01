@@ -1,7 +1,7 @@
 // Wave 17: Unit tests for Onboarding models, defaults, and state transitions.
 
 import 'package:test/test.dart';
-import '../../lib/features/onboarding/domain/onboarding_models.dart';
+import 'package:kratos_app/features/onboarding/domain/onboarding_models.dart';
 
 void main() {
   group('Onboarding Defaults and Templates', () {
