@@ -20,6 +20,7 @@ class KratosMainBar extends StatelessWidget {
   final VoidCallback onStreak;
   final int notificationCount;
   final bool hasUrgentNotification;
+  final String? currentSection;
 
   const KratosMainBar({
     super.key,
@@ -31,6 +32,7 @@ class KratosMainBar extends StatelessWidget {
     required this.onStreak,
     required this.notificationCount,
     required this.hasUrgentNotification,
+    this.currentSection,
   });
 
   @override
@@ -44,11 +46,24 @@ class KratosMainBar extends StatelessWidget {
       color: Colors.transparent,
       child: Container(
         constraints: const BoxConstraints(minHeight: 58),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xE8080A08)
-              : const Color(0xF4FFFFFF),
+          gradient: isDark
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xF2121513),
+                    Color(0xEB0A0D0B),
+                  ],
+                )
+              : const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xF8FFFFFF),
+                    Color(0xF2F7F8FA),
+                  ],
+                ),
           border: Border(
             bottom: BorderSide(
               color: isDark
@@ -57,63 +72,100 @@ class KratosMainBar extends StatelessWidget {
               width: 1.0,
             ),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.35)
+                  : const Color(0x0A0F172A),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        child: Row(
+        child: Stack(
           children: [
-            IconButton(
-              tooltip: 'Menu',
-              onPressed: onMenu,
-              icon: Icon(Icons.menu, color: iconColor, size: 21),
-            ),
-            const _KratosMark(),
-            const SizedBox(width: 12),
-            Expanded(
-              child: StreamBuilder<UserProfileData>(
-                stream: ProfileRepository(database: database)
-                    .watchProfile(ownerId),
-                builder: (context, profileSnapshot) {
-                  return StreamBuilder<OverallProgressionSnapshot>(
-                    stream: OverallProgressionRepository(database).watch(ownerId),
-                    builder: (context, progressionSnapshot) {
-                      return _IdentityCluster(
-                        profile: profileSnapshot.data,
-                        progression: progressionSnapshot.data,
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-            IconButton(
-              tooltip: notificationCount > 0
-                  ? '$notificationCount Notifications'
-                  : 'Notifications',
-              onPressed: onNotifications,
-              icon: Badge(
-                isLabelVisible: notificationCount > 0,
-                backgroundColor: hasUrgentNotification
-                    ? const Color(0xFFFF3B30)
-                    : accent,
-                smallSize: 8,
-                child: Icon(
-                  notificationCount > 0
-                      ? Icons.notifications_active
-                      : Icons.notifications_outlined,
-                  color: notificationCount > 0
-                      ? (hasUrgentNotification
-                          ? const Color(0xFFFF3B30)
-                          : accent)
-                      : (isDark ? Colors.white70 : KratosTheme.lightTextSecondary),
-                  size: 20,
+            // Top specular hairline
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1.0,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      (isDark ? Colors.white : accent).withValues(
+                        alpha: isDark ? 0.16 : 0.20,
+                      ),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
                 ),
               ),
             ),
-            InkWell(
-              onTap: onStreak,
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.only(left: 4, right: 4),
-                child: StreakBadgeWidget(streakInfo: streakInfo),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Menu',
+                    onPressed: onMenu,
+                    icon: Icon(Icons.menu, color: iconColor, size: 21),
+                  ),
+                  _KratosMark(sectionTitle: currentSection),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: StreamBuilder<UserProfileData>(
+                      stream: ProfileRepository(database: database)
+                          .watchProfile(ownerId),
+                      builder: (context, profileSnapshot) {
+                        return StreamBuilder<OverallProgressionSnapshot>(
+                          stream: OverallProgressionRepository(database).watch(ownerId),
+                          builder: (context, progressionSnapshot) {
+                            return _IdentityCluster(
+                              profile: profileSnapshot.data,
+                              progression: progressionSnapshot.data,
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: notificationCount > 0
+                        ? '$notificationCount Notifications'
+                        : 'Notifications',
+                    onPressed: onNotifications,
+                    icon: Badge(
+                      isLabelVisible: notificationCount > 0,
+                      backgroundColor: hasUrgentNotification
+                          ? const Color(0xFFFF3B30)
+                          : accent,
+                      smallSize: 8,
+                      child: Icon(
+                        notificationCount > 0
+                            ? Icons.notifications_active
+                            : Icons.notifications_outlined,
+                        color: notificationCount > 0
+                            ? (hasUrgentNotification
+                                ? const Color(0xFFFF3B30)
+                                : accent)
+                            : (isDark ? Colors.white70 : KratosTheme.lightTextSecondary),
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: onStreak,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4, right: 4),
+                      child: StreakBadgeWidget(streakInfo: streakInfo),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -124,11 +176,16 @@ class KratosMainBar extends StatelessWidget {
 }
 
 class _KratosMark extends StatelessWidget {
-  const _KratosMark();
+  final String? sectionTitle;
+  const _KratosMark({this.sectionTitle});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final showSection = sectionTitle != null && screenWidth >= 640;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -148,6 +205,27 @@ class _KratosMark extends StatelessWidget {
             fontSize: 13,
           ),
         ),
+        if (showSection) ...[
+          const SizedBox(width: 8),
+          Text(
+            '/',
+            style: TextStyle(
+              color: (isDark ? Colors.white : KratosTheme.lightTextSecondary).withValues(alpha: 0.25),
+              fontWeight: FontWeight.w300,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            sectionTitle!,
+            style: TextStyle(
+              color: accent,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+              fontSize: 11,
+            ),
+          ),
+        ],
       ],
     );
   }

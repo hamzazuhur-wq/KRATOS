@@ -406,6 +406,7 @@ class KratosGlassBottomBar extends StatelessWidget {
       top: false,
       minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: KratosGlassCard(
+        variant: KratosSurfaceVariant.elevated,
         borderRadius: BorderRadius.circular(24),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         child: Row(
@@ -450,13 +451,15 @@ class _KratosNavButtonState extends State<_KratosNavButton> {
     final accent = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
     final active = widget.selected;
     final unselectedColor =
-        isDark ? Colors.white60 : KratosTheme.lightTextSecondary;
+        isDark ? Colors.white54 : KratosTheme.lightTextSecondary;
 
     return MouseRegion(
+      cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
         onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
         onTapDown: (_) => setState(() => _pressed = true),
         onTapUp: (_) => setState(() => _pressed = false),
         onTapCancel: () => setState(() => _pressed = false),
@@ -466,6 +469,7 @@ class _KratosNavButtonState extends State<_KratosNavButton> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
             curve: Curves.easeOutCubic,
+            constraints: const BoxConstraints(minHeight: 46),
             padding: const EdgeInsets.symmetric(vertical: 6),
             decoration: BoxDecoration(
               color: active
@@ -479,9 +483,18 @@ class _KratosNavButtonState extends State<_KratosNavButton> {
                     ? accent.withValues(alpha: isDark ? 0.40 : 0.50)
                     : Colors.transparent,
               ),
+              boxShadow: [
+                if (active)
+                  BoxShadow(
+                    color: accent.withValues(alpha: isDark ? 0.10 : 0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   active ? widget.item.activeIcon : widget.item.icon,
@@ -496,7 +509,7 @@ class _KratosNavButtonState extends State<_KratosNavButton> {
                         ? (isDark ? Colors.white : KratosTheme.lightTextPrimary)
                         : unselectedColor,
                     fontSize: 10,
-                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: active ? FontWeight.w800 : FontWeight.w500,
                     letterSpacing: 0.2,
                   ),
                 ),

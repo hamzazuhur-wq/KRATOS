@@ -209,6 +209,16 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  String get _currentSectionTitle => switch (_currentIndex) {
+    0 => 'HOME',
+    1 => 'TASKS',
+    2 => 'GOALS',
+    3 => 'ACTIVITIES',
+    4 => 'IDEAS',
+    5 => 'STATS',
+    _ => 'KRATOS',
+  };
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -229,17 +239,42 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                 Container(
                   width: 270,
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xE6080A08)
-                        : const Color(0xF7FFFFFF),
+                    gradient: isDark
+                        ? const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xF2121613),
+                              Color(0xF20D100E),
+                              Color(0xF5080A08),
+                            ],
+                          )
+                        : const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xF8FFFFFF),
+                              Color(0xF4F8F9FA),
+                              Color(0xF2F0F2F5),
+                            ],
+                          ),
                     border: Border(
                       right: BorderSide(
                         color: isDark
-                            ? Colors.white.withValues(alpha: 0.08)
-                            : const Color(0x1F0F172A),
+                            ? Colors.white.withValues(alpha: 0.09)
+                            : KratosTheme.lightBorderGlass,
                         width: 1.0,
                       ),
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark
+                            ? Colors.black.withValues(alpha: 0.40)
+                            : const Color(0x0C0F172A),
+                        blurRadius: 20,
+                        offset: const Offset(4, 0),
+                      ),
+                    ],
                   ),
                   child: Material(
                     color: Colors.transparent,
@@ -313,11 +348,50 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             child: _buildGlobalMainBar(context, isMobile: true),
           ),
           drawer: Drawer(
-            backgroundColor: isDark
-                ? const Color(0xF2080A08)
-                : const Color(0xFAFFFFFF),
-            child: SafeArea(
-              child: _buildSidebarContent(context, isDrawer: true),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: isDark
+                    ? const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xF5141815),
+                          Color(0xF50E110F),
+                          Color(0xF8080A08),
+                        ],
+                      )
+                    : const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xF8FFFFFF),
+                          Color(0xF5F8F9FA),
+                          Color(0xF5F0F2F5),
+                        ],
+                      ),
+                border: Border(
+                  right: BorderSide(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.10)
+                        : KratosTheme.lightBorderGlass,
+                    width: 1.0,
+                  ),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark
+                        ? Colors.black.withValues(alpha: 0.60)
+                        : const Color(0x180F172A),
+                    blurRadius: 28,
+                    offset: const Offset(6, 0),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: _buildSidebarContent(context, isDrawer: true),
+              ),
             ),
           ),
           body: Stack(
@@ -418,6 +492,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           streakInfo: _streakInfo,
           notificationCount: unread,
           hasUrgentNotification: urgent,
+          currentSection: _currentSectionTitle,
           onMenu: _openGlobalMenu,
           onNotifications: () => _openNotifications(context),
           onStreak: () => Navigator.of(context).push(
@@ -851,46 +926,12 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     Widget? trailing,
     required VoidCallback onTap,
   }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final accent = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
-    final unselectedIcon = isDark ? Colors.white60 : KratosTheme.lightTextSecondary;
-    final unselectedText = isDark ? Colors.white : KratosTheme.lightTextPrimary;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: Material(
-        color: isSelected
-            ? accent.withValues(alpha: isDark ? 0.14 : 0.12)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        child: ListTile(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: isSelected
-                ? BorderSide(
-                    color: accent.withValues(alpha: isDark ? 0.35 : 0.45),
-                    width: 1.0,
-                  )
-                : BorderSide.none,
-          ),
-          leading: Icon(
-            icon,
-            color: isSelected ? accent : unselectedIcon,
-            size: 20,
-          ),
-          title: Text(
-            title,
-            style: TextStyle(
-              color: isSelected ? accent : unselectedText,
-              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
-              fontSize: 13,
-            ),
-          ),
-          trailing: trailing,
-          onTap: onTap,
-        ),
-      ),
+    return _SidebarNavTile(
+      icon: icon,
+      title: title,
+      isSelected: isSelected,
+      trailing: trailing,
+      onTap: onTap,
     );
   }
 
@@ -937,6 +978,124 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           color: Color(0xFFC6F135),
           fontWeight: FontWeight.w900,
           fontSize: 18,
+        ),
+      ),
+    );
+  }
+}
+
+class _SidebarNavTile extends StatefulWidget {
+  final IconData icon;
+  final String title;
+  final bool isSelected;
+  final Widget? trailing;
+  final VoidCallback onTap;
+
+  const _SidebarNavTile({
+    required this.icon,
+    required this.title,
+    this.isSelected = false,
+    this.trailing,
+    required this.onTap,
+  });
+
+  @override
+  State<_SidebarNavTile> createState() => _SidebarNavTileState();
+}
+
+class _SidebarNavTileState extends State<_SidebarNavTile> {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final isSelected = widget.isSelected;
+    final unselectedIcon = isDark ? Colors.white54 : KratosTheme.lightTextSecondary;
+    final unselectedText = isDark ? Colors.white70 : KratosTheme.lightTextPrimary;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: GestureDetector(
+          onTap: widget.onTap,
+          behavior: HitTestBehavior.opaque,
+          onTapDown: (_) => setState(() => _pressed = true),
+          onTapUp: (_) => setState(() => _pressed = false),
+          onTapCancel: () => setState(() => _pressed = false),
+          child: AnimatedScale(
+            scale: _pressed ? 0.985 : (_hovered ? 1.008 : 1.0),
+            duration: const Duration(milliseconds: 100),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 140),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: isSelected
+                    ? accent.withValues(alpha: isDark ? 0.14 : 0.12)
+                    : (_hovered
+                        ? (isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0x0C0F172A))
+                        : Colors.transparent),
+                border: Border.all(
+                  color: isSelected
+                      ? accent.withValues(alpha: isDark ? 0.45 : 0.55)
+                      : (_hovered
+                          ? (isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0x1F0F172A))
+                          : Colors.transparent),
+                  width: 1.0,
+                ),
+                boxShadow: [
+                  if (isSelected)
+                    BoxShadow(
+                      color: accent.withValues(alpha: isDark ? 0.08 : 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Subtle left active indicator bar
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    width: 3,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(2),
+                      color: isSelected ? accent : Colors.transparent,
+                    ),
+                  ),
+                  const SizedBox(width: 9),
+                  Icon(
+                    widget.icon,
+                    color: isSelected ? accent : unselectedIcon,
+                    size: 19,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: TextStyle(
+                        color: isSelected
+                            ? (isDark ? Colors.white : KratosTheme.lightTextPrimary)
+                            : unselectedText,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                        fontSize: 13,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                  if (widget.trailing != null) widget.trailing!,
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

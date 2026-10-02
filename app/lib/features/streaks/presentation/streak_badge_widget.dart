@@ -13,15 +13,26 @@ class StreakBadgeWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final hasStreak = streakInfo.currentStreak > 0;
+    const flameColor = Color(0xFFFF9500);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: isDark
+            ? (hasStreak
+                ? flameColor.withValues(alpha: 0.12)
+                : Colors.white.withValues(alpha: 0.04))
+            : (hasStreak
+                ? flameColor.withValues(alpha: 0.10)
+                : const Color(0x0C0F172A)),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: hasStreak ? const Color(0xFFFF9500) : Colors.white24,
+          color: hasStreak
+              ? flameColor.withValues(alpha: isDark ? 0.50 : 0.60)
+              : (isDark ? Colors.white12 : const Color(0x1F0F172A)),
           width: 1.0,
         ),
       ),
@@ -30,33 +41,34 @@ class StreakBadgeWidget extends StatelessWidget {
         children: [
           Icon(
             Icons.local_fire_department,
-            color: hasStreak ? const Color(0xFFFF9500) : Colors.white38,
-            size: 20,
+            color: hasStreak ? flameColor : (isDark ? Colors.white38 : const Color(0xFF8A92A0)),
+            size: 18,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 5),
           Text(
             '${streakInfo.currentStreak} DAYS',
             style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-              letterSpacing: 1.2,
+              color: isDark ? Colors.white : const Color(0xFF0F1115),
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+              letterSpacing: 1.0,
             ),
           ),
-          const SizedBox(width: 10),
-          // Freeze token indicators
-          Row(
-            children: List.generate(
-              streakInfo.freezeTokensAvailable.clamp(
-                0,
-                StreakConfig.maxFreezes,
-              ),
-              (index) => const Padding(
-                padding: EdgeInsets.only(left: 3),
-                child: Icon(Icons.ac_unit, size: 13, color: Color(0xFF00FFFF)),
+          if (streakInfo.freezeTokensAvailable > 0) ...[
+            const SizedBox(width: 8),
+            Row(
+              children: List.generate(
+                streakInfo.freezeTokensAvailable.clamp(
+                  0,
+                  StreakConfig.maxFreezes,
+                ),
+                (index) => const Padding(
+                  padding: EdgeInsets.only(left: 2),
+                  child: Icon(Icons.ac_unit, size: 12, color: Color(0xFF00FFFF)),
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
