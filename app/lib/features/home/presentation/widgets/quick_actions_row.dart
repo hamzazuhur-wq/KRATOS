@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/kratos_theme.dart';
 import '../../../../app/kratos_visuals.dart';
 import '../../../../app/kratos_motion.dart';
 import '../../../../data/drift/app_database.dart';
@@ -179,6 +180,7 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return KratosPressable(
       onTap: onTap,
       child: KratosGlassCard(
@@ -204,8 +206,8 @@ class _QuickActionButton extends StatelessWidget {
                 child: Text(
                   label,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.3,

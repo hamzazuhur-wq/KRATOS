@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../app/kratos_motion.dart';
+import '../../../../app/kratos_theme.dart';
 import '../../../../app/kratos_visuals.dart';
 import '../../domain/home_models.dart';
 
@@ -12,6 +13,12 @@ class XpSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? const Color(0xFFC6F135) : KratosTheme.lightAcidLime;
+    final labelColor = isDark ? Colors.white54 : KratosTheme.lightTextSecondary;
+    final primaryTextColor = isDark ? Colors.white : KratosTheme.lightTextPrimary;
+    final mutedTextColor = isDark ? Colors.white38 : KratosTheme.lightTextMuted;
+
     final formatter = NumberFormat('#,###');
     final formattedMin = formatter.format(progression.minRangeXp);
     final formattedMax = formatter.format(progression.maxRangeXp);
@@ -20,26 +27,26 @@ class XpSummaryCard extends StatelessWidget {
       width: double.infinity,
       child: KratosGlassCard(
         dashboardGlass: true,
-        accentColor: const Color(0xFFC6F135),
+        accentColor: lime,
         borderRadius: BorderRadius.circular(20),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header Label
-              const Row(
+              Row(
                 children: [
                   Text(
                     'TOTAL XP',
                     style: TextStyle(
-                      color: Colors.white54,
+                      color: labelColor,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.5,
                     ),
                   ),
-                  Spacer(),
-                  Icon(Icons.trending_up, color: Color(0xFFC6F135), size: 16),
+                  const Spacer(),
+                  Icon(Icons.trending_up, color: lime, size: 16),
                 ],
               ),
               const SizedBox(height: 10),
@@ -52,8 +59,8 @@ class XpSummaryCard extends StatelessWidget {
                   KratosAnimatedMetric(
                     value: progression.totalXp,
                     formatter: (v) => '${formatter.format(v.round())} XP',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: primaryTextColor,
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.5,
@@ -63,8 +70,8 @@ class XpSummaryCard extends StatelessWidget {
                   KratosAnimatedMetric(
                     value: progression.progressPct,
                     formatter: (v) => '${v.toStringAsFixed(0)}%',
-                    style: const TextStyle(
-                      color: Color(0xFFC6F135),
+                    style: TextStyle(
+                      color: lime,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
@@ -80,7 +87,9 @@ class XpSummaryCard extends StatelessWidget {
                 child: Container(
                   height: 7,
                   width: double.infinity,
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : const Color(0x14000000),
                   child: KratosProgressAnimation(
                     value: (progression.progressPct / 100.0).clamp(0.0, 1.0),
                     builder: (context, animatedFactor) => FractionallySizedBox(
@@ -88,16 +97,20 @@ class XpSummaryCard extends StatelessWidget {
                       widthFactor: animatedFactor,
                       child: Container(
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF8AE02B), Color(0xFFC6F135)],
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? const [Color(0xFF8AE02B), Color(0xFFC6F135)]
+                                : const [Color(0xFF6B9900), Color(0xFF8AE02B)],
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFC6F135)
-                                  .withValues(alpha: 0.5),
-                              blurRadius: 8,
-                            ),
-                          ],
+                          boxShadow: isDark
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFFC6F135)
+                                        .withValues(alpha: 0.5),
+                                    blurRadius: 8,
+                                  ),
+                                ]
+                              : null,
                         ),
                       ),
                     ),
@@ -111,8 +124,8 @@ class XpSummaryCard extends StatelessWidget {
                 children: [
                   Text(
                     formattedMin,
-                    style: const TextStyle(
-                      color: Colors.white38,
+                    style: TextStyle(
+                      color: mutedTextColor,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       fontFamily: 'monospace',
@@ -122,13 +135,13 @@ class XpSummaryCard extends StatelessWidget {
                     child: Container(
                       height: 1,
                       margin: const EdgeInsets.symmetric(horizontal: 10),
-                      color: Colors.white12,
+                      color: isDark ? Colors.white12 : const Color(0x14000000),
                     ),
                   ),
                   Text(
                     formattedMax,
-                    style: const TextStyle(
-                      color: Colors.white38,
+                    style: TextStyle(
+                      color: mutedTextColor,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       fontFamily: 'monospace',

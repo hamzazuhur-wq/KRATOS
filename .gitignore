@@ -54,6 +54,8 @@ tools/*.bak
 .DS_Store
 Thumbs.db
 Desktop.ini
+*.exe
+.wrangler/
 
 # ── IDE ────────────────────────────────────────────────
 *.code-workspace

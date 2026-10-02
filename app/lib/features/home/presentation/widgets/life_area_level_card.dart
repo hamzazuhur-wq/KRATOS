@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../app/kratos_motion.dart';
+import '../../../../app/kratos_theme.dart';
 import '../../../../app/kratos_visuals.dart';
 import '../../../../data/drift/app_database.dart';
 import '../../../levels/data/levels_dashboard_repository.dart';
@@ -62,6 +63,10 @@ class LifeAreaLevelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? Colors.white : KratosTheme.lightTextPrimary;
+    final secondaryTextColor = isDark ? Colors.white70 : KratosTheme.lightTextSecondary;
+
     final tierColor = getTierColor(entry.progression.tier);
     final formatter = NumberFormat('#,###');
     final formattedXp = formatter.format(entry.progression.totalXp);
@@ -92,8 +97,8 @@ class LifeAreaLevelCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         entry.area.name,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: primaryTextColor,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.2,
@@ -139,15 +144,18 @@ class LifeAreaLevelCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       '•',
-                      style: TextStyle(color: Colors.white24, fontSize: 12),
+                      style: TextStyle(
+                        color: isDark ? Colors.white24 : const Color(0x33000000),
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       '$formattedXp XP',
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: secondaryTextColor,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -155,8 +163,8 @@ class LifeAreaLevelCard extends StatelessWidget {
                     const Spacer(),
                     Text(
                       '${progressPct.toStringAsFixed(0)}%',
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: secondaryTextColor,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -171,7 +179,9 @@ class LifeAreaLevelCard extends StatelessWidget {
                   child: Container(
                     height: 5,
                     width: double.infinity,
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : const Color(0x14000000),
                     child: FractionallySizedBox(
                       alignment: Alignment.centerLeft,
                       widthFactor: (progressPct / 100.0).clamp(0.0, 1.0),
@@ -180,7 +190,7 @@ class LifeAreaLevelCard extends StatelessWidget {
                           color: tierColor,
                           boxShadow: [
                             BoxShadow(
-                              color: tierColor.withValues(alpha: 0.5),
+                              color: tierColor.withValues(alpha: isDark ? 0.5 : 0.3),
                               blurRadius: 6,
                             ),
                           ],

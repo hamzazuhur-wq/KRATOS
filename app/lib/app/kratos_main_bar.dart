@@ -8,6 +8,7 @@ import '../features/progression/data/overall_progression_repository.dart';
 import '../features/streaks/domain/streak_models.dart';
 import '../features/streaks/presentation/streak_badge_widget.dart';
 import 'kratos_skeleton.dart';
+import 'kratos_theme.dart';
 import 'kratos_tiers.dart';
 
 class KratosMainBar extends StatelessWidget {
@@ -34,15 +35,25 @@ class KratosMainBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? const Color(0xFFC6F135) : KratosTheme.lightAcidLime;
+    final iconColor = isDark ? Colors.white70 : KratosTheme.lightTextPrimary;
+
     return Material(
       type: MaterialType.transparency,
       child: Container(
         constraints: const BoxConstraints(minHeight: 58),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF0D0F0D).withValues(alpha: 0.96),
+          color: isDark
+              ? const Color(0xFF0D0F0D).withValues(alpha: 0.96)
+              : const Color(0xFFFFFFFF).withValues(alpha: 0.96),
           border: Border(
-            bottom: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+            bottom: BorderSide(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : const Color(0x1F000000),
+            ),
           ),
         ),
         child: Row(
@@ -50,7 +61,7 @@ class KratosMainBar extends StatelessWidget {
           IconButton(
             tooltip: 'Menu',
             onPressed: onMenu,
-            icon: const Icon(Icons.menu, color: Colors.white70, size: 21),
+            icon: Icon(Icons.menu, color: iconColor, size: 21),
           ),
           const _KratosMark(),
           const SizedBox(width: 12),
@@ -80,7 +91,7 @@ class KratosMainBar extends StatelessWidget {
               isLabelVisible: notificationCount > 0,
               backgroundColor: hasUrgentNotification
                   ? const Color(0xFFFF3B30)
-                  : const Color(0xFFC6F135),
+                  : lime,
               smallSize: 8,
               child: Icon(
                 notificationCount > 0
@@ -89,8 +100,8 @@ class KratosMainBar extends StatelessWidget {
                 color: notificationCount > 0
                     ? (hasUrgentNotification
                           ? const Color(0xFFFF3B30)
-                          : const Color(0xFFC6F135))
-                    : Colors.white70,
+                          : lime)
+                    : (isDark ? Colors.white70 : KratosTheme.lightTextSecondary),
                 size: 20,
               ),
             ),
@@ -115,6 +126,7 @@ class _KratosMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -125,10 +137,10 @@ class _KratosMark extends StatelessWidget {
           fit: BoxFit.contain,
         ),
         const SizedBox(width: 7),
-        const Text(
+        Text(
           'KRATOS',
           style: TextStyle(
-            color: Colors.white,
+            color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.8,
             fontSize: 13,
@@ -166,6 +178,9 @@ class _IdentityCluster extends StatelessWidget {
     final accent = KratosTierSystem.getGlobalColor(tier);
     final xp = NumberFormat('#,###').format(progression?.totalXp ?? 0);
     final name = profile!.displayName;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final nameColor = isDark ? Colors.white : KratosTheme.lightTextPrimary;
+    final xpColor = isDark ? Colors.white60 : KratosTheme.lightTextSecondary;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -177,8 +192,8 @@ class _IdentityCluster extends StatelessWidget {
                 name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: nameColor,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
@@ -218,8 +233,8 @@ class _IdentityCluster extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 '$xp XP',
-                style: const TextStyle(
-                  color: Colors.white60,
+                style: TextStyle(
+                  color: xpColor,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -229,8 +244,8 @@ class _IdentityCluster extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 8),
                 child: Text(
                   '$xp XP',
-                  style: const TextStyle(
-                    color: Colors.white60,
+                  style: TextStyle(
+                    color: xpColor,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),

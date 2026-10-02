@@ -7,6 +7,7 @@ import '../data/drift/app_database.dart';
 import '../domain/ids.dart';
 import 'kratos_motion.dart';
 import 'kratos_main_bar.dart';
+import 'kratos_theme.dart';
 import 'number_pop_in.dart';
 import 'kratos_visuals.dart';
 import '../features/activities/presentation/activities_screen.dart';
@@ -210,6 +211,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isDesktop = MediaQuery.of(context).size.width >= 840;
     KratosPageRoute.globalHeaderBuilder = (routeContext) =>
         _buildGlobalMainBar(context, isMobile: !isDesktop);
@@ -225,14 +227,17 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               children: [
                 Container(
                   width: 270,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF0D0F0D),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0D0F0D) : const Color(0xFFFFFFFF),
                     border: Border(
-                      right: BorderSide(color: Colors.white12, width: 0.5),
+                      right: BorderSide(
+                        color: isDark ? Colors.white12 : const Color(0x1F000000),
+                        width: 0.5,
+                      ),
                     ),
                   ),
                   child: Material(
-                    color: const Color(0xFF0D0F0D),
+                    color: isDark ? const Color(0xFF0D0F0D) : const Color(0xFFFFFFFF),
                     child: SafeArea(
                       child: _buildSidebarContent(context, isDrawer: false),
                     ),
@@ -303,7 +308,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             child: _buildGlobalMainBar(context, isMobile: true),
           ),
           drawer: Drawer(
-            backgroundColor: const Color(0xFF0D0F0D),
+            backgroundColor: isDark ? const Color(0xFF0D0F0D) : const Color(0xFFFFFFFF),
             child: SafeArea(
               child: _buildSidebarContent(context, isDrawer: true),
             ),
@@ -470,6 +475,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   }
 
   Widget _buildSidebarContent(BuildContext context, {required bool isDrawer}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
         // 1. Profile Header (Visually distinct, clickable to open ProfileScreen)
@@ -505,9 +511,14 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.035),
-                  border: const Border(
-                    bottom: BorderSide(color: Colors.white12, width: 0.5),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.035)
+                      : const Color(0xFFF3F4F6),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isDark ? Colors.white12 : const Color(0x1F000000),
+                      width: 0.5,
+                    ),
                   ),
                 ),
                 child: Column(
@@ -521,7 +532,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: const Color(0xFFC6F135)
+                              color: (isDark
+                                      ? const Color(0xFFC6F135)
+                                      : KratosTheme.lightAcidLime)
                                   .withValues(alpha: 0.6),
                               width: 1.5,
                             ),
@@ -559,8 +572,10 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                                 displayName,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white
+                                      : KratosTheme.lightTextPrimary,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 15,
                                 ),
@@ -570,8 +585,10 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                                 caption,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Color(0xFFC6F135),
+                                style: TextStyle(
+                                  color: isDark
+                                      ? const Color(0xFFC6F135)
+                                      : KratosTheme.lightAcidLime,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -579,9 +596,11 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                             ],
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.chevron_right,
-                          color: Colors.white30,
+                          color: isDark
+                              ? Colors.white30
+                              : KratosTheme.lightTextMuted,
                           size: 18,
                         ),
                       ],
@@ -594,8 +613,10 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                           child: Text(
                             'User: ${widget.userId}',
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white38,
+                            style: TextStyle(
+                              color: isDark
+                                  ? Colors.white38
+                                  : KratosTheme.lightTextMuted,
                               fontSize: 10,
                             ),
                           ),
@@ -775,9 +796,12 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         if (widget.onSignOut != null)
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
-                top: BorderSide(color: Colors.white12, width: 0.5),
+                top: BorderSide(
+                  color: isDark ? Colors.white12 : const Color(0x1F000000),
+                  width: 0.5,
+                ),
               ),
             ),
             child: Material(
@@ -786,7 +810,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                tileColor: Colors.white.withValues(alpha: 0.03),
+                tileColor: isDark
+                    ? Colors.white.withValues(alpha: 0.03)
+                    : const Color(0xFFFEE2E2).withValues(alpha: 0.5),
                 leading: const Icon(
                   Icons.logout,
                   color: Color(0xFFFF3B30),
@@ -818,11 +844,18 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     Widget? trailing,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? const Color(0xFFC6F135) : KratosTheme.lightAcidLime;
+    final unselectedIcon =
+        isDark ? Colors.white60 : KratosTheme.lightTextSecondary;
+    final unselectedText =
+        isDark ? Colors.white : KratosTheme.lightTextPrimary;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: Material(
         color: isSelected
-            ? const Color(0xFFC6F135).withValues(alpha: 0.12)
+            ? lime.withValues(alpha: 0.12)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         child: ListTile(
@@ -831,13 +864,13 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           ),
           leading: Icon(
             icon,
-            color: isSelected ? const Color(0xFFC6F135) : Colors.white60,
+            color: isSelected ? lime : unselectedIcon,
             size: 20,
           ),
           title: Text(
             title,
             style: TextStyle(
-              color: isSelected ? const Color(0xFFC6F135) : Colors.white,
+              color: isSelected ? lime : unselectedText,
               fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
               fontSize: 13,
             ),

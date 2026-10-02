@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/kratos_theme.dart';
 import '../../../../app/kratos_visuals.dart';
 import '../../../../app/kratos_motion.dart';
 import '../../../../app/number_pop_in.dart';
@@ -123,6 +124,11 @@ class _StatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final labelColor = isDark ? Colors.white54 : KratosTheme.lightTextSecondary;
+    final valueColor = isDark ? Colors.white : KratosTheme.lightTextPrimary;
+    final detailColor = isDark ? Colors.white54 : KratosTheme.lightTextSecondary;
+
     return KratosGlassCard(
       dashboardGlass: true,
       accentColor: color,
@@ -142,20 +148,33 @@ class _StatusCard extends StatelessWidget {
                   children: [
                     Icon(icon, color: color, size: 16),
                     const SizedBox(width: 7),
-                    Text(label, style: const TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.1)),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: labelColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
                   ],
                 ),
                 const Spacer(),
                 KratosNumberPopIn(
                   value,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: valueColor,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(detail, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                Text(
+                  detail,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: detailColor, fontSize: 10),
+                ),
               ],
             ),
           ),
@@ -173,6 +192,7 @@ class DashboardNotificationsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final dao = NotificationsDao(database);
     return StreamBuilder<List<NotificationRecord>>(
       stream: dao.watchNotifications(ownerId),
@@ -197,11 +217,30 @@ class DashboardNotificationsCard extends StatelessWidget {
                     const Icon(Icons.notifications_active_outlined, color: Color(0xFFFF2D55), size: 19),
                     const SizedBox(width: 12),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('$unread unread notifications', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13)),
+                      Text(
+                        '$unread unread notifications',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
+                      ),
                       const SizedBox(height: 3),
-                      Text(latest?.title ?? 'No important notifications yet', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                      Text(
+                        latest?.title ?? 'No important notifications yet',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
                     ])),
-                    const Icon(Icons.chevron_right, color: Colors.white38, size: 18),
+                    Icon(
+                      Icons.chevron_right,
+                      color: isDark ? Colors.white38 : KratosTheme.lightTextMuted,
+                      size: 18,
+                    ),
                   ],
                 ),
               ),

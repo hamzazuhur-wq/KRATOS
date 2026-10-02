@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/kratos_theme.dart';
 import '../../../app/kratos_tiers.dart';
 import '../../../app/kratos_skeleton.dart';
 import '../../../app/kratos_visuals.dart';
@@ -55,6 +56,7 @@ class _ProgressionIdentityBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasCaption = profile.caption?.trim().isNotEmpty ?? false;
     return StreamBuilder<OverallProgressionSnapshot>(
       stream: OverallProgressionRepository(database).watch(ownerId),
@@ -65,7 +67,7 @@ class _ProgressionIdentityBlock extends StatelessWidget {
             child: Container(
               height: 112,
               decoration: BoxDecoration(
-                color: Colors.white10,
+                color: isDark ? Colors.white10 : const Color(0x14000000),
                 borderRadius: BorderRadius.circular(18),
               ),
             ),
@@ -86,8 +88,8 @@ class _ProgressionIdentityBlock extends StatelessWidget {
                 profile.displayName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0.2,
@@ -118,8 +120,8 @@ class _ProgressionIdentityBlock extends StatelessWidget {
                   ),
                   Text(
                     '${NumberFormat('#,###').format(global.overallXp)} XP',
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : KratosTheme.lightTextSecondary,
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                     ),
@@ -138,16 +140,16 @@ class _ProgressionIdentityBlock extends StatelessWidget {
                         Expanded(
                           child: Text(
                             profile.caption!,
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : KratosTheme.lightTextSecondary,
                               fontSize: 13,
                             ),
                           ),
                         ),
                         const SizedBox(width: 6),
-                        const Icon(
+                        Icon(
                           Icons.edit_outlined,
-                          color: Colors.white30,
+                          color: isDark ? Colors.white30 : KratosTheme.lightTextMuted,
                           size: 14,
                         ),
                       ],
@@ -267,8 +269,9 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Colors.transparent,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -281,7 +284,9 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                 return Center(
                   child: Text(
                     'Unable to load dashboard: ${snapshot.error}',
-                    style: const TextStyle(color: Colors.white70),
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : KratosTheme.lightTextSecondary,
+                    ),
                   ),
                 );
               }
@@ -343,27 +348,29 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                   const SizedBox(height: 28),
 
                                   // 4. Life Area Levels Section
-                                  const Row(
+                                  Row(
                                     children: [
                                       Icon(
                                         Icons.layers_outlined,
-                                        color: Colors.white54,
+                                        color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
                                         size: 16,
                                       ),
-                                      SizedBox(width: 8),
+                                      const SizedBox(width: 8),
                                       Text(
                                         'LIFE AREA LEVELS',
                                         style: TextStyle(
-                                          color: Colors.white,
+                                          color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
                                           letterSpacing: 1.5,
-                                          shadows: [
-                                            Shadow(
-                                              color: Color(0x44C6F135),
-                                              blurRadius: 10,
-                                            ),
-                                          ],
+                                          shadows: isDark
+                                              ? const [
+                                                  Shadow(
+                                                    color: Color(0x44C6F135),
+                                                    blurRadius: 10,
+                                                  ),
+                                                ]
+                                              : null,
                                         ),
                                       ),
                                     ],
@@ -375,19 +382,19 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                       width: double.infinity,
                                       padding: const EdgeInsets.all(20),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.02,
-                                        ),
+                                        color: isDark
+                                            ? Colors.white.withValues(alpha: 0.02)
+                                            : const Color(0xFFF3F4F6),
                                         borderRadius: BorderRadius.circular(18),
                                         border: Border.all(
-                                          color: Colors.white10,
+                                          color: isDark ? Colors.white10 : const Color(0x14000000),
                                         ),
                                       ),
-                                      child: const Center(
+                                      child: Center(
                                         child: Text(
                                           'No active Life Areas found',
                                           style: TextStyle(
-                                            color: Colors.white38,
+                                            color: isDark ? Colors.white38 : KratosTheme.lightTextMuted,
                                             fontSize: 13,
                                           ),
                                         ),

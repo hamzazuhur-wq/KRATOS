@@ -88,7 +88,18 @@ class _ActiveGlassCardState extends State<ActiveGlassCard>
             ],
           ),
           padding: widget.padding,
-          child: child,
+          child: DefaultTextStyle.merge(
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF0F1115),
+              fontFamily: 'Roboto',
+            ),
+            child: IconTheme.merge(
+              data: IconThemeData(
+                color: isDark ? Colors.white70 : const Color(0xFF5A606A),
+              ),
+              child: child ?? const SizedBox.shrink(),
+            ),
+          ),
         );
       },
       child: widget.child,

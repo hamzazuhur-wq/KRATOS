@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/kratos_motion.dart';
-
+import '../../../../app/kratos_theme.dart';
 import '../../../../app/kratos_visuals.dart';
 import '../../../../data/drift/app_database.dart';
 import '../../../goals/presentation/goal_detail_screen.dart';
@@ -116,6 +116,11 @@ class _EndingTodaySectionState extends State<EndingTodaySection>
     final reducedMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? Colors.white : KratosTheme.lightTextPrimary;
+    final secondaryTextColor = isDark ? Colors.white54 : KratosTheme.lightTextSecondary;
+    final lime = isDark ? const Color(0xFFC6F135) : KratosTheme.lightAcidLime;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -128,10 +133,10 @@ class _EndingTodaySectionState extends State<EndingTodaySection>
               size: 16,
             ),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'ENDING TODAY',
               style: TextStyle(
-                color: Colors.white,
+                color: primaryTextColor,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.5,
@@ -144,10 +149,10 @@ class _EndingTodaySectionState extends State<EndingTodaySection>
                 visualDensity: VisualDensity.compact,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
-              child: const Text(
+              child: Text(
                 'View all',
                 style: TextStyle(
-                  color: Color(0xFFC6F135),
+                  color: lime,
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
                 ),
@@ -162,22 +167,29 @@ class _EndingTodaySectionState extends State<EndingTodaySection>
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.02),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.02)
+                  : const Color(0xFFF3F4F6),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(
+                color: isDark ? Colors.white10 : const Color(0x14000000),
+              ),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Icon(
                   Icons.check_circle_outline,
-                  color: Colors.white38,
+                  color: isDark ? Colors.white38 : KratosTheme.lightTextMuted,
                   size: 18,
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'No items ending today • All caught up',
-                    style: TextStyle(color: Colors.white38, fontSize: 13),
+                    style: TextStyle(
+                      color: isDark ? Colors.white38 : KratosTheme.lightTextMuted,
+                      fontSize: 13,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -237,8 +249,8 @@ class _EndingTodaySectionState extends State<EndingTodaySection>
                                         item.title,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: primaryTextColor,
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -246,8 +258,8 @@ class _EndingTodaySectionState extends State<EndingTodaySection>
                                       const SizedBox(height: 3),
                                       Text(
                                         subtitle,
-                                        style: const TextStyle(
-                                          color: Colors.white54,
+                                        style: TextStyle(
+                                          color: secondaryTextColor,
                                           fontSize: 11,
                                         ),
                                       ),

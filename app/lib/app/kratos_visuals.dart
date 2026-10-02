@@ -103,7 +103,6 @@ class _KratosGlassCardState extends State<KratosGlassCard>
               final drift = reduced
                   ? 0.0
                   : math.sin(_sheen.value * math.pi * 2) * 0.10;
-              final reflectionX = reduced ? 0.0 : (_sheen.value * 1.7) - 0.85;
               final light = Alignment(
                 (_pointer.dx * 2 - 1) + drift,
                 _pointer.dy * 2 - 1,
@@ -116,20 +115,12 @@ class _KratosGlassCardState extends State<KratosGlassCard>
               final isDark = Theme.of(context).brightness == Brightness.dark;
               return ClipRRect(
                 borderRadius: widget.borderRadius,
-                /* TEMP PERFORMANCE TEST — GLASS DISABLED
-                child: BackdropFilter(
-                  filter: ui.ImageFilter.blur(
-                    sigmaX: widget.dashboardGlass ? 8 : 18,
-                    sigmaY: widget.dashboardGlass ? 8 : 18,
-                  ),
-                  child: Container(
-                */
                 child: Container(
                     decoration: BoxDecoration(
                       color: widget.dashboardGlass
-                          ? (isDark ? null : Colors.white.withValues(alpha: 0.90))
+                          ? (isDark ? const Color(0xFF111412) : Colors.white)
                           : (isDark
-                              ? const Color(0xFF131315).withValues(alpha: 0.88)
+                              ? const Color(0xFF131614).withValues(alpha: 0.94)
                               : Colors.white),
                       gradient: widget.dashboardGlass
                           ? (isDark
@@ -137,51 +128,59 @@ class _KratosGlassCardState extends State<KratosGlassCard>
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
-                                    Colors.white.withValues(alpha: 0.055),
-                                    Colors.white.withValues(alpha: 0.009),
-                                    Colors.black.withValues(alpha: 0.035),
+                                    const Color(0xFF171B18).withValues(alpha: 0.96),
+                                    const Color(0xFF111412).withValues(alpha: 0.98),
+                                    const Color(0xFF0C0E0D),
                                   ],
-                                  stops: const [0, 0.42, 1],
+                                  stops: const [0, 0.45, 1],
                                 )
                               : LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
                                     Colors.white,
-                                    Colors.white.withValues(alpha: 0.95),
+                                    const Color(0xFFFBFBFD),
                                     const Color(0xFFF2F4F8),
                                   ],
-                                  stops: const [0, 0.42, 1],
+                                  stops: const [0, 0.5, 1],
                                 ))
                           : null,
                       borderRadius: widget.borderRadius,
                       border: Border.all(
                         color: widget.dashboardGlass
                             ? (isDark
-                                ? Colors.white.withValues(
-                                    alpha: _hovered ? 0.28 : 0.16,
-                                  )
-                                : Colors.black.withValues(
-                                    alpha: _hovered ? 0.12 : 0.07,
-                                  ))
-                            : accent.withValues(alpha: borderAlpha),
+                                ? (_hovered
+                                    ? accent.withValues(alpha: 0.35)
+                                    : Colors.white.withValues(alpha: 0.12))
+                                : (_hovered
+                                    ? accent.withValues(alpha: 0.50)
+                                    : const Color(0x1F0F172A)))
+                            : (isDark
+                                ? accent.withValues(alpha: borderAlpha)
+                                : const Color(0x1F0F172A)),
                         width: 1.0,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(
-                            alpha: isDark
-                                ? (widget.dashboardGlass ? 0.17 : 0.40)
-                                : (widget.dashboardGlass ? 0.04 : 0.08),
-                          ),
+                          color: isDark
+                              ? Colors.black.withValues(
+                                  alpha: _hovered ? 0.45 : (widget.dashboardGlass ? 0.28 : 0.40),
+                                )
+                              : const Color(0x0A0F172A),
                           blurRadius: widget.dashboardGlass ? 20 : 28,
-                          offset: const Offset(0, 10),
+                          offset: const Offset(0, 8),
                         ),
-                        if (widget.dashboardGlass && isDark)
+                        if (isDark)
                           BoxShadow(
-                            color: Colors.white.withValues(alpha: 0.025),
+                            color: Colors.white.withValues(alpha: 0.03),
                             blurRadius: 1,
                             offset: const Offset(0, 1),
+                          )
+                        else
+                          const BoxShadow(
+                            color: Color(0x06000000),
+                            blurRadius: 4,
+                            offset: Offset(0, 1),
                           ),
                       ],
                     ),
@@ -242,42 +241,31 @@ class _KratosGlassCardState extends State<KratosGlassCard>
                             ),
                           ),
                         ),
-                        if (widget.dashboardGlass)
-                          Positioned.fill(
-                            child: IgnorePointer(
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  borderRadius: widget.borderRadius,
-                                  gradient: LinearGradient(
-                                    begin: Alignment(reflectionX - 0.38, -0.9),
-                                    end: Alignment(reflectionX + 0.38, 0.9),
-                                    colors: [
-                                      Colors.transparent,
-                                      Colors.white.withValues(alpha: 0.012),
-                                      Colors.white.withValues(alpha: 0.028),
-                                      Colors.white.withValues(alpha: 0.01),
-                                      Colors.transparent,
-                                    ],
-                                    stops: const [0.28, 0.43, 0.50, 0.57, 0.72],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        if (widget.dashboardGlass)
+                        if (widget.dashboardGlass && isDark)
                           Positioned.fill(
                             child: IgnorePointer(
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
                                   borderRadius: widget.borderRadius,
                                   border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.08),
+                                    color: Colors.white.withValues(alpha: 0.06),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        content,
+                        DefaultTextStyle.merge(
+                          style: TextStyle(
+                            color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
+                            fontFamily: 'Roboto',
+                          ),
+                          child: IconTheme.merge(
+                            data: IconThemeData(
+                              color: isDark ? Colors.white70 : KratosTheme.lightTextSecondary,
+                            ),
+                            child: content,
+                          ),
+                        ),
                         ],
                       ),
                     ),
@@ -553,8 +541,14 @@ class _KratosNavButtonState extends State<_KratosNavButton> {
 
   @override
   Widget build(BuildContext context) {
-    final lime = KratosTheme.acidLime;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? KratosTheme.acidLime : KratosTheme.lightAcidLime;
     final active = widget.selected;
+    final unselectedColor =
+        isDark ? Colors.white54 : KratosTheme.lightTextSecondary;
+    final selectedTextColor =
+        isDark ? Colors.white : KratosTheme.lightTextPrimary;
+
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
@@ -569,16 +563,22 @@ class _KratosNavButtonState extends State<_KratosNavButton> {
           padding: const EdgeInsets.symmetric(vertical: 7),
           decoration: BoxDecoration(
             color: active || _hovered
-                ? lime.withValues(alpha: active ? 0.12 : 0.055)
+                ? lime.withValues(alpha: active ? (isDark ? 0.12 : 0.16) : 0.06)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(17),
             border: Border.all(
-              color: active ? lime.withValues(alpha: 0.32) : Colors.transparent,
+              color: active
+                  ? lime.withValues(alpha: isDark ? 0.32 : 0.45)
+                  : Colors.transparent,
             ),
             boxShadow: active || _pressed
                 ? [
                     BoxShadow(
-                      color: lime.withValues(alpha: _pressed ? 0.30 : 0.12),
+                      color: lime.withValues(
+                        alpha: _pressed
+                            ? 0.30
+                            : (isDark ? 0.12 : 0.08),
+                      ),
                       blurRadius: 16,
                     ),
                   ]
@@ -592,14 +592,14 @@ class _KratosNavButtonState extends State<_KratosNavButton> {
               children: [
                 Icon(
                   active ? widget.item.activeIcon : widget.item.icon,
-                  color: active ? lime : Colors.white54,
+                  color: active ? lime : unselectedColor,
                   size: 20,
                 ),
                 const SizedBox(height: 3),
                 Text(
                   widget.item.label,
                   style: TextStyle(
-                    color: active ? Colors.white : Colors.white54,
+                    color: active ? selectedTextColor : unselectedColor,
                     fontSize: 10,
                     fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                     letterSpacing: 0.2,
@@ -614,67 +614,155 @@ class _KratosNavButtonState extends State<_KratosNavButton> {
   }
 }
 
-/// Soft, slowly drifting lime light used as the shared KRATOS backdrop.
-class KratosEnvironment extends StatefulWidget {
+/// Static technical atmosphere with crystal/star KRATOS signature.
+/// Fully deterministic and GPU-cached with zero per-frame CPU overhead.
+class KratosEnvironment extends StatelessWidget {
   const KratosEnvironment({super.key});
 
   @override
-  State<KratosEnvironment> createState() => _KratosEnvironmentState();
-}
-
-class _KratosEnvironmentState extends State<KratosEnvironment>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 36),
-    );
-    // TEMP PERFORMANCE TEST — MOTION DISABLED
-    // final isTest = WidgetsBinding.instance.runtimeType.toString().contains(
-    //   'Test',
-    // );
-    // if (!isTest) {
-    //   _controller.repeat();
-    // }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final reduced = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (reduced) _controller.stop();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return IgnorePointer(
-      child: ColoredBox(
-        color: isDark ? KratosTheme.volcanic : KratosTheme.lightBackground,
-        child: const SizedBox.expand(),
-      ),
-    );
-    /* ORIGINAL CODE:
-    return IgnorePointer(
       child: RepaintBoundary(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, _) => CustomPaint(
-            painter: _KratosEnvironmentPainter(
-              phase: reduced ? 0.42 : _controller.value,
-            ),
-            child: const SizedBox.expand(),
-          ),
+        child: CustomPaint(
+          painter: _KratosAtmospherePainter(isDark: isDark),
+          isComplex: true,
+          willChange: false,
+          child: const SizedBox.expand(),
         ),
       ),
     );
-    */
   }
+}
+
+class _KratosAtmospherePainter extends CustomPainter {
+  final bool isDark;
+
+  const _KratosAtmospherePainter({required this.isDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final rect = Offset.zero & size;
+
+    if (isDark) {
+      // 1. Dark Volcanic Deep Base with central ambient radial gradient
+      final baseGradient = ui.Gradient.radial(
+        Offset(size.width * 0.5, size.height * 0.18),
+        size.longestSide * 0.85,
+        [
+          const Color(0xFF141815),
+          const Color(0xFF0D0F0D),
+          const Color(0xFF070807),
+        ],
+        const [0.0, 0.55, 1.0],
+      );
+      canvas.drawRect(rect, Paint()..shader = baseGradient);
+
+      // 2. Subtle Static Technical Grid (64px interval)
+      final gridPaint = Paint()
+        ..color = const Color(0xFFC6F135).withValues(alpha: 0.02)
+        ..strokeWidth = 0.5;
+
+      const step = 64.0;
+      for (double x = 0; x < size.width; x += step) {
+        canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+      }
+      for (double y = 0; y < size.height; y += step) {
+        canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+      }
+
+      // 3. Crystal / Star KRATOS signature coordinates
+      final starPaint = Paint()
+        ..color = const Color(0xFFC6F135).withValues(alpha: 0.16)
+        ..strokeWidth = 1.0;
+      final dotPaint = Paint()
+        ..color = Colors.white.withValues(alpha: 0.38)
+        ..style = PaintingStyle.fill;
+
+      for (double x = step * 2; x < size.width; x += step * 4) {
+        for (double y = step * 2; y < size.height; y += step * 4) {
+          canvas.drawLine(Offset(x - 3.5, y), Offset(x + 3.5, y), starPaint);
+          canvas.drawLine(Offset(x, y - 3.5), Offset(x, y + 3.5), starPaint);
+          canvas.drawCircle(Offset(x, y), 0.75, dotPaint);
+        }
+      }
+
+      // 4. Subtle Vignette to keep content areas calm and readable
+      final vignetteRadius = size.longestSide * 0.78;
+      final vignettePaint = Paint()
+        ..shader = ui.Gradient.radial(
+          Offset(size.width * 0.5, size.height * 0.48),
+          vignetteRadius,
+          [
+            Colors.transparent,
+            Colors.black.withValues(alpha: 0.25),
+            Colors.black.withValues(alpha: 0.50),
+          ],
+          const [0.45, 0.8, 1.0],
+        );
+      canvas.drawRect(rect, vignettePaint);
+    } else {
+      // Light Mode: Sophisticated Off-White / Architectural Ceramic Canvas
+      final lightGradient = ui.Gradient.linear(
+        const Offset(0, 0),
+        Offset(0, size.height),
+        [
+          const Color(0xFFF9FAFB),
+          const Color(0xFFF3F4F6),
+          const Color(0xFFE5E7EB),
+        ],
+        const [0.0, 0.45, 1.0],
+      );
+      canvas.drawRect(rect, Paint()..shader = lightGradient);
+
+      // Soft top-center ambient accent glow (KRATOS Acid Lime identity)
+      final ambientGlow = Paint()
+        ..shader = ui.Gradient.radial(
+          Offset(size.width * 0.5, 0),
+          size.width * 0.65,
+          [
+            const Color(0xFFC6F135).withValues(alpha: 0.05),
+            Colors.transparent,
+          ],
+          const [0.0, 1.0],
+        );
+      canvas.drawRect(rect, ambientGlow);
+
+      // Crisp Technical Lattice Grid
+      final lightGridPaint = Paint()
+        ..color = const Color(0xFF0F172A).withValues(alpha: 0.025)
+        ..strokeWidth = 0.5;
+
+      const step = 64.0;
+      for (double x = 0; x < size.width; x += step) {
+        canvas.drawLine(Offset(x, 0), Offset(x, size.height), lightGridPaint);
+      }
+      for (double y = 0; y < size.height; y += step) {
+        canvas.drawLine(Offset(0, y), Offset(size.width, y), lightGridPaint);
+      }
+
+      // Technical Crystal Anchor Points
+      final crossPaint = Paint()
+        ..color = const Color(0xFF0F172A).withValues(alpha: 0.08)
+        ..strokeWidth = 0.8;
+      final centerDotPaint = Paint()
+        ..color = const Color(0xFF4B5563).withValues(alpha: 0.16)
+        ..style = PaintingStyle.fill;
+
+      for (double x = step * 2; x < size.width; x += step * 4) {
+        for (double y = step * 2; y < size.height; y += step * 4) {
+          canvas.drawLine(Offset(x - 2.5, y), Offset(x + 2.5, y), crossPaint);
+          canvas.drawLine(Offset(x, y - 2.5), Offset(x, y + 2.5), crossPaint);
+          canvas.drawCircle(Offset(x, y), 0.6, centerDotPaint);
+        }
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _KratosAtmospherePainter oldDelegate) =>
+      oldDelegate.isDark != isDark;
 }
 
 /* TEMP PERFORMANCE TEST — DECORATIVE AMBIENT PAINTER DISABLED

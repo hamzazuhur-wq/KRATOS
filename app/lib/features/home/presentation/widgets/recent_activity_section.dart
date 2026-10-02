@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/kratos_motion.dart';
-
+import '../../../../app/kratos_theme.dart';
 import '../../../../app/kratos_visuals.dart';
 import '../../../../data/drift/app_database.dart';
 import '../../../goals/presentation/goal_detail_screen.dart';
@@ -93,6 +93,11 @@ class RecentActivitySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? Colors.white : KratosTheme.lightTextPrimary;
+    final secondaryTextColor = isDark ? Colors.white54 : KratosTheme.lightTextSecondary;
+    final mutedTextColor = isDark ? Colors.white38 : KratosTheme.lightTextMuted;
+
     // Show top 8 items across systems for a concise recent snapshot
     final displayItems = items.take(8).toList();
 
@@ -100,14 +105,18 @@ class RecentActivitySection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Section Header
-        const Row(
+        Row(
           children: [
-            Icon(Icons.history, color: Colors.white54, size: 16),
-            SizedBox(width: 8),
+            Icon(
+              Icons.history,
+              color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
             Text(
               'RECENT',
               style: TextStyle(
-                color: Colors.white,
+                color: primaryTextColor,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.5,
@@ -122,17 +131,25 @@ class RecentActivitySection extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.02),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.02)
+                  : const Color(0xFFF3F4F6),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(
+                color: isDark ? Colors.white10 : const Color(0x14000000),
+              ),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.hourglass_empty, color: Colors.white38, size: 18),
-                SizedBox(width: 12),
+                Icon(
+                  Icons.hourglass_empty,
+                  color: mutedTextColor,
+                  size: 18,
+                ),
+                const SizedBox(width: 12),
                 Text(
                   'No recent actions logged yet',
-                  style: TextStyle(color: Colors.white38, fontSize: 13),
+                  style: TextStyle(color: mutedTextColor, fontSize: 13),
                 ),
               ],
             ),
@@ -145,8 +162,11 @@ class RecentActivitySection extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: displayItems.length,
-              separatorBuilder: (_, _) =>
-                  const Divider(color: Colors.white10, height: 1, indent: 52),
+              separatorBuilder: (_, _) => Divider(
+                color: isDark ? Colors.white10 : const Color(0x12000000),
+                height: 1,
+                indent: 52,
+              ),
               itemBuilder: (context, index) {
                 final item = displayItems[index];
                 final relativeTime = formatRelativeTime(item.timestamp);
@@ -190,8 +210,8 @@ class RecentActivitySection extends StatelessWidget {
                                   item.title,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: primaryTextColor,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -199,8 +219,8 @@ class RecentActivitySection extends StatelessWidget {
                                 const SizedBox(height: 2),
                                 Text(
                                   item.subtitle,
-                                  style: const TextStyle(
-                                    color: Colors.white54,
+                                  style: TextStyle(
+                                    color: secondaryTextColor,
                                     fontSize: 11,
                                   ),
                                 ),
@@ -210,8 +230,8 @@ class RecentActivitySection extends StatelessWidget {
                           const SizedBox(width: 10),
                           Text(
                             relativeTime,
-                            style: const TextStyle(
-                              color: Colors.white38,
+                            style: TextStyle(
+                              color: mutedTextColor,
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
                             ),
