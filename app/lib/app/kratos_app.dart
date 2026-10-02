@@ -20,6 +20,7 @@ import '../features/onboarding/domain/onboarding_service.dart';
 import '../features/sync/data/supabase_sync_transport.dart';
 import 'app_shell.dart';
 import 'kratos_theme.dart';
+import 'kratos_theme_controller.dart';
 
 class KratosApp extends StatefulWidget {
   final AuthService? authService;
@@ -44,6 +45,7 @@ class _KratosAppState extends State<KratosApp> {
     super.initState();
     _database = widget.database ?? AppDatabase();
     _authService = widget.authService ?? _createRuntimeAuth();
+    KratosThemeController.instance.load();
   }
 
   Future<void> _loadOnboarding(String userId) async {
@@ -149,12 +151,18 @@ class _KratosAppState extends State<KratosApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'KRATOS',
-      debugShowCheckedModeBanner: false,
-      theme: KratosTheme.darkTheme,
-      builder: (context, child) => child ?? const SizedBox.shrink(),
-      home: StreamBuilder<AuthState>(
+    return ListenableBuilder(
+      listenable: KratosThemeController.instance,
+      builder: (context, _) {
+        final controller = KratosThemeController.instance;
+        return MaterialApp(
+          title: 'KRATOS',
+          debugShowCheckedModeBanner: false,
+          theme: KratosTheme.lightTheme,
+          darkTheme: KratosTheme.darkTheme,
+          themeMode: controller.themeMode,
+          builder: (context, child) => child ?? const SizedBox.shrink(),
+          home: StreamBuilder<AuthState>(
         stream: _authService.authStateStream,
         initialData: _authService.currentState,
         builder: (context, snapshot) {
@@ -240,6 +248,8 @@ class _KratosAppState extends State<KratosApp> {
           );
         },
       ),
+    );
+      },
     );
   }
 }

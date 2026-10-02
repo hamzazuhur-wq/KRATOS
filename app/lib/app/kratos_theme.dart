@@ -186,4 +186,139 @@ class KratosTheme {
       ),
     );
   }
+
+  // Light Mode Tokens (Pure Liquid Glass, Ceramic Off-White, preserved KRATOS Acid Lime)
+  static const Color lightBackground = Color(0xFFF7F8FA);
+  static const Color lightSurface = Color(0xFFFFFFFF);
+  static const Color lightSurfaceGlass = Color(0xB8FFFFFF); // 72% frosted white
+  static const Color lightBorderGlass = Color(0x1F000000); // 12% subtle dark border
+  static const Color lightTextPrimary = Color(0xFF0F1115);
+  static const Color lightTextSecondary = Color(0xFF5A606A);
+  static const Color lightTextMuted = Color(0xFF8A92A0);
+  /// Accessible KRATOS lime for light backgrounds with optimal contrast
+  static const Color lightAcidLime = Color(0xFF6B9900);
+
+  static ThemeData get lightTheme {
+    final liquidOverlay = WidgetStateProperty.resolveWith<Color?>((states) {
+      if (states.contains(WidgetState.pressed)) {
+        return acidLime.withValues(alpha: 0.25);
+      }
+      if (states.contains(WidgetState.hovered)) {
+        return acidLime.withValues(alpha: 0.12);
+      }
+      if (states.contains(WidgetState.focused)) {
+        return acidLime.withValues(alpha: 0.10);
+      }
+      return null;
+    });
+    final liquidElevation = WidgetStateProperty.resolveWith<double?>((states) {
+      if (states.contains(WidgetState.pressed)) return 1;
+      if (states.contains(WidgetState.hovered)) return 6;
+      return 2;
+    });
+
+    return ThemeData(
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: lightBackground,
+      primaryColor: acidLime,
+      colorScheme: const ColorScheme.light(
+        primary: lightAcidLime,
+        secondary: cyan,
+        surface: lightSurface,
+      ),
+      splashFactory: InkRipple.splashFactory,
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ButtonStyle(
+          animationDuration: const Duration(milliseconds: 180),
+          overlayColor: liquidOverlay,
+          elevation: liquidElevation,
+          shadowColor: WidgetStatePropertyAll(Colors.black.withValues(alpha: 0.08)),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: ButtonStyle(
+          animationDuration: const Duration(milliseconds: 180),
+          overlayColor: liquidOverlay,
+          elevation: liquidElevation,
+          shadowColor: WidgetStatePropertyAll(Colors.black.withValues(alpha: 0.08)),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: ButtonStyle(
+          animationDuration: const Duration(milliseconds: 180),
+          overlayColor: liquidOverlay,
+          elevation: liquidElevation,
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: ButtonStyle(
+          animationDuration: const Duration(milliseconds: 180),
+          overlayColor: liquidOverlay,
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: ButtonStyle(
+          animationDuration: const Duration(milliseconds: 180),
+          overlayColor: liquidOverlay,
+        ),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: acidLime,
+        foregroundColor: volcanic,
+        hoverColor: acidLime.withValues(alpha: 0.92),
+        splashColor: acidLime.withValues(alpha: 0.24),
+        elevation: 4,
+        focusElevation: 6,
+        hoverElevation: 8,
+        highlightElevation: 1,
+      ),
+      fontFamily: 'Roboto',
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: KratosGlobalPageTransitionsBuilder(),
+          TargetPlatform.iOS: KratosGlobalPageTransitionsBuilder(),
+          TargetPlatform.linux: KratosGlobalPageTransitionsBuilder(),
+          TargetPlatform.macOS: KratosGlobalPageTransitionsBuilder(),
+          TargetPlatform.windows: KratosGlobalPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: KratosGlobalPageTransitionsBuilder(),
+        },
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
+        iconTheme: IconThemeData(color: lightTextPrimary),
+        titleTextStyle: TextStyle(
+          color: lightTextPrimary,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 2.0,
+          fontSize: 16,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: lightSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: lightBorderGlass),
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: lightSurface,
+        elevation: 12,
+        shadowColor: Colors.black.withValues(alpha: 0.15),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(
+            color: lightBorderGlass,
+            width: 1.0,
+          ),
+        ),
+        textStyle: const TextStyle(
+          color: lightTextPrimary,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
 }

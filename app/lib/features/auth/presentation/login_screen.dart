@@ -854,16 +854,20 @@ class _LoginScreenState extends State<LoginScreen> {
                                   )
                                 : Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       _GoogleIcon(),
                                       const SizedBox(width: 12),
-                                      const Text(
-                                        'Continue with Google',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600,
-                                          letterSpacing: 0.5,
+                                      const Flexible(
+                                        child: Text(
+                                          'Continue with Google',
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 0.5,
+                                          ),
                                         ),
                                       ),
                                     ],

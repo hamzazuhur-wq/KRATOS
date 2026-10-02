@@ -67,12 +67,25 @@ class _ActiveGlassCardState extends State<ActiveGlassCard>
               t,
             ) ??
             const Color(0xFFC6F135);
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Container(
           decoration: BoxDecoration(
             borderRadius: widget.borderRadius,
-            color: const Color(0xFF111511).withValues(alpha: .96),
-            border: Border.all(color: glow, width: 1.2),
-            boxShadow: [BoxShadow(color: glow.withValues(alpha: .14), blurRadius: 24)],
+            color: isDark
+                ? const Color(0xFF111511).withValues(alpha: .96)
+                : Colors.white,
+            border: Border.all(
+              color: isDark ? glow : const Color(0xFFC6F135).withValues(alpha: 0.6),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? glow.withValues(alpha: .14)
+                    : Colors.black.withValues(alpha: 0.06),
+                blurRadius: 24,
+              ),
+            ],
           ),
           padding: widget.padding,
           child: child,

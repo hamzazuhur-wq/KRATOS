@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 
 import '../../../../app/kratos_motion.dart';
 import '../../../../app/kratos_visuals.dart';
-import '../../../../app/number_pop_in.dart';
 import '../../domain/home_models.dart';
 
 class XpSummaryCard extends StatelessWidget {
@@ -14,10 +13,8 @@ class XpSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final formatter = NumberFormat('#,###');
-    final formattedTotal = formatter.format(progression.totalXp);
     final formattedMin = formatter.format(progression.minRangeXp);
     final formattedMax = formatter.format(progression.maxRangeXp);
-    final pctString = '${progression.progressPct.toStringAsFixed(0)}%';
 
     return SizedBox(
       width: double.infinity,

@@ -113,6 +113,7 @@ class _KratosGlassCardState extends State<KratosGlassCard>
                   : (_hovered ? 0.09 : 0.06);
               final borderAlpha = _pressed ? 0.46 : (_hovered ? 0.34 : 0.22);
 
+              final isDark = Theme.of(context).brightness == Brightness.dark;
               return ClipRRect(
                 borderRadius: widget.borderRadius,
                 /* TEMP PERFORMANCE TEST — GLASS DISABLED
@@ -126,38 +127,57 @@ class _KratosGlassCardState extends State<KratosGlassCard>
                 child: Container(
                     decoration: BoxDecoration(
                       color: widget.dashboardGlass
-                          ? null
-                          : const Color(0xFF131315).withValues(alpha: 0.88),
+                          ? (isDark ? null : Colors.white.withValues(alpha: 0.90))
+                          : (isDark
+                              ? const Color(0xFF131315).withValues(alpha: 0.88)
+                              : Colors.white),
                       gradient: widget.dashboardGlass
-                          ? LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Colors.white.withValues(alpha: 0.055),
-                                Colors.white.withValues(alpha: 0.009),
-                                Colors.black.withValues(alpha: 0.035),
-                              ],
-                              stops: const [0, 0.42, 1],
-                            )
+                          ? (isDark
+                              ? LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Colors.white.withValues(alpha: 0.055),
+                                    Colors.white.withValues(alpha: 0.009),
+                                    Colors.black.withValues(alpha: 0.035),
+                                  ],
+                                  stops: const [0, 0.42, 1],
+                                )
+                              : LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Colors.white,
+                                    Colors.white.withValues(alpha: 0.95),
+                                    const Color(0xFFF2F4F8),
+                                  ],
+                                  stops: const [0, 0.42, 1],
+                                ))
                           : null,
                       borderRadius: widget.borderRadius,
                       border: Border.all(
                         color: widget.dashboardGlass
-                            ? Colors.white.withValues(
-                                alpha: _hovered ? 0.28 : 0.16,
-                              )
+                            ? (isDark
+                                ? Colors.white.withValues(
+                                    alpha: _hovered ? 0.28 : 0.16,
+                                  )
+                                : Colors.black.withValues(
+                                    alpha: _hovered ? 0.12 : 0.07,
+                                  ))
                             : accent.withValues(alpha: borderAlpha),
                         width: 1.0,
                       ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(
-                            alpha: widget.dashboardGlass ? 0.17 : 0.40,
+                            alpha: isDark
+                                ? (widget.dashboardGlass ? 0.17 : 0.40)
+                                : (widget.dashboardGlass ? 0.04 : 0.08),
                           ),
                           blurRadius: widget.dashboardGlass ? 20 : 28,
                           offset: const Offset(0, 10),
                         ),
-                        if (widget.dashboardGlass)
+                        if (widget.dashboardGlass && isDark)
                           BoxShadow(
                             color: Colors.white.withValues(alpha: 0.025),
                             blurRadius: 1,
@@ -632,11 +652,11 @@ class _KratosEnvironmentState extends State<KratosEnvironment>
   Widget build(BuildContext context) {
     final reduced = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     if (reduced) _controller.stop();
-    // TEMP PERFORMANCE TEST — MOTION & DECORATIVE BACKGROUND BLUR DISABLED
-    return const IgnorePointer(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return IgnorePointer(
       child: ColoredBox(
-        color: KratosTheme.volcanic,
-        child: SizedBox.expand(),
+        color: isDark ? KratosTheme.volcanic : KratosTheme.lightBackground,
+        child: const SizedBox.expand(),
       ),
     );
     /* ORIGINAL CODE:
