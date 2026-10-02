@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
   <base href="$FLUTTER_BASE_HREF">
+  <script>
+    if (window.location.hostname === 'www.kratos-os.online') {
+      window.location.replace('https://kratos-os.online' + window.location.pathname + window.location.search + window.location.hash);
+    }
+  </script>
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../../app/kratos_skeleton.dart';
 import '../../../app/number_pop_in.dart';
 import '../../../app/kratos_visuals.dart';
+import '../../../app/kratos_motion.dart';
 import '../data/xp_analytics_dao.dart';
 
 /// XP Dashboard — main analytics hub.
@@ -101,14 +102,15 @@ class _XpDashboardScreenState extends State<XpDashboardScreen> {
                     onRefresh: _loadData,
                     color: const Color(0xFFC6F135),
                     backgroundColor: const Color(0xFF1A1A1A),
-                    child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        _HeroXpCard(
-                          totalXp: m.totalXp,
-                          streakBonus: m.streakBonusXp,
-                        ),
+                    child: KratosPageEntrance(
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          _HeroXpCard(
+                            totalXp: m.totalXp,
+                            streakBonus: m.streakBonusXp,
+                          ),
                         const SizedBox(height: 20),
                         const _SectionLabel(label: 'LAST 7 DAYS'),
                         const SizedBox(height: 10),
@@ -129,6 +131,7 @@ class _XpDashboardScreenState extends State<XpDashboardScreen> {
                       ],
                     ),
                   ),
+                ),
           ),
         ],
       ),
@@ -349,11 +352,14 @@ class _LifeAreaXpList extends StatelessWidget {
                 const SizedBox(height: 6),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(3),
-                  child: LinearProgressIndicator(
+                  child: KratosProgressAnimation(
                     value: fraction,
-                    backgroundColor: Colors.white.withValues(alpha: 0.07),
-                    valueColor: AlwaysStoppedAnimation<Color>(e.color),
-                    minHeight: 4,
+                    builder: (context, val) => LinearProgressIndicator(
+                      value: val,
+                      backgroundColor: Colors.white.withValues(alpha: 0.07),
+                      valueColor: AlwaysStoppedAnimation<Color>(e.color),
+                      minHeight: 4,
+                    ),
                   ),
                 ),
               ],
@@ -390,7 +396,7 @@ class _XpSourceBreakdown extends StatelessWidget {
               children: [
                 Icon(s.icon, color: const Color(0xFFC6F135), size: 22),
                 const SizedBox(height: 8),
-                Text(
+                KratosNumberPopIn(
                   '${s.xp}',
                   style: const TextStyle(
                     color: Color(0xFFC6F135),

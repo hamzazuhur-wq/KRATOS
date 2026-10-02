@@ -1,54 +1,71 @@
+// KRATOS Authentication Service Interface — Clean Rebuild.
+// Defines contract for authentication, session lifecycle, Google OAuth, and Email sign-in.
+
 import 'auth_models.dart';
 
-/// Safe, user-facing authentication failure. Raw provider details are not exposed.
-class AuthFailure extends StateError {
-  AuthFailure(super.message);
-}
-
 abstract class AuthService {
-  bool get isDevBypassEnabled;
-
+  /// Stream of authentication state transitions.
   Stream<AuthState> get authStateStream;
+
+  /// Current authentication state.
   AuthState get currentState;
+
+  /// Authenticated user, or null if unauthenticated.
   KratosUser? get currentUser;
 
-  /// True only when Supabase has a usable current session.
-  bool get hasValidSession;
+  /// Initiates Google OAuth using official Supabase SDK.
+  Future<void> signInWithGoogle();
 
-  Future<void> signInWithGoogle({String? redirectTo});
-
-  /// Sends a passwordless email OTP. This is not a magic-link flow.
-  Future<void> signInWithEmail(String email, {String? password});
-
-  Future<void> verifyEmailOtp(String email, String token);
-
-  /// Resends an OTP subject to the service-level cooldown.
-  Future<void> resendEmailOtp(String email);
-
-  /// Invalidates a pending email-code attempt without removing server limits.
-  void cancelEmailOtpAttempt() {}
-
-  /// Creates a new account with email + password.
-  /// Supabase sends a 6-digit OTP to the email; call [verifySignUpOtp] next.
-  Future<void> signUpWithPassword({
-    required String email,
-    required String password,
-    required String displayName,
-  });
-
-  /// Confirms a sign-up with the 6-digit OTP sent to the email.
-  Future<void> verifySignUpOtp({
-    required String email,
-    required String token,
-  });
-
-  /// Signs in with email + password (no OTP step).
+  /// Authenticates using email and password via Supabase Auth.
   Future<void> signInWithPassword({
     required String email,
     required String password,
   });
 
-  Future<void> signInWithDevBypass({String? userId, String? displayName});
-  Future<void> updatePassword(String newPassword);
+  /// Creates a new Supabase account with full name, email, and password.
+  Future<AuthSignUpResult> signUpWithPassword({
+    required String fullName,
+    required String email,
+    required String password,
+  });
+
+  /// Verifies a 6-digit signup OTP code for an email address.
+  Future<void> verifySignUpOtp({
+    required String email,
+    required String token,
+  });
+
+  /// Resends a signup verification code to an email address.
+  Future<void> resendSignUpOtp({
+    required String email,
+  });
+
+  /// Retrieves the list of linked authentication providers for the current user.
+  Future<List<String>> getUserIdentities();
+
+  /// Sends a password reset recovery email or OTP to the user.
+  Future<void> resetPasswordForEmail(String email);
+
+  /// Verifies a recovery OTP token and creates a session for resetting password.
+  Future<void> verifyRecoveryOtp({
+    required String email,
+    required String token,
+  });
+
+  /// Signs out of current Supabase session.
   Future<void> signOut();
+
+  /// Updates password for authenticated user (if supported).
+  Future<void> updatePassword(String newPassword);
+
+  /// Verifies a 6-digit recovery OTP, updates the user's password, and signs out
+  /// cleanly so the user can sign in with their new credentials.
+  Future<void> completePasswordResetWithOtp({
+    required String email,
+    required String token,
+    required String newPassword,
+  });
+
+  /// Disposes stream controllers and subscriptions.
+  void dispose();
 }

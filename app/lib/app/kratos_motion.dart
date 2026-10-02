@@ -11,6 +11,45 @@ import 'kratos_theme.dart';
 /// with optimized timing and curves differentiated between Mobile (touch/springs)
 /// and Web/Desktop (pointer/crisp crossfades).
 class KratosMotion {
+  // Centralized KRATOS Motion Tokens
+  // FAST → SMOOTH DECELERATION → NATURAL SETTLE
+
+  // Page Entrance Tokens (Section 3)
+  static const Duration pageEntranceDuration = Duration(milliseconds: 500);
+  static const double pageEntranceDistance = 24.0;
+  static const double pageEntranceInitialScale = 0.985;
+  static const Curve pageEntranceCurve = Cubic(0.16, 1.0, 0.3, 1.0); // Fast start, smooth deceleration, natural settle
+
+  // Stagger Tokens (Section 4)
+  static const Duration staggerStepDuration = Duration(milliseconds: 35);
+  static const Duration staggerWindowCap = Duration(milliseconds: 320);
+
+  // Number Animation Tokens (Section 5)
+  static const Duration numberDuration = Duration(milliseconds: 650);
+  static const Curve numberCurve = Cubic(0.16, 1.0, 0.3, 1.0);
+
+  // Progress Animation Tokens (Section 6)
+  static const Duration progressDuration = Duration(milliseconds: 750);
+  static const Curve progressCurve = Cubic(0.16, 1.0, 0.3, 1.0);
+
+  // Button Press Tokens (Section 7)
+  static const Duration pressDownDuration = Duration(milliseconds: 80);
+  static const Duration pressReleaseDuration = Duration(milliseconds: 200);
+  static const double buttonPressScaleWeb = 0.978;
+  static const double buttonPressScaleMobile = 0.968;
+  static const Curve pressCurve = Curves.easeOutQuad;
+  static const Curve releaseCurve = Cubic(0.25, 1.0, 0.4, 1.0);
+
+  // Switch / Toggle Tokens (Section 8)
+  static const Duration switchDuration = Duration(milliseconds: 260);
+  static const Curve switchCurve = Cubic(0.2, 0.9, 0.3, 1.0);
+
+  // Modal / Dialog Entrance Tokens (Section 9)
+  static const Duration modalDuration = Duration(milliseconds: 450);
+  static const double modalDistance = 24.0;
+  static const double modalInitialScale = 0.975;
+  static const Curve modalCurve = Cubic(0.16, 1.0, 0.3, 1.0);
+
   // Mobile timings & curves (iOS 18 fluid physics)
   static const Duration mobileTabDuration = Duration(milliseconds: 360);
   static const Duration mobilePageDuration = Duration(milliseconds: 380);
@@ -417,6 +456,437 @@ class _KratosSpringCardState extends State<KratosSpringCard> {
                         : null),
             ),
             child: widget.child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Coordinated Page Entrance animation widget (Section 3 & 4).
+///
+/// Features:
+/// - Y offset: +24px -> 0px
+/// - Opacity: 0 -> 1
+/// - Scale: 0.985 -> 1.0
+/// - FAST → DECELERATE → SETTLE curve (Cubic(0.16, 1.0, 0.3, 1.0))
+/// - Respects MediaQuery.disableAnimations (reduced motion)
+/// - One-shot execution: animates once on entry and STOPS completely.
+class KratosPageEntrance extends StatefulWidget {
+  final Widget child;
+  final Duration duration;
+  final double distance;
+  final double initialScale;
+  final Duration delay;
+
+  const KratosPageEntrance({
+    super.key,
+    required this.child,
+    this.duration = KratosMotion.pageEntranceDuration,
+    this.distance = KratosMotion.pageEntranceDistance,
+    this.initialScale = KratosMotion.pageEntranceInitialScale,
+    this.delay = Duration.zero,
+  });
+
+  @override
+  State<KratosPageEntrance> createState() => _KratosPageEntranceState();
+}
+
+class _KratosPageEntranceState extends State<KratosPageEntrance>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: KratosMotion.pageEntranceCurve,
+    );
+    _play();
+  }
+
+  Future<void> _play() async {
+    if (widget.delay > Duration.zero) {
+      await Future<void>.delayed(widget.delay);
+    }
+    if (mounted) {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final disableAnimations =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (disableAnimations) return widget.child;
+
+    return AnimatedBuilder(
+      animation: _animation,
+      child: widget.child,
+      builder: (context, child) {
+        final progress = _animation.value;
+        final offset = widget.distance * (1.0 - progress);
+        final scale = widget.initialScale + ((1.0 - widget.initialScale) * progress);
+
+        return Opacity(
+          opacity: progress.clamp(0.0, 1.0),
+          child: Transform.translate(
+            offset: Offset(0, offset),
+            child: Transform.scale(
+              scale: scale,
+              alignment: Alignment.topCenter,
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Helper that wraps children in a coordinated staggered entrance wave (Section 4).
+///
+/// Features:
+/// - Stagger: ~35ms between children
+/// - Total window cap: 320ms so large lists feel like ONE coordinated wave
+/// - Each child enters with KratosPageEntrance
+class KratosStaggerList extends StatelessWidget {
+  final List<Widget> children;
+  final Duration stepDuration;
+  final Duration windowCap;
+  final Axis direction;
+  final CrossAxisAlignment crossAxisAlignment;
+  final MainAxisSize mainAxisSize;
+
+  const KratosStaggerList({
+    super.key,
+    required this.children,
+    this.stepDuration = KratosMotion.staggerStepDuration,
+    this.windowCap = KratosMotion.staggerWindowCap,
+    this.direction = Axis.vertical,
+    this.crossAxisAlignment = CrossAxisAlignment.start,
+    this.mainAxisSize = MainAxisSize.min,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final count = children.length;
+    final maxSteps = (windowCap.inMilliseconds / stepDuration.inMilliseconds).floor();
+
+    final animatedChildren = <Widget>[];
+    for (var i = 0; i < count; i++) {
+      final stepIndex = i < maxSteps ? i : maxSteps;
+      final delay = stepDuration * stepIndex;
+      animatedChildren.add(
+        KratosPageEntrance(
+          delay: delay,
+          child: children[i],
+        ),
+      );
+    }
+
+    if (direction == Axis.vertical) {
+      return Column(
+        crossAxisAlignment: crossAxisAlignment,
+        mainAxisSize: mainAxisSize,
+        children: animatedChildren,
+      );
+    } else {
+      return Row(
+        crossAxisAlignment: crossAxisAlignment,
+        mainAxisSize: mainAxisSize,
+        children: animatedChildren,
+      );
+    }
+  }
+}
+
+/// Smooth progress animation widget (Section 6).
+///
+/// Animates from previous value to new value over ~750ms with natural deceleration.
+/// Does not animate continuously; stops once settled.
+class KratosProgressAnimation extends StatefulWidget {
+  final double value; // 0.0 to 1.0
+  final Widget Function(BuildContext context, double animatedValue) builder;
+  final Duration duration;
+  final Curve curve;
+
+  const KratosProgressAnimation({
+    super.key,
+    required this.value,
+    required this.builder,
+    this.duration = KratosMotion.progressDuration,
+    this.curve = KratosMotion.progressCurve,
+  });
+
+  @override
+  State<KratosProgressAnimation> createState() => _KratosProgressAnimationState();
+}
+
+class _KratosProgressAnimationState extends State<KratosProgressAnimation>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late Animation<double> _animation;
+  double _lastValue = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastValue = widget.value.clamp(0.0, 1.0);
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _animation = Tween<double>(begin: 0.0, end: _lastValue).animate(
+      CurvedAnimation(parent: _controller, curve: widget.curve),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void didUpdateWidget(KratosProgressAnimation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      final target = widget.value.clamp(0.0, 1.0);
+      _animation = Tween<double>(begin: _animation.value, end: target).animate(
+        CurvedAnimation(parent: _controller, curve: widget.curve),
+      );
+      _controller.forward(from: 0.0);
+    }
+  }
+
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final disableAnimations =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (disableAnimations) {
+      return widget.builder(context, widget.value.clamp(0.0, 1.0));
+    }
+
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, _) => widget.builder(context, _animation.value),
+    );
+  }
+}
+
+/// Smooth number animation for XP, streaks, levels, and progress counters (Section 5).
+///
+/// Animates numeric value change from previous to target over ~650ms.
+/// Maintains a single Text widget with full string formatting (e.g. "5,000 XP"),
+/// preserving exact widget tree searchability while rendering smooth counting motion.
+class KratosAnimatedMetric extends StatefulWidget {
+  final num value;
+  final String Function(num animatedValue) formatter;
+  final TextStyle? style;
+  final Duration duration;
+  final Curve curve;
+
+  const KratosAnimatedMetric({
+    super.key,
+    required this.value,
+    required this.formatter,
+    this.style,
+    this.duration = KratosMotion.numberDuration,
+    this.curve = KratosMotion.numberCurve,
+  });
+
+  @override
+  State<KratosAnimatedMetric> createState() => _KratosAnimatedMetricState();
+}
+
+class _KratosAnimatedMetricState extends State<KratosAnimatedMetric>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late Animation<double> _animation;
+  num _lastValue = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastValue = widget.value;
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _animation = Tween<double>(begin: 0.0, end: widget.value.toDouble()).animate(
+      CurvedAnimation(parent: _controller, curve: widget.curve),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant KratosAnimatedMetric oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _lastValue = oldWidget.value;
+      _animation = Tween<double>(
+        begin: _lastValue.toDouble(),
+        end: widget.value.toDouble(),
+      ).animate(
+        CurvedAnimation(parent: _controller, curve: widget.curve),
+      );
+      _controller.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final disableAnimations =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (disableAnimations) {
+      return Text(widget.formatter(widget.value), style: widget.style);
+    }
+
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, _) {
+        final currentVal = _animation.value;
+        return Text(widget.formatter(currentVal), style: widget.style);
+      },
+    );
+  }
+}
+
+
+/// Tactile button press wrapper (Section 7).
+///
+/// Applies subtle scale on press:
+/// - 1.0 -> 0.968–0.978 on press
+/// - Returns to 1.0 on release
+/// - Immediate tactile feel without bounce or design changes
+class KratosPressable extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final HitTestBehavior behavior;
+
+  const KratosPressable({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.behavior = HitTestBehavior.opaque,
+  });
+
+  @override
+  State<KratosPressable> createState() => _KratosPressableState();
+}
+
+class _KratosPressableState extends State<KratosPressable> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final disableAnimations =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (disableAnimations) {
+      return GestureDetector(
+        behavior: widget.behavior,
+        onTap: widget.onTap,
+        child: widget.child,
+      );
+    }
+
+    final isWeb = KratosMotion.isWebOrDesktop;
+    final pressedScale =
+        isWeb ? KratosMotion.buttonPressScaleWeb : KratosMotion.buttonPressScaleMobile;
+
+    return GestureDetector(
+      behavior: widget.behavior,
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? pressedScale : 1.0,
+        duration: _pressed
+            ? KratosMotion.pressDownDuration
+            : KratosMotion.pressReleaseDuration,
+        curve: _pressed ? KratosMotion.pressCurve : KratosMotion.releaseCurve,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Physical switch & toggle motion widget (Section 8).
+///
+/// Preserves exact existing KRATOS switch appearance while animating
+/// the thumb smoothly with natural physical spring-deceleration curve.
+class KratosPhysicalSwitch extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+  final Color activeColor;
+  final Color inactiveColor;
+
+  const KratosPhysicalSwitch({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.activeColor = KratosTheme.acidLime,
+    this.inactiveColor = const Color(0x33FFFFFF),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onChanged != null;
+    final disableAnimations =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+    return GestureDetector(
+      onTap: enabled ? () => onChanged!(!value) : null,
+      child: AnimatedContainer(
+        duration: disableAnimations ? Duration.zero : KratosMotion.switchDuration,
+        curve: KratosMotion.switchCurve,
+        width: 44,
+        height: 24,
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: value
+              ? activeColor.withValues(alpha: 0.25)
+              : inactiveColor,
+          border: Border.all(
+            color: value
+                ? activeColor.withValues(alpha: 0.8)
+                : Colors.white24,
+            width: 1,
+          ),
+        ),
+        child: AnimatedAlign(
+          duration: disableAnimations ? Duration.zero : KratosMotion.switchDuration,
+          curve: KratosMotion.switchCurve,
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: value ? activeColor : Colors.white70,
+              boxShadow: value
+                  ? [
+                      BoxShadow(
+                        color: activeColor.withValues(alpha: 0.4),
+                        blurRadius: 6,
+                      ),
+                    ]
+                  : null,
+            ),
           ),
         ),
       ),

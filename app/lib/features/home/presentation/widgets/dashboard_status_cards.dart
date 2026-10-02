@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/kratos_visuals.dart';
 import '../../../../app/kratos_motion.dart';
+import '../../../../app/number_pop_in.dart';
 import '../../../../data/drift/app_database.dart';
 import '../../../notifications/data/notifications_dao.dart';
 import '../../../notifications/domain/notification_models.dart';
@@ -145,7 +146,14 @@ class _StatusCard extends StatelessWidget {
                   ],
                 ),
                 const Spacer(),
-                Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+                KratosNumberPopIn(
+                  value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(detail, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 10)),
               ],

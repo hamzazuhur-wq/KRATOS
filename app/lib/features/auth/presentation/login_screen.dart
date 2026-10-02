@@ -1,653 +1,943 @@
-// ignore_for_file: public_member_api_docs
-import 'dart:async';
+// KRATOS Login & Create Account Screen — Wave 3: Create Account + Email Sign In + Google OAuth.
+// High-aesthetic Liquid Glass design with official Supabase authentication.
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
+import '../../../app/kratos_theme.dart';
+import '../domain/auth_models.dart';
 import '../domain/auth_service.dart';
+import 'email_verification_screen.dart';
+import 'reset_password_screen.dart';
 
-// ---------------------------------------------------------------------------
-// Login screen — supports Sign In, Sign Up, and OTP verification step.
-// ---------------------------------------------------------------------------
-
-enum _AuthMode { signIn, signUp }
-
-enum _Step { form, otp }
+enum _AuthMode {
+  signIn,
+  createAccount,
+  verifyOtp,
+  forgotPassword,
+}
 
 class LoginScreen extends StatefulWidget {
   final AuthService authService;
-  final VoidCallback onLoginSuccess;
+  final String? initialError;
+  final VoidCallback? onLoginSuccess;
 
   const LoginScreen({
     super.key,
     required this.authService,
-    required this.onLoginSuccess,
+    this.initialError,
+    this.onLoginSuccess,
   });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
-    with SingleTickerProviderStateMixin {
-  // ── tab / step ────────────────────────────────────────────────────────────
+class _LoginScreenState extends State<LoginScreen> {
   _AuthMode _mode = _AuthMode.signIn;
-  _Step _step = _Step.form;
 
-  // ── controllers ───────────────────────────────────────────────────────────
-  final _nameCtrl = TextEditingController();
+  final _fullNameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  final _otpCtrl = TextEditingController();
-  final _emailFocus = FocusNode();
-  final _passwordFocus = FocusNode();
+  final _confirmPasswordCtrl = TextEditingController();
 
-  // ── state ─────────────────────────────────────────────────────────────────
-  bool _isLoading = false;
+  String? _verificationEmail;
+  String? _verificationName;
+
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+  bool _isBusySubmitting = false;
+  bool _isLaunchingGoogle = false;
   String? _errorMessage;
-  String? _pendingEmail; // email awaiting OTP confirmation
-  Timer? _cooldownTimer;
-  int _resendSeconds = 0;
+  String? _successBanner;
+
+  @override
+  void initState() {
+    super.initState();
+    _errorMessage = widget.initialError;
+  }
+
+  @override
+  void didUpdateWidget(covariant LoginScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialError != oldWidget.initialError) {
+      setState(() => _errorMessage = widget.initialError);
+    }
+  }
 
   @override
   void dispose() {
-    _cooldownTimer?.cancel();
-    _nameCtrl.dispose();
+    _fullNameCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
-    _otpCtrl.dispose();
-    _emailFocus.dispose();
-    _passwordFocus.dispose();
+    _confirmPasswordCtrl.dispose();
     super.dispose();
   }
 
-  // ── helpers ───────────────────────────────────────────────────────────────
-
-  bool _isValidEmail(String v) =>
-      RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v);
-
-  Future<void> _run(Future<void> Function() action) async {
-    if (_isLoading) return;
+  void _switchMode(_AuthMode newMode) {
+    if (_isBusySubmitting || _isLaunchingGoogle) return;
     setState(() {
-      _isLoading = true;
+      _mode = newMode;
       _errorMessage = null;
+      _successBanner = null;
     });
-    try {
-      await action();
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _errorMessage =
-          e is AuthFailure ? e.message : 'Something went wrong. Try again.');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+  }
+
+  String? _validateCreateAccountInputs({
+    required String fullName,
+    required String email,
+    required String password,
+    required String confirmPassword,
+  }) {
+    if (fullName.trim().isEmpty) {
+      return 'Please enter your full name.';
     }
+
+    if (email.trim().isEmpty) {
+      return 'Please enter your email.';
+    }
+
+    final emailRegex = RegExp(r'^[\w\.\-]+@[\w\.\-]+\.[a-zA-Z]{2,}$');
+    if (!emailRegex.hasMatch(email.trim())) {
+      return 'Please enter a valid email address.';
+    }
+
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters.';
+    }
+
+    if (!password.contains(RegExp(r'[A-Z]'))) {
+      return 'Password must contain at least one uppercase letter.';
+    }
+
+    if (!password.contains(RegExp(r'[a-z]'))) {
+      return 'Password must contain at least one lowercase letter.';
+    }
+
+    if (!password.contains(RegExp(r'[0-9]'))) {
+      return 'Password must contain at least one number.';
+    }
+
+    final symbolRegex = RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-=+~`\[\]\\/]');
+    if (!password.contains(symbolRegex)) {
+      return 'Password must contain at least one symbol.';
+    }
+
+    if (confirmPassword != password) {
+      return 'Passwords do not match.';
+    }
+
+    return null;
   }
 
-  void _startCooldown() {
-    _cooldownTimer?.cancel();
-    setState(() => _resendSeconds = 60);
-    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) {
-        t.cancel();
-        return;
-      }
-      if (_resendSeconds <= 1) {
-        t.cancel();
-        setState(() => _resendSeconds = 0);
-      } else {
-        setState(() => _resendSeconds -= 1);
-      }
-    });
-  }
+  Future<void> _handleEmailSignIn() async {
+    if (_isBusySubmitting || _isLaunchingGoogle) return;
 
-  void _backToForm() {
-    _cooldownTimer?.cancel();
-    setState(() {
-      _step = _Step.form;
-      _pendingEmail = null;
-      _otpCtrl.clear();
-      _resendSeconds = 0;
-      _errorMessage = null;
-    });
-  }
-
-  // ── action handlers ───────────────────────────────────────────────────────
-
-  Future<void> _handleGoogle() async {
-    await _run(() => widget.authService.signInWithGoogle());
-  }
-
-  Future<void> _handleSignIn() async {
     final email = _emailCtrl.text.trim();
     final password = _passwordCtrl.text;
-    if (!_isValidEmail(email)) {
-      setState(() => _errorMessage = 'Enter a valid email address.');
+
+    if (email.isEmpty) {
+      setState(() => _errorMessage = 'Please enter your email.');
       return;
     }
     if (password.isEmpty) {
-      setState(() => _errorMessage = 'Enter your password.');
+      setState(() => _errorMessage = 'Please enter your password.');
       return;
     }
-    await _run(() async {
+
+    setState(() {
+      _isBusySubmitting = true;
+      _errorMessage = null;
+      _successBanner = null;
+    });
+
+    try {
       await widget.authService.signInWithPassword(
         email: email,
         password: password,
       );
-      if (mounted) widget.onLoginSuccess();
-    });
+
+      final state = widget.authService.currentState;
+      if (state is AuthError && mounted) {
+        setState(() => _errorMessage = state.message);
+      } else if (state is AuthAuthenticated && mounted) {
+        widget.onLoginSuccess?.call();
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _errorMessage = 'Incorrect email or password.');
+      }
+    } finally {
+      if (mounted) setState(() => _isBusySubmitting = false);
+    }
   }
 
-  Future<void> _handleSignUp() async {
-    final name = _nameCtrl.text.trim();
-    final email = _emailCtrl.text.trim();
+  Future<void> _handleCreateAccount() async {
+    if (_isBusySubmitting || _isLaunchingGoogle) return;
+
+    final fullName = _fullNameCtrl.text;
+    final email = _emailCtrl.text;
     final password = _passwordCtrl.text;
-    if (name.isEmpty) {
-      setState(() => _errorMessage = 'Enter your full name.');
+    final confirmPassword = _confirmPasswordCtrl.text;
+
+    // Strict local validation before contacting Supabase
+    final validationError = _validateCreateAccountInputs(
+      fullName: fullName,
+      email: email,
+      password: password,
+      confirmPassword: confirmPassword,
+    );
+
+    if (validationError != null) {
+      setState(() => _errorMessage = validationError);
       return;
     }
-    if (!_isValidEmail(email)) {
-      setState(() => _errorMessage = 'Enter a valid email address.');
-      return;
-    }
-    if (password.length < 8) {
-      setState(
-          () => _errorMessage = 'Password must be at least 8 characters.');
-      return;
-    }
-    await _run(() async {
-      await widget.authService.signUpWithPassword(
-        email: email,
+
+    setState(() {
+      _isBusySubmitting = true;
+      _errorMessage = null;
+      _successBanner = null;
+    });
+
+    try {
+      final result = await widget.authService.signUpWithPassword(
+        fullName: fullName.trim(),
+        email: email.trim(),
         password: password,
-        displayName: name,
       );
+
       if (!mounted) return;
-      setState(() {
-        _pendingEmail = email;
-        _step = _Step.otp;
-      });
-      _startCooldown();
-    });
-  }
 
-  Future<void> _handleVerifyOtp() async {
-    final email = _pendingEmail ?? _emailCtrl.text.trim();
-    final token = _otpCtrl.text.trim();
-    if (!RegExp(r'^\d{6}$').hasMatch(token)) {
-      setState(() => _errorMessage = 'Enter the 6-digit verification code.');
-      return;
+      if (result.requiresEmailVerification) {
+        // Transition directly to verification screen in-place
+        setState(() {
+          _verificationEmail = result.email;
+          _verificationName = fullName.trim();
+          _mode = _AuthMode.verifyOtp;
+          _errorMessage = null;
+        });
+      } else {
+        // Instant authenticated session (if auto-confirm is enabled)
+        widget.onLoginSuccess?.call();
+      }
+    } catch (e) {
+      if (mounted) {
+        final state = widget.authService.currentState;
+        if (state is AuthError) {
+          setState(() => _errorMessage = state.message);
+        } else {
+          setState(() => _errorMessage = 'Unable to create account. Please try again.');
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isBusySubmitting = false);
     }
-    await _run(() async {
-      await widget.authService.verifySignUpOtp(email: email, token: token);
-      if (mounted) widget.onLoginSuccess();
-    });
   }
 
-  Future<void> _handleResend() async {
-    if (_resendSeconds > 0 || _isLoading) return;
-    final email = _pendingEmail ?? _emailCtrl.text.trim();
-    await _run(() async {
-      await widget.authService.signUpWithPassword(
-        email: email,
-        password: _passwordCtrl.text,
-        displayName: _nameCtrl.text.trim(),
-      );
-      _startCooldown();
-    });
-  }
+  Future<void> _handleGoogleSignIn() async {
+    if (_isBusySubmitting || _isLaunchingGoogle) return;
 
-  // ── build ─────────────────────────────────────────────────────────────────
+    setState(() {
+      _isLaunchingGoogle = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await widget.authService.signInWithGoogle();
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Unable to complete Google sign-in. Please try again.';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isLaunchingGoogle = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildBrand(),
-                const SizedBox(height: 40),
-                Container(
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.03),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08)),
-                  ),
-                  child: _step == _Step.otp
-                      ? _buildOtpStep()
-                      : _buildFormStep(),
-                ),
-                const SizedBox(height: 24),
-                if (widget.authService.isDevBypassEnabled) _buildDevBypass(),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ── brand ─────────────────────────────────────────────────────────────────
-
-  Widget _buildBrand() => Column(
-        children: [
-          Image.asset(
-            'assets/branding/kratos_logo.png',
-            width: 76,
-            height: 76,
-            fit: BoxFit.contain,
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'KRATOS',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 4,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'LEVEL UP YOUR LIFE',
-            style: TextStyle(
-              color: Color(0xFFC6F135),
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2.5,
-            ),
-          ),
-        ],
-      );
-
-  // ── tab switcher ──────────────────────────────────────────────────────────
-
-  Widget _buildTabSwitcher() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          _buildTab('Sign In', _AuthMode.signIn),
-          _buildTab('Create Account', _AuthMode.signUp),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTab(String label, _AuthMode mode) {
-    final active = _mode == mode;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          if (_mode == mode || _isLoading) return;
+    if (_mode == _AuthMode.verifyOtp && _verificationEmail != null) {
+      return EmailVerificationScreen(
+        email: _verificationEmail!,
+        fullName: _verificationName,
+        authService: widget.authService,
+        onVerificationSuccess: widget.onLoginSuccess,
+        onBack: () {
           setState(() {
-            _mode = mode;
+            _mode = _AuthMode.createAccount;
             _errorMessage = null;
-            _nameCtrl.clear();
-            _emailCtrl.clear();
-            _passwordCtrl.clear();
           });
         },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 11),
-          decoration: BoxDecoration(
-            color: active
-                ? const Color(0xFFC6F135).withValues(alpha: 0.15)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-            border: active
-                ? Border.all(
-                    color: const Color(0xFFC6F135).withValues(alpha: 0.4))
-                : null,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: active ? const Color(0xFFC6F135) : Colors.white38,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
+      );
+    }
+
+    if (_mode == _AuthMode.forgotPassword) {
+      return ResetPasswordScreen(
+        authService: widget.authService,
+        initialEmail: _emailCtrl.text.trim(),
+        onBackToSignIn: () {
+          setState(() {
+            _mode = _AuthMode.signIn;
+            _errorMessage = null;
+          });
+        },
+        onResetSuccess: (resetEmail) {
+          setState(() {
+            _mode = _AuthMode.signIn;
+            _emailCtrl.text = resetEmail;
+            _passwordCtrl.clear();
+            _errorMessage = null;
+            _successBanner = 'Password updated successfully! Please sign in with your new password.';
+          });
+        },
+      );
+    }
+
+    final state = widget.authService.currentState;
+    final isBusy = _isBusySubmitting || _isLaunchingGoogle || state is AuthAuthenticating;
+
+    return Scaffold(
+      backgroundColor: KratosTheme.volcanic,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background ambient gradient
+          Positioned(
+            top: -120,
+            left: -120,
+            child: Container(
+              width: 320,
+              height: 320,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    KratosTheme.acidLime.withValues(alpha: 0.12),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+          Positioned(
+            bottom: -100,
+            right: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    KratosTheme.cyan.withValues(alpha: 0.08),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Main Center Content
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                    child: Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: KratosTheme.volcanic.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: KratosTheme.borderGlass,
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Brand Header
+                          const Text(
+                            'KRATOS',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 8,
+                              color: KratosTheme.acidLime,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'OPERATING SYSTEM FOR HUMAN ASCENT',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 2.2,
+                              color: Colors.white.withValues(alpha: 0.6),
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+
+                          // Mode Segmented Switch: Sign In vs Create Account
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: KratosTheme.glassFill,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: KratosTheme.borderGlass,
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () => _switchMode(_AuthMode.signIn),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: _mode == _AuthMode.signIn
+                                            ? KratosTheme.acidLime
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        'Sign In',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: _mode == _AuthMode.signIn
+                                              ? KratosTheme.volcanic
+                                              : Colors.white.withValues(alpha: 0.7),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () => _switchMode(_AuthMode.createAccount),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: _mode == _AuthMode.createAccount
+                                            ? KratosTheme.acidLime
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        'Create Account',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: _mode == _AuthMode.createAccount
+                                              ? KratosTheme.volcanic
+                                              : Colors.white.withValues(alpha: 0.7),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Success message banner (e.g. after password reset)
+                          if (_successBanner != null) ...[
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: KratosTheme.acidLime.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: KratosTheme.acidLime.withValues(alpha: 0.5),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.check_circle_outline,
+                                    color: KratosTheme.acidLime,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _successBanner!,
+                                      style: const TextStyle(
+                                        color: KratosTheme.acidLime,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+
+                          // Error message banner
+                          if (_errorMessage != null) ...[
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.redAccent.withValues(alpha: 0.4),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.error_outline,
+                                    color: Colors.redAccent,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _errorMessage!,
+                                      style: const TextStyle(
+                                        color: Colors.redAccent,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+
+                          // Full Name (Only in Create Account mode)
+                          if (_mode == _AuthMode.createAccount) ...[
+                            TextField(
+                              controller: _fullNameCtrl,
+                              enabled: !isBusy,
+                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                              decoration: InputDecoration(
+                                labelText: 'Full Name',
+                                labelStyle: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                  fontSize: 13,
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.person_outline,
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  size: 18,
+                                ),
+                                filled: true,
+                                fillColor: KratosTheme.glassFill,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: KratosTheme.borderGlass,
+                                    width: 1,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: KratosTheme.acidLime,
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // Email Input Field
+                          TextField(
+                            controller: _emailCtrl,
+                            enabled: !isBusy,
+                            keyboardType: TextInputType.emailAddress,
+                            autocorrect: false,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            decoration: InputDecoration(
+                              labelText: 'Email',
+                              labelStyle: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                fontSize: 13,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.alternate_email,
+                                color: Colors.white.withValues(alpha: 0.5),
+                                size: 18,
+                              ),
+                              filled: true,
+                              fillColor: KratosTheme.glassFill,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: KratosTheme.borderGlass,
+                                  width: 1,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: KratosTheme.acidLime,
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Password Input Field
+                          TextField(
+                            controller: _passwordCtrl,
+                            enabled: !isBusy,
+                            obscureText: _obscurePassword,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              labelStyle: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                fontSize: 13,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.lock_outline,
+                                color: Colors.white.withValues(alpha: 0.5),
+                                size: 18,
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  size: 18,
+                                ),
+                                onPressed: () {
+                                  setState(() => _obscurePassword = !_obscurePassword);
+                                },
+                              ),
+                              filled: true,
+                              fillColor: KratosTheme.glassFill,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: KratosTheme.borderGlass,
+                                  width: 1,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: KratosTheme.acidLime,
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
+                            onSubmitted: (_) {
+                              if (_mode == _AuthMode.signIn) {
+                                _handleEmailSignIn();
+                              }
+                            },
+                          ),
+                          if (_mode == _AuthMode.signIn) ...[
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: InkWell(
+                                onTap: isBusy
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          _mode = _AuthMode.forgotPassword;
+                                          _errorMessage = null;
+                                        });
+                                      },
+                                borderRadius: BorderRadius.circular(6),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 4,
+                                  ),
+                                  child: Text(
+                                    'Forgot password?',
+                                    style: TextStyle(
+                                      color: KratosTheme.acidLime.withValues(alpha: 0.9),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+
+                          // Confirm Password (Only in Create Account mode)
+                          if (_mode == _AuthMode.createAccount) ...[
+                            TextField(
+                              controller: _confirmPasswordCtrl,
+                              enabled: !isBusy,
+                              obscureText: _obscureConfirmPassword,
+                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                              decoration: InputDecoration(
+                                labelText: 'Confirm Password',
+                                labelStyle: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                  fontSize: 13,
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.lock_reset_outlined,
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  size: 18,
+                                ),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscureConfirmPassword
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    color: Colors.white.withValues(alpha: 0.5),
+                                    size: 18,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscureConfirmPassword = !_obscureConfirmPassword;
+                                    });
+                                  },
+                                ),
+                                filled: true,
+                                fillColor: KratosTheme.glassFill,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: KratosTheme.borderGlass,
+                                    width: 1,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: KratosTheme.acidLime,
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                              onSubmitted: (_) => _handleCreateAccount(),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+
+                          const SizedBox(height: 8),
+
+                          // Primary Action Button: "Sign In" or "Create"
+                          FilledButton(
+                            onPressed: isBusy
+                                ? null
+                                : (_mode == _AuthMode.signIn
+                                    ? _handleEmailSignIn
+                                    : _handleCreateAccount),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: KratosTheme.acidLime,
+                              disabledBackgroundColor: KratosTheme.acidLime.withValues(alpha: 0.3),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: _isBusySubmitting
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        KratosTheme.volcanic,
+                                      ),
+                                    ),
+                                  )
+                                : Text(
+                                    _mode == _AuthMode.signIn ? 'Sign In' : 'Create',
+                                    style: const TextStyle(
+                                      color: KratosTheme.volcanic,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Divider / "OR"
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Divider(
+                                  color: Colors.white.withValues(alpha: 0.15),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  'OR',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.4),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 1.5,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Divider(
+                                  color: Colors.white.withValues(alpha: 0.15),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Continue with Google Button
+                          OutlinedButton(
+                            onPressed: isBusy ? null : _handleGoogleSignIn,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 16,
+                              ),
+                              side: BorderSide(
+                                color: isBusy
+                                    ? Colors.white.withValues(alpha: 0.2)
+                                    : KratosTheme.acidLime.withValues(alpha: 0.8),
+                                width: 1.2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              backgroundColor: KratosTheme.glassFill,
+                            ),
+                            child: _isLaunchingGoogle
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        KratosTheme.acidLime,
+                                      ),
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      _GoogleIcon(),
+                                      const SizedBox(width: 12),
+                                      const Text(
+                                        'Continue with Google',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Security Notice
+                          Text(
+                            'Secured by Supabase Auth with PKCE and hardware-grade session encryption.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.white.withValues(alpha: 0.35),
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  // ── form step ─────────────────────────────────────────────────────────────
+class _GoogleIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: CustomPaint(
+        painter: _GoogleLogoPainter(),
+      ),
+    );
+  }
+}
 
-  Widget _buildFormStep() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildTabSwitcher(),
-          const SizedBox(height: 24),
+class _GoogleLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
 
-          // Google button
-          _primaryButton(
-            label: 'Continue with Google',
-            icon: Icons.g_mobiledata,
-            onTap: _handleGoogle,
-          ),
-          const SizedBox(height: 20),
+    final redPaint = Paint()..color = const Color(0xFFEA4335)..style = PaintingStyle.fill;
+    final bluePaint = Paint()..color = const Color(0xFF4285F4)..style = PaintingStyle.fill;
+    final yellowPaint = Paint()..color = const Color(0xFFFBBC05)..style = PaintingStyle.fill;
+    final greenPaint = Paint()..color = const Color(0xFF34A853)..style = PaintingStyle.fill;
 
-          // Divider
-          const Row(children: [
-            Expanded(child: Divider(color: Colors.white12)),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              child: Text('OR',
-                  style: TextStyle(color: Colors.white24, fontSize: 11)),
-            ),
-            Expanded(child: Divider(color: Colors.white12)),
-          ]),
-          const SizedBox(height: 20),
+    final rect = Rect.fromCircle(center: center, radius: radius);
 
-          // Name field (Sign Up only)
-          if (_mode == _AuthMode.signUp) ...[
-            _fieldLabel('Full Name'),
-            const SizedBox(height: 8),
-            _textField(
-              controller: _nameCtrl,
-              hint: 'Your name',
-              icon: Icons.person_outline,
-              onSubmitted: (_) => _emailFocus.requestFocus(),
-            ),
-            const SizedBox(height: 16),
-          ],
+    canvas.drawArc(rect, -0.6, 1.2, true, bluePaint);
+    canvas.drawArc(rect, 0.6, 1.0, true, greenPaint);
+    canvas.drawArc(rect, 1.6, 1.2, true, yellowPaint);
+    canvas.drawArc(rect, 2.8, 1.4, true, redPaint);
 
-          // Email
-          _fieldLabel('Email'),
-          const SizedBox(height: 8),
-          _textField(
-            controller: _emailCtrl,
-            hint: 'you@example.com',
-            icon: Icons.email_outlined,
-            keyboardType: TextInputType.emailAddress,
-            focusNode: _emailFocus,
-            onSubmitted: (_) => _passwordFocus.requestFocus(),
-          ),
-          const SizedBox(height: 16),
+    final innerPaint = Paint()..color = const Color(0xFF141414)..style = PaintingStyle.fill;
+    canvas.drawCircle(center, radius * 0.55, innerPaint);
 
-          // Password
-          _fieldLabel('Password'),
-          const SizedBox(height: 8),
-          _passwordField(),
-          if (_mode == _AuthMode.signUp)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                'At least 8 characters',
-                style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.3), fontSize: 11),
-              ),
-            ),
-          const SizedBox(height: 24),
+    final barRect = Rect.fromLTWH(
+      center.dx,
+      center.dy - (radius * 0.22),
+      radius,
+      radius * 0.44,
+    );
+    canvas.drawRect(barRect, bluePaint);
+  }
 
-          // CTA button
-          _accentButton(
-            _mode == _AuthMode.signIn ? 'Sign In' : 'Create Account & Send Code',
-            _mode == _AuthMode.signIn ? _handleSignIn : _handleSignUp,
-          ),
-
-          _errorWidget(),
-        ],
-      );
-
-  // ── otp step ──────────────────────────────────────────────────────────────
-
-  Widget _buildOtpStep() => Column(
-        children: [
-          const Icon(Icons.mark_email_read_outlined,
-              color: Color(0xFFC6F135), size: 40),
-          const SizedBox(height: 16),
-          const Text(
-            'Check your email',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'We sent a 6-digit code to\n${_pendingEmail ?? _emailCtrl.text}',
-            textAlign: TextAlign.center,
-            style:
-                const TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
-          ),
-          const SizedBox(height: 28),
-
-          // 6-digit OTP input
-          TextField(
-            controller: _otpCtrl,
-            keyboardType: TextInputType.number,
-            maxLength: 6,
-            enabled: !_isLoading,
-            textAlign: TextAlign.center,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 30,
-              letterSpacing: 14,
-              fontWeight: FontWeight.w700,
-            ),
-            decoration: InputDecoration(
-              counterText: '',
-              hintText: '000000',
-              hintStyle: const TextStyle(
-                  color: Colors.white12, letterSpacing: 14, fontSize: 30),
-              filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.05),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide.none,
-              ),
-            ),
-            onSubmitted: (_) => _handleVerifyOtp(),
-          ),
-          const SizedBox(height: 20),
-
-          _accentButton('Verify & Enter', _handleVerifyOtp),
-          const SizedBox(height: 12),
-
-          // Resend
-          TextButton(
-            onPressed:
-                _resendSeconds == 0 && !_isLoading ? _handleResend : null,
-            child: Text(
-              _resendSeconds == 0
-                  ? 'Resend code'
-                  : 'Resend in ${_resendSeconds}s',
-              style: TextStyle(
-                color: _resendSeconds == 0
-                    ? const Color(0xFFC6F135)
-                    : Colors.white38,
-              ),
-            ),
-          ),
-
-          TextButton(
-            onPressed: _isLoading ? null : _backToForm,
-            child: const Text('← Back',
-                style: TextStyle(color: Colors.white54)),
-          ),
-
-          _errorWidget(),
-        ],
-      );
-
-  // ── shared widgets ────────────────────────────────────────────────────────
-
-  Widget _fieldLabel(String text) => Text(
-        text,
-        style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
-      );
-
-  Widget _textField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    TextInputType keyboardType = TextInputType.text,
-    FocusNode? focusNode,
-    void Function(String)? onSubmitted,
-  }) =>
-      TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        autocorrect: false,
-        enabled: !_isLoading,
-        focusNode: focusNode,
-        onSubmitted: onSubmitted,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white38, fontSize: 14),
-          prefixIcon: Icon(icon, color: Colors.white38),
-          filled: true,
-          fillColor: Colors.white.withValues(alpha: 0.05),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
-          ),
-        ),
-      );
-
-  Widget _passwordField() => TextField(
-        controller: _passwordCtrl,
-        obscureText: _obscurePassword,
-        enabled: !_isLoading,
-        focusNode: _passwordFocus,
-        onSubmitted: (_) =>
-            _mode == _AuthMode.signIn ? _handleSignIn() : _handleSignUp(),
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: _mode == _AuthMode.signIn ? 'Password' : 'Create password',
-          hintStyle: const TextStyle(color: Colors.white38, fontSize: 14),
-          prefixIcon:
-              const Icon(Icons.lock_outline, color: Colors.white38),
-          suffixIcon: IconButton(
-            icon: Icon(
-              _obscurePassword ? Icons.visibility_off : Icons.visibility,
-              color: Colors.white38,
-              size: 20,
-            ),
-            onPressed: () =>
-                setState(() => _obscurePassword = !_obscurePassword),
-          ),
-          filled: true,
-          fillColor: Colors.white.withValues(alpha: 0.05),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
-          ),
-        ),
-      );
-
-  Widget _primaryButton({
-    required String label,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) =>
-      GestureDetector(
-        onTap: _isLoading ? null : onTap,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.black, size: 28),
-              const SizedBox(width: 8),
-              Text(label,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  )),
-            ],
-          ),
-        ),
-      );
-
-  Widget _accentButton(String label, VoidCallback onTap) => GestureDetector(
-        onTap: _isLoading ? null : onTap,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: const Color(0xFFC6F135).withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-                color: const Color(0xFFC6F135).withValues(alpha: 0.4)),
-          ),
-          alignment: Alignment.center,
-          child: _isLoading
-              ? const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Color(0xFFC6F135),
-                  ),
-                )
-              : Text(
-                  label,
-                  style: const TextStyle(
-                    color: Color(0xFFC6F135),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-        ),
-      );
-
-  Widget _errorWidget() => _errorMessage == null
-      ? const SizedBox.shrink()
-      : Padding(
-          padding: const EdgeInsets.only(top: 16),
-          child: Text(
-            _errorMessage!,
-            style: const TextStyle(color: Color(0xFFFF6B6B), fontSize: 12),
-            textAlign: TextAlign.center,
-          ),
-        );
-
-  Widget _buildDevBypass() => GestureDetector(
-        onTap: _isLoading
-            ? null
-            : () => _run(widget.authService.signInWithDevBypass),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white12),
-          ),
-          child: const Text(
-            'CONTINUE AS DEV (SEED USER)',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
-      );
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

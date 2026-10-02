@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../app/kratos_tiers.dart';
 import '../../../app/kratos_skeleton.dart';
 import '../../../app/kratos_visuals.dart';
+import '../../../app/kratos_motion.dart';
 import '../../../data/drift/app_database.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../profile/domain/profile_models.dart';
@@ -296,11 +297,12 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                       : LayoutBuilder(
                           builder: (context, constraints) {
                             final isWide = constraints.maxWidth >= 840;
-                            return SingleChildScrollView(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isWide ? 32 : 18,
-                                vertical: 16,
-                              ),
+                            return KratosPageEntrance(
+                              child: SingleChildScrollView(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isWide ? 32 : 18,
+                                  vertical: 16,
+                                ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -450,7 +452,8 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                   const SizedBox(height: 40),
                                 ],
                               ),
-                            );
+                            ),
+                          );
                           },
                         ),
                 ),

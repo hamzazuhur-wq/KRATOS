@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/kratos_visuals.dart';
+import '../../../../app/kratos_motion.dart';
 import '../../../../data/drift/app_database.dart';
 import '../../../activities/presentation/create_activity_dialog.dart';
 import '../../../goals/presentation/dialogs/create_goal_dialog.dart';
@@ -178,44 +179,40 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return KratosGlassCard(
-      dashboardGlass: true,
-      accentColor: accentColor,
-      borderRadius: BorderRadius.circular(16),
-      padding: EdgeInsets.zero,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: accentColor, size: 16),
+    return KratosPressable(
+      onTap: onTap,
+      child: KratosGlassCard(
+        dashboardGlass: true,
+        accentColor: accentColor,
+        borderRadius: BorderRadius.circular(16),
+        padding: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(width: 10),
-                Flexible(
-                  child: Text(
-                    label,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.3,
-                    ),
+                child: Icon(icon, color: accentColor, size: 16),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.3,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

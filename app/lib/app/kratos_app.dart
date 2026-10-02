@@ -1,6 +1,8 @@
 // Wave 18: KratosApp — Root Application Widget with State Routing.
 // Manages authentication state, onboarding completion, and Liquid Glass theme.
+// ignore_for_file: avoid_print
 
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
@@ -17,9 +19,7 @@ import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/onboarding/domain/onboarding_service.dart';
 import '../features/sync/data/supabase_sync_transport.dart';
 import 'app_shell.dart';
-import 'kratos_motion.dart';
 import 'kratos_theme.dart';
-import 'kratos_visuals.dart';
 
 class KratosApp extends StatefulWidget {
   final AuthService? authService;
@@ -36,7 +36,6 @@ class _KratosAppState extends State<KratosApp> {
   late final AppDatabase _database;
   final AppConfig _config = AppConfig.fromEnvironment();
   bool _isOnboarded = false;
-  bool _showOpening = true;
   String? _checkedUserId;
   bool _checkingOnboarding = false;
 
@@ -54,6 +53,58 @@ class _KratosAppState extends State<KratosApp> {
       var completed = await onboardingService
           .isCompleted(userId)
           .timeout(const Duration(seconds: 12));
+
+      // Remote Supabase fallback:
+      // If local database has no user record (e.g. fresh browser session or hard reload on Web),
+      // check if the user already has life areas seeded in Supabase cloud database.
+      if (!completed && _config.hasSupabaseConfiguration) {
+        try {
+          final client = supabase.Supabase.instance.client;
+          final remoteLifeAreas = await client
+              .from('life_areas')
+              .select('id, name, description, color, icon, sort_order, version_hlc, created_at, updated_at')
+              .eq('owner_id', userId);
+
+          if (remoteLifeAreas.isNotEmpty) {
+            completed = true;
+
+            final now = DateTime.now().toUtc();
+            await _database.into(_database.users).insertOnConflictUpdate(
+              UsersCompanion.insert(
+                id: userId,
+                deviceId: Id.uuidV7().value,
+                timezone: 'UTC',
+                createdAt: now,
+                updatedAt: now,
+              ),
+            );
+
+            final localAreas = await (_database.select(_database.lifeAreas)
+              ..where((row) => row.ownerId.equals(userId))).get();
+            if (localAreas.isEmpty) {
+              for (final area in remoteLifeAreas) {
+                await _database.into(_database.lifeAreas).insertOnConflictUpdate(
+                  LifeAreasCompanion(
+                    id: drift.Value(area['id'] as String),
+                    ownerId: drift.Value(userId),
+                    name: drift.Value(area['name'] as String),
+                    description: drift.Value(area['description'] as String? ?? ''),
+                    color: drift.Value(area['color'] as String? ?? '#CCFF00'),
+                    icon: drift.Value(area['icon'] as String? ?? 'target'),
+                    sortOrder: drift.Value(area['sort_order'] as int? ?? 0),
+                    versionHlc: drift.Value(area['version_hlc'] as String? ?? '0'),
+                    createdAt: drift.Value(DateTime.tryParse(area['created_at']?.toString() ?? '') ?? now),
+                    updatedAt: drift.Value(DateTime.tryParse(area['updated_at']?.toString() ?? '') ?? now),
+                  ),
+                );
+              }
+            }
+          }
+        } catch (supaErr) {
+          print('[KratosApp] Remote onboarding check error: $supaErr');
+        }
+      }
+
       if (!completed &&
           (userId.startsWith('usr_seed_dev') || userId == 'usr_seed_dev_01')) {
         await onboardingService.bootstrapDevUser(userId: userId);
@@ -66,7 +117,6 @@ class _KratosAppState extends State<KratosApp> {
         _checkingOnboarding = false;
       });
     } catch (e, stack) {
-      // ignore: avoid_print
       print('[KratosApp] _loadOnboarding error for $userId: $e\n$stack');
       if (!mounted) return;
       // Fall back: treat as not onboarded so we reach the onboarding flow
@@ -103,90 +153,92 @@ class _KratosAppState extends State<KratosApp> {
       title: 'KRATOS',
       debugShowCheckedModeBanner: false,
       theme: KratosTheme.darkTheme,
-      builder: (context, child) =>
-          KratosTextReveal(child: child ?? const SizedBox.shrink()),
-      home: Stack(
-        fit: StackFit.expand,
-        children: [
-          StreamBuilder<AuthState>(
-            stream: _authService.authStateStream,
-            initialData: _authService.currentState,
-            builder: (context, snapshot) {
-              final state = snapshot.data;
+      builder: (context, child) => child ?? const SizedBox.shrink(),
+      home: StreamBuilder<AuthState>(
+        stream: _authService.authStateStream,
+        initialData: _authService.currentState,
+        builder: (context, snapshot) {
+          final state = snapshot.data;
 
-              print('[AUTH-TRACE] KratosApp stream builder state: AuthAuthenticated');
-              if (state is AuthAuthenticated) {
-                if (_checkedUserId != state.user.id.value &&
-                    !_checkingOnboarding) {
-                  _loadOnboarding(state.user.id.value);
-                  return const Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                if (_checkingOnboarding) {
-                  return const Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                if (!_isOnboarded) {
-                  return OnboardingScreen(
-                    onComplete:
-                        ({
-                          required selectedAreaIds,
-                          initialGoalTitle,
-                          initialGoalXp = 500,
-                        }) async {
-                          final deviceId = Id.uuidV7();
-                          await OnboardingService(_database).completeOnboarding(
-                            userId: state.user.id.value,
-                            selectedAreaIds: selectedAreaIds,
-                            initialGoalTitle: initialGoalTitle,
-                            initialGoalXp: initialGoalXp,
-                            deviceId: deviceId.value,
-                            versionHlc: Hlc.now(deviceId).toString(),
-                          );
-                          if (mounted) {
-                            setState(() {
-                              _isOnboarded = true;
-                              _checkedUserId = state.user.id.value;
-                            });
-                          }
-                        },
-                  );
-                }
-                return AppShell(
-                  database: _database,
-                  userId: state.user.id.value,
-                  syncTransport: _authService is SupabaseAuthService
-                      ? SupabaseSyncTransport(supabase.Supabase.instance.client)
-                      : null,
-                  onSignOut: () => _authService.signOut(),
-                );
-              }
-
-              if (state is AuthLoading) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              }
-
-              // Unauthenticated
-              print('[AUTH-TRACE] KratosApp returning LoginScreen');
-              return LoginScreen(
-                authService: _authService,
-                onLoginSuccess: () {
-                  // Auth stream will trigger rebuild into AppShell
-                },
+          if (state is AuthAuthenticated) {
+            if (_checkedUserId != state.user.id.value &&
+                !_checkingOnboarding) {
+              _loadOnboarding(state.user.id.value);
+              return const Scaffold(
+                backgroundColor: KratosTheme.volcanic,
+                body: Center(
+                  child: CircularProgressIndicator(
+                    color: KratosTheme.acidLime,
+                  ),
+                ),
               );
+            }
+            if (_checkingOnboarding) {
+              return const Scaffold(
+                backgroundColor: KratosTheme.volcanic,
+                body: Center(
+                  child: CircularProgressIndicator(
+                    color: KratosTheme.acidLime,
+                  ),
+                ),
+              );
+            }
+            if (!_isOnboarded) {
+              return OnboardingScreen(
+                onComplete:
+                    ({
+                      required selectedAreaIds,
+                      initialGoalTitle,
+                      initialGoalXp = 500,
+                    }) async {
+                      final deviceId = Id.uuidV7();
+                      await OnboardingService(_database).completeOnboarding(
+                        userId: state.user.id.value,
+                        selectedAreaIds: selectedAreaIds,
+                        initialGoalTitle: initialGoalTitle,
+                        initialGoalXp: initialGoalXp,
+                        deviceId: deviceId.value,
+                        versionHlc: Hlc.now(deviceId).toString(),
+                      );
+                      if (mounted) {
+                        setState(() {
+                          _isOnboarded = true;
+                          _checkedUserId = state.user.id.value;
+                        });
+                      }
+                    },
+              );
+            }
+            return AppShell(
+              database: _database,
+              userId: state.user.id.value,
+              syncTransport: _authService is SupabaseAuthService
+                  ? SupabaseSyncTransport(supabase.Supabase.instance.client)
+                  : null,
+              onSignOut: () => _authService.signOut(),
+            );
+          }
+
+          if (state is AuthInitializing || state is AuthAuthenticating) {
+            return const Scaffold(
+              backgroundColor: KratosTheme.volcanic,
+              body: Center(
+                child: CircularProgressIndicator(
+                  color: KratosTheme.acidLime,
+                ),
+              ),
+            );
+          }
+
+          // Unauthenticated or AuthError
+          return LoginScreen(
+            authService: _authService,
+            initialError: state is AuthError ? state.message : null,
+            onLoginSuccess: () {
+              // Auth stream will trigger rebuild into AppShell
             },
-          ),
-          if (_showOpening)
-            KratosOpeningSequence(
-              onFinished: () {
-                if (mounted) setState(() => _showOpening = false);
-              },
-            ),
-        ],
+          );
+        },
       ),
     );
   }

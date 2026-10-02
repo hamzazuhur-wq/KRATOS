@@ -1,7 +1,6 @@
 // Wave 18: KRATOS Entrypoint.
 // Initializes the local database, auth service, and boots the KratosApp shell.
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -16,18 +15,17 @@ Future<void> main() async {
       await Supabase.initialize(
         url: config.supabaseUrl,
         publishableKey: config.supabaseAnonKey,
-        authOptions: FlutterAuthClientOptions(
-          // On web, read the OAuth token from the URL fragment (#access_token=…)
-          // or query params (?code=…) that Supabase appends after the redirect.
-          detectSessionInUri: kIsWeb,
-          // Required for PKCE flow on web — stores the code verifier across
-          // the OAuth redirect so the session can be exchanged server-side.
+        authOptions: const FlutterAuthClientOptions(
+          // Detect sessions on both web (URL fragment/query) and mobile (deep link).
+          detectSessionInUri: true,
+          // Required for PKCE flow across web and mobile.
           authFlowType: AuthFlowType.pkce,
         ),
       );
       runApp(const KratosApp());
       return;
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[KRATOS] Supabase initialization failed: $e\n$st');
       runApp(const KratosApp());
       return;
     }

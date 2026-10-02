@@ -130,7 +130,7 @@ class AppConfig {
   static const _kProductionSupabaseUrl =
       'https://hkpqjzstldglpobgwgmo.supabase.co';
   static const _kProductionSupabaseAnonKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrcHFqenN0bGRnbHBvYmd3Z21vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNjE5NDUsImV4cCI6MjA2MjczNzk0NX0.N1kGRkXrgJh1kFVa0h3vRoXt4-nRGKXv2TkbJT_qxEI';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrcHFqenN0bGRnbHBvYmd3Z21vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0NjA1NjgsImV4cCI6MjEwNjAzNjU2OH0.W8UQDli6VTM33-ay5ZP3XTxPIQY3mCiWHDjaa9OBKyY';
 
   factory AppConfig.fromEnvironment({
     bool isRelease = const bool.fromEnvironment('dart.vm.product'),

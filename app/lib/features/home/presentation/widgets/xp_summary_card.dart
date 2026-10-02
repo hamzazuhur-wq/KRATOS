@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../app/kratos_motion.dart';
 import '../../../../app/kratos_visuals.dart';
+import '../../../../app/number_pop_in.dart';
 import '../../domain/home_models.dart';
 
 class XpSummaryCard extends StatelessWidget {
@@ -50,8 +52,9 @@ class XpSummaryCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text(
-                    '$formattedTotal XP',
+                  KratosAnimatedMetric(
+                    value: progression.totalXp,
+                    formatter: (v) => '${formatter.format(v.round())} XP',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -60,8 +63,9 @@ class XpSummaryCard extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  Text(
-                    pctString,
+                  KratosAnimatedMetric(
+                    value: progression.progressPct,
+                    formatter: (v) => '${v.toStringAsFixed(0)}%',
                     style: const TextStyle(
                       color: Color(0xFFC6F135),
                       fontSize: 18,
@@ -73,31 +77,31 @@ class XpSummaryCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // Progress Bar
+              // Progress Bar with natural deceleration
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
                 child: Container(
                   height: 7,
                   width: double.infinity,
                   color: Colors.white.withValues(alpha: 0.08),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: (progression.progressPct / 100.0).clamp(
-                      0.0,
-                      1.0,
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF8AE02B), Color(0xFFC6F135)],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFC6F135)
-                                .withValues(alpha: 0.5),
-                            blurRadius: 8,
+                  child: KratosProgressAnimation(
+                    value: (progression.progressPct / 100.0).clamp(0.0, 1.0),
+                    builder: (context, animatedFactor) => FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: animatedFactor,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF8AE02B), Color(0xFFC6F135)],
                           ),
-                        ],
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFC6F135)
+                                  .withValues(alpha: 0.5),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

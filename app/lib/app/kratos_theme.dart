@@ -21,7 +21,7 @@ class KratosGlobalPageTransitionsBuilder extends PageTransitionsBuilder {
 
     final curved = CurvedAnimation(
       parent: animation,
-      curve: const Cubic(0.22, 1.0, 0.36, 1.0),
+      curve: const Cubic(0.16, 1.0, 0.3, 1.0),
     );
 
     return AnimatedBuilder(
