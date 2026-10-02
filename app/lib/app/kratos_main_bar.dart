@@ -35,86 +35,76 @@ class KratosMainBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final lime = isDark ? const Color(0xFFC6F135) : KratosTheme.lightAcidLime;
-    final iconColor = isDark ? Colors.white70 : KratosTheme.lightTextPrimary;
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
 
     return Material(
-      type: MaterialType.transparency,
+      color: theme.colorScheme.surface,
       child: Container(
         constraints: const BoxConstraints(minHeight: 58),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xFF0D0F0D).withValues(alpha: 0.96)
-              : const Color(0xFFFFFFFF).withValues(alpha: 0.96),
+          color: theme.colorScheme.surface,
           border: Border(
             bottom: BorderSide(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : const Color(0x1F000000),
+              color: theme.dividerColor,
             ),
           ),
         ),
         child: Row(
-        children: [
-          IconButton(
-            tooltip: 'Menu',
-            onPressed: onMenu,
-            icon: Icon(Icons.menu, color: iconColor, size: 21),
-          ),
-          const _KratosMark(),
-          const SizedBox(width: 12),
-          Expanded(
-            child: StreamBuilder<UserProfileData>(
-              stream: ProfileRepository(database: database)
-                  .watchProfile(ownerId),
-              builder: (context, profileSnapshot) {
-                return StreamBuilder<OverallProgressionSnapshot>(
-                  stream: OverallProgressionRepository(database).watch(ownerId),
-                  builder: (context, progressionSnapshot) {
-                    return _IdentityCluster(
-                      profile: profileSnapshot.data,
-                      progression: progressionSnapshot.data,
-                    );
-                  },
-                );
-              },
+          children: [
+            IconButton(
+              tooltip: 'Menu',
+              onPressed: onMenu,
+              icon: const Icon(Icons.menu, size: 21),
             ),
-          ),
-          IconButton(
-            tooltip: notificationCount > 0
-                ? '$notificationCount Notifications'
-                : 'Notifications',
-            onPressed: onNotifications,
-            icon: Badge(
-              isLabelVisible: notificationCount > 0,
-              backgroundColor: hasUrgentNotification
-                  ? const Color(0xFFFF3B30)
-                  : lime,
-              smallSize: 8,
-              child: Icon(
-                notificationCount > 0
-                    ? Icons.notifications_active
-                    : Icons.notifications_outlined,
-                color: notificationCount > 0
-                    ? (hasUrgentNotification
-                          ? const Color(0xFFFF3B30)
-                          : lime)
-                    : (isDark ? Colors.white70 : KratosTheme.lightTextSecondary),
-                size: 20,
+            const _KratosMark(),
+            const SizedBox(width: 12),
+            Expanded(
+              child: StreamBuilder<UserProfileData>(
+                stream: ProfileRepository(database: database)
+                    .watchProfile(ownerId),
+                builder: (context, profileSnapshot) {
+                  return StreamBuilder<OverallProgressionSnapshot>(
+                    stream: OverallProgressionRepository(database).watch(ownerId),
+                    builder: (context, progressionSnapshot) {
+                      return _IdentityCluster(
+                        profile: profileSnapshot.data,
+                        progression: progressionSnapshot.data,
+                      );
+                    },
+                  );
+                },
               ),
             ),
-          ),
-          InkWell(
-            onTap: onStreak,
-            borderRadius: BorderRadius.circular(20),
-            child: Padding(
-              padding: const EdgeInsets.only(left: 4, right: 4),
-              child: StreakBadgeWidget(streakInfo: streakInfo),
+            IconButton(
+              tooltip: notificationCount > 0
+                  ? '$notificationCount Notifications'
+                  : 'Notifications',
+              onPressed: onNotifications,
+              icon: Badge(
+                isLabelVisible: notificationCount > 0,
+                backgroundColor: hasUrgentNotification
+                    ? Colors.red
+                    : primary,
+                smallSize: 8,
+                child: Icon(
+                  notificationCount > 0
+                      ? Icons.notifications_active
+                      : Icons.notifications_outlined,
+                  size: 20,
+                ),
+              ),
             ),
-          ),
-        ],
+            InkWell(
+              onTap: onStreak,
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.only(left: 4, right: 4),
+                child: StreakBadgeWidget(streakInfo: streakInfo),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -126,7 +116,6 @@ class _KratosMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -137,12 +126,11 @@ class _KratosMark extends StatelessWidget {
           fit: BoxFit.contain,
         ),
         const SizedBox(width: 7),
-        Text(
+        const Text(
           'KRATOS',
           style: TextStyle(
-            color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.8,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.5,
             fontSize: 13,
           ),
         ),

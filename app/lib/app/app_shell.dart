@@ -211,108 +211,98 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
     final isDesktop = MediaQuery.of(context).size.width >= 840;
     KratosPageRoute.globalHeaderBuilder = (routeContext) =>
         _buildGlobalMainBar(context, isMobile: !isDesktop);
 
     if (isDesktop) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          const KratosEnvironment(),
-          Scaffold(
-            backgroundColor: Colors.transparent,
-            body: Row(
-              children: [
-                Container(
-                  width: 270,
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF0D0F0D) : const Color(0xFFFFFFFF),
-                    border: Border(
-                      right: BorderSide(
-                        color: isDark ? Colors.white12 : const Color(0x1F000000),
-                        width: 0.5,
-                      ),
-                    ),
-                  ),
-                  child: Material(
-                    color: isDark ? const Color(0xFF0D0F0D) : const Color(0xFFFFFFFF),
-                    child: SafeArea(
-                      child: _buildSidebarContent(context, isDrawer: false),
-                    ),
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: Row(
+          children: [
+            Container(
+              width: 270,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border(
+                  right: BorderSide(
+                    color: theme.dividerColor,
+                    width: 0.5,
                   ),
                 ),
-                Expanded(
-                  child: Scaffold(
-                    backgroundColor: Colors.transparent,
-                    appBar: PreferredSize(
-                      preferredSize: const Size.fromHeight(64),
-                      child: _buildGlobalMainBar(context, isMobile: false),
-                    ),
-                    body: Stack(
+              ),
+              child: Material(
+                color: theme.colorScheme.surface,
+                child: SafeArea(
+                  child: _buildSidebarContent(context, isDrawer: false),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Scaffold(
+                backgroundColor: theme.scaffoldBackgroundColor,
+                appBar: PreferredSize(
+                  preferredSize: const Size.fromHeight(64),
+                  child: _buildGlobalMainBar(context, isMobile: false),
+                ),
+                body: Stack(
+                  children: [
+                    Column(
                       children: [
-                        Column(
-                          children: [
-                            GlobalTimerBanner(
-                              database: widget.database,
-                              ownerId: widget.userId,
-                            ),
-                            Expanded(
-                              child: KratosTabTransition(
-                                currentIndex: _currentIndex,
-                                onSwipeLeft: _nextTab,
-                                onSwipeRight: _prevTab,
-                                children: _buildTabScreens(),
-                              ),
-                            ),
-                          ],
-                        ),
-                        GlobalActiveSessionMiniPlayer(
+                        GlobalTimerBanner(
                           database: widget.database,
                           ownerId: widget.userId,
-                          onOpenDetail: (type, id) {
-                            if (type == 'activity') {
-                              Navigator.of(context).push(
-                                KratosMaterialPageRoute(
-                                  builder: (_) => ActivityDetailScreen(
-                                    database: widget.database,
-                                    ownerId: widget.userId,
-                                    activityId: id,
-                                  ),
-                                ),
-                              );
-                            }
-                          },
+                        ),
+                        Expanded(
+                          child: KratosTabTransition(
+                            currentIndex: _currentIndex,
+                            onSwipeLeft: _nextTab,
+                            onSwipeRight: _prevTab,
+                            children: _buildTabScreens(),
+                          ),
                         ),
                       ],
                     ),
-                  ),
+                    GlobalActiveSessionMiniPlayer(
+                      database: widget.database,
+                      ownerId: widget.userId,
+                      onOpenDetail: (type, id) {
+                        if (type == 'activity') {
+                          Navigator.of(context).push(
+                            KratosMaterialPageRoute(
+                              builder: (_) => ActivityDetailScreen(
+                                database: widget.database,
+                                ownerId: widget.userId,
+                                activityId: id,
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
     }
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const KratosEnvironment(),
-        Scaffold(
-          key: _mobileScaffoldKey,
-          backgroundColor: Colors.transparent,
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(64),
-            child: _buildGlobalMainBar(context, isMobile: true),
-          ),
-          drawer: Drawer(
-            backgroundColor: isDark ? const Color(0xFF0D0F0D) : const Color(0xFFFFFFFF),
-            child: SafeArea(
-              child: _buildSidebarContent(context, isDrawer: true),
-            ),
-          ),
+    return Scaffold(
+      key: _mobileScaffoldKey,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(64),
+        child: _buildGlobalMainBar(context, isMobile: true),
+      ),
+      drawer: Drawer(
+        backgroundColor: theme.colorScheme.surface,
+        child: SafeArea(
+          child: _buildSidebarContent(context, isDrawer: true),
+        ),
+      ),
           body: Stack(
             children: [
               Column(
@@ -386,9 +376,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               ),
             ],
           ),
-        ),
-      ],
-    );
+        );
   }
 
   Widget _buildGlobalMainBar(BuildContext context, {required bool isMobile}) {
@@ -844,18 +832,14 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     Widget? trailing,
     required VoidCallback onTap,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final lime = isDark ? const Color(0xFFC6F135) : KratosTheme.lightAcidLime;
-    final unselectedIcon =
-        isDark ? Colors.white60 : KratosTheme.lightTextSecondary;
-    final unselectedText =
-        isDark ? Colors.white : KratosTheme.lightTextPrimary;
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: Material(
         color: isSelected
-            ? lime.withValues(alpha: 0.12)
+            ? primary.withValues(alpha: 0.12)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         child: ListTile(
@@ -864,14 +848,14 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           ),
           leading: Icon(
             icon,
-            color: isSelected ? lime : unselectedIcon,
+            color: isSelected ? primary : null,
             size: 20,
           ),
           title: Text(
             title,
             style: TextStyle(
-              color: isSelected ? lime : unselectedText,
-              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
+              color: isSelected ? primary : null,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               fontSize: 13,
             ),
           ),
