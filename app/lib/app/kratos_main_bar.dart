@@ -36,18 +36,25 @@ class KratosMainBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final iconColor = isDark ? Colors.white70 : KratosTheme.lightTextPrimary;
 
     return Material(
-      color: theme.colorScheme.surface,
+      color: Colors.transparent,
       child: Container(
         constraints: const BoxConstraints(minHeight: 58),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: isDark
+              ? const Color(0xE8080A08)
+              : const Color(0xF4FFFFFF),
           border: Border(
             bottom: BorderSide(
-              color: theme.dividerColor,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : const Color(0x1F0F172A),
+              width: 1.0,
             ),
           ),
         ),
@@ -56,7 +63,7 @@ class KratosMainBar extends StatelessWidget {
             IconButton(
               tooltip: 'Menu',
               onPressed: onMenu,
-              icon: const Icon(Icons.menu, size: 21),
+              icon: Icon(Icons.menu, color: iconColor, size: 21),
             ),
             const _KratosMark(),
             const SizedBox(width: 12),
@@ -85,13 +92,18 @@ class KratosMainBar extends StatelessWidget {
               icon: Badge(
                 isLabelVisible: notificationCount > 0,
                 backgroundColor: hasUrgentNotification
-                    ? Colors.red
-                    : primary,
+                    ? const Color(0xFFFF3B30)
+                    : accent,
                 smallSize: 8,
                 child: Icon(
                   notificationCount > 0
                       ? Icons.notifications_active
                       : Icons.notifications_outlined,
+                  color: notificationCount > 0
+                      ? (hasUrgentNotification
+                          ? const Color(0xFFFF3B30)
+                          : accent)
+                      : (isDark ? Colors.white70 : KratosTheme.lightTextSecondary),
                   size: 20,
                 ),
               ),
@@ -116,6 +128,7 @@ class _KratosMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -126,11 +139,12 @@ class _KratosMark extends StatelessWidget {
           fit: BoxFit.contain,
         ),
         const SizedBox(width: 7),
-        const Text(
+        Text(
           'KRATOS',
           style: TextStyle(
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.5,
+            color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.8,
             fontSize: 13,
           ),
         ),
