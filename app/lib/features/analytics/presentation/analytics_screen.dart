@@ -403,37 +403,47 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     },
   );
   Widget _card(String title, String value, String delta, Color color) =>
-      KratosGlassCard(
-        accentColor: color,
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              title.toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white54,
-                fontSize: 10,
-                letterSpacing: 1,
-              ),
+      Builder(
+        builder: (context) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return KratosGlassCard(
+            variant: KratosSurfaceVariant.elevated,
+            accentColor: color,
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title.toUpperCase(),
+                  style: TextStyle(
+                    color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
+                    fontSize: 10,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  delta,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 7),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              delta,
-              style: TextStyle(
-                color: color,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       );
   Widget _growth(AnalyticsSnapshot d) => KratosGlassCard(
     child: Column(
@@ -545,51 +555,73 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ],
     ),
   );
-  Widget _rows(List<String> values) => KratosGlassCard(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final value in values)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.arrow_right,
-                  color: KratosTheme.acidLime,
-                  size: 15,
+  Widget _rows(List<String> values) => Builder(
+    builder: (context) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      return KratosGlassCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final value in values)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.arrow_right,
+                      color: KratosTheme.acidLime,
+                      size: 15,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        value,
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : KratosTheme.lightTextSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    value,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+          ],
+        ),
+      );
+    },
+  );
+  Widget _timeline(List<String> values) => Builder(
+    builder: (context) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      return KratosGlassCard(
+        child: Column(
+          children: [
+            for (final value in values)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(
+                  Icons.bolt_outlined,
+                  color: KratosTheme.acidLime,
+                ),
+                title: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
                   ),
                 ),
-              ],
-            ),
-          ),
-      ],
-    ),
-  );
-  Widget _timeline(List<String> values) => KratosGlassCard(
-    child: Column(
-      children: [
-        for (final value in values)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(
-              Icons.bolt_outlined,
-              color: KratosTheme.acidLime,
-            ),
-            title: Text(value, style: const TextStyle(fontSize: 12)),
-            subtitle: const Text(
-              'Recorded event',
-              style: TextStyle(color: Colors.white38, fontSize: 10),
-            ),
-          ),
-      ],
-    ),
+                subtitle: Text(
+                  'Recorded event',
+                  style: TextStyle(
+                    color: isDark ? Colors.white38 : KratosTheme.lightTextMuted,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    },
   );
 
   static String _dayName(int day) => switch (day) {
@@ -626,24 +658,29 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     if (maxDayVal <= 0 && maxTimeVal <= 0) return 'No activity recorded';
     return '${_dayName(peakDay)} $peakTime';
   }
-  Widget _section(String title, Widget child) => Padding(
-    padding: const EdgeInsets.only(top: 26),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white54,
-            fontSize: 11,
-            letterSpacing: 1.4,
-            fontWeight: FontWeight.w800,
-          ),
+  Widget _section(String title, Widget child) => Builder(
+    builder: (context) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      return Padding(
+        padding: const EdgeInsets.only(top: 26),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
+                fontSize: 11,
+                letterSpacing: 1.4,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 10),
+            child,
+          ],
         ),
-        const SizedBox(height: 10),
-        child,
-      ],
-    ),
+      );
+    },
   );
   Widget _state(String message) => Center(
     child: KratosGlassCard(

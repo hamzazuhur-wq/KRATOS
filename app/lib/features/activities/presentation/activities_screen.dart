@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../app/kratos_dropdown.dart';
 import '../../../app/kratos_motion.dart';
 import '../../../app/kratos_skeleton.dart';
+import '../../../app/kratos_theme.dart';
 import '../../../app/kratos_visuals.dart';
 import '../../../data/drift/app_database.dart';
 import '../../categories/data/categories_dao.dart';
@@ -117,15 +118,16 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
+          children: [
+            const Text(
               'ACTIVITIES',
               style: TextStyle(
                 color: Color(0xFFC6F135),
@@ -136,7 +138,10 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
             ),
             Text(
               'Repeatable practices, habits, and tracked routines',
-              style: TextStyle(color: Colors.white38, fontSize: 11),
+              style: TextStyle(
+                color: isDark ? Colors.white38 : KratosTheme.lightTextSecondary,
+                fontSize: 11,
+              ),
             ),
           ],
         ),
@@ -418,7 +423,12 @@ class _ActivityCard extends StatelessWidget {
             activeState.entityId == item.id;
         final isPaused = isActive && activeState.isPaused;
 
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return KratosGlassCard(
+          variant: isActive
+              ? KratosSurfaceVariant.active
+              : KratosSurfaceVariant.interactive,
+          interactive: true,
           accentColor: isActive
               ? (isPaused ? Colors.amber : const Color(0xFFC6F135))
               : null,
@@ -462,8 +472,8 @@ class _ActivityCard extends StatelessWidget {
                             children: [
                               Text(
                                 item.name,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                 ),

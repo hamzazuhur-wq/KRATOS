@@ -40,7 +40,7 @@ class _TasksScreenState extends State<TasksScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFF0D0D0D),
+    backgroundColor: Colors.transparent,
     body: Stack(
       fit: StackFit.expand,
       children: [
@@ -273,56 +273,65 @@ class _Header extends StatelessWidget {
   final VoidCallback onNewTask;
   const _Header({required this.onNewTask});
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        'TASKS',
-        style: TextStyle(
-          color: KratosTheme.acidLime,
-          fontSize: 13,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 2,
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'TASKS',
+          style: TextStyle(
+            color: KratosTheme.acidLime,
+            fontSize: 13,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2,
+          ),
         ),
-      ),
-      const SizedBox(height: 7),
-      const Text(
-        'Turn your plans into action.',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 26,
-          fontWeight: FontWeight.w800,
+        const SizedBox(height: 7),
+        Text(
+          'Turn your plans into action.',
+          style: TextStyle(
+            color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+          ),
         ),
-      ),
-      const SizedBox(height: 16),
-      KratosGlassCard(
-        padding: EdgeInsets.zero,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          onTap: onNewTask,
+        const SizedBox(height: 16),
+        KratosGlassCard(
+          variant: KratosSurfaceVariant.interactive,
+          interactive: true,
+          padding: EdgeInsets.zero,
           borderRadius: BorderRadius.circular(18),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            child: Row(
-              children: [
-                Icon(Icons.add, color: KratosTheme.acidLime),
-                SizedBox(width: 10),
-                Text(
-                  'New Task',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
+          child: InkWell(
+            onTap: onNewTask,
+            borderRadius: BorderRadius.circular(18),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(
+                children: [
+                  const Icon(Icons.add, color: KratosTheme.acidLime),
+                  const SizedBox(width: 10),
+                  Text(
+                    'New Task',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                Spacer(),
-                Icon(Icons.arrow_forward, size: 18, color: Colors.white54),
-              ],
+                  const Spacer(),
+                  Icon(
+                    Icons.arrow_forward,
+                    size: 18,
+                    color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 class _StatusFilters extends StatelessWidget {
@@ -330,38 +339,46 @@ class _StatusFilters extends StatelessWidget {
   final ValueChanged<TaskDashboardStatus> onChanged;
   const _StatusFilters({required this.selected, required this.onChanged});
   @override
-  Widget build(BuildContext context) => Row(
-    children: TaskDashboardStatus.values.map((status) {
-      final active = selected == status;
-      return Expanded(
-        child: Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: OutlinedButton(
-            onPressed: () => onChanged(status),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: active ? KratosTheme.acidLime : Colors.white60,
-              backgroundColor: active
-                  ? KratosTheme.acidLime.withValues(alpha: .12)
-                  : Colors.white.withValues(alpha: .03),
-              side: BorderSide(
-                color: active
-                    ? KratosTheme.acidLime.withValues(alpha: .65)
-                    : Colors.white12,
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Row(
+      children: TaskDashboardStatus.values.map((status) {
+        final active = selected == status;
+        final inactiveFg = isDark ? Colors.white60 : KratosTheme.lightTextSecondary;
+        final inactiveBg = isDark
+            ? Colors.white.withValues(alpha: .03)
+            : Colors.black.withValues(alpha: .03);
+        final inactiveBorder = isDark ? Colors.white12 : Colors.black12;
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: OutlinedButton(
+              onPressed: () => onChanged(status),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: active ? KratosTheme.acidLime : inactiveFg,
+                backgroundColor: active
+                    ? KratosTheme.acidLime.withValues(alpha: .12)
+                    : inactiveBg,
+                side: BorderSide(
+                  color: active
+                      ? KratosTheme.acidLime.withValues(alpha: .65)
+                      : inactiveBorder,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 13),
               ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+              child: Text(
+                _statusLabel(status),
+                style: const TextStyle(fontWeight: FontWeight.w800),
               ),
-              padding: const EdgeInsets.symmetric(vertical: 13),
-            ),
-            child: Text(
-              _statusLabel(status),
-              style: const TextStyle(fontWeight: FontWeight.w800),
             ),
           ),
-        ),
-      );
-    }).toList(),
-  );
+        );
+      }).toList(),
+    );
+  }
 }
 
 class _DynamicFilters extends StatelessWidget {
@@ -446,16 +463,22 @@ class _SelectButton extends StatelessWidget {
     required this.onTap,
   });
   @override
-  Widget build(BuildContext context) => OutlinedButton.icon(
-    onPressed: onTap,
-    icon: Icon(icon, size: 16),
-    label: Text(label, overflow: TextOverflow.ellipsis),
-    style: OutlinedButton.styleFrom(
-      foregroundColor: Colors.white70,
-      side: const BorderSide(color: Colors.white12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-    ),
-  );
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 16),
+      label: Text(label, overflow: TextOverflow.ellipsis),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: isDark ? Colors.white70 : KratosTheme.lightTextPrimary,
+        side: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
+        backgroundColor: isDark
+            ? Colors.white.withValues(alpha: .03)
+            : Colors.black.withValues(alpha: .02),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
 }
 
 class _ChoiceSheet<T> extends StatelessWidget {
@@ -490,11 +513,13 @@ class _WorkloadSummary extends StatelessWidget {
   const _WorkloadSummary({required this.tasks, required this.status});
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final tracked = tasks.fold<int>(
       0,
       (sum, task) => sum + task.trackedDurationMs,
     );
     return KratosGlassCard(
+      variant: KratosSurfaceVariant.elevated,
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -520,9 +545,12 @@ class _WorkloadSummary extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          const Text(
+          Text(
             'Planned time is not persisted in the current Task schema.',
-            style: TextStyle(color: Colors.white38, fontSize: 11),
+            style: TextStyle(
+              color: isDark ? Colors.white38 : KratosTheme.lightTextSecondary,
+              fontSize: 11,
+            ),
           ),
         ],
       ),
@@ -535,26 +563,32 @@ class _Metric extends StatelessWidget {
   final String label;
   const _Metric({required this.value, required this.label});
   @override
-  Widget build(BuildContext context) => Expanded(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        KratosNumberPopIn(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          KratosNumberPopIn(
+            value,
+            style: TextStyle(
+              color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white54, fontSize: 11),
-        ),
-      ],
-    ),
-  );
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Section extends StatelessWidget {
@@ -577,43 +611,50 @@ class _Section extends StatelessWidget {
     required this.onDelete,
   });
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.5,
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                color: isDark ? Colors.white70 : KratosTheme.lightTextSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5,
+              ),
             ),
-          ),
-          const SizedBox(width: 10),
-          const Expanded(child: Divider(color: Colors.white12)),
-        ],
-      ),
-      const SizedBox(height: 10),
-      if (tasks.isEmpty)
-        _EmptyState(message: emptyMessage)
-      else
-        ...tasks.map(
-          (task) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _TaskCard(
-              task: task,
-              activeState: activeState,
-              onStatusChanged: onStatusChanged,
-              onFocus: onFocus,
-              onComplete: onComplete,
-              onDelete: onDelete,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Divider(
+                color: isDark ? Colors.white12 : Colors.black12,
+              ),
             ),
-          ),
+          ],
         ),
-    ],
-  );
+        const SizedBox(height: 10),
+        if (tasks.isEmpty)
+          _EmptyState(message: emptyMessage)
+        else
+          ...tasks.map(
+            (task) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _TaskCard(
+                task: task,
+                activeState: activeState,
+                onStatusChanged: onStatusChanged,
+                onFocus: onFocus,
+                onComplete: onComplete,
+                onDelete: onDelete,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _TaskCard extends StatelessWidget {
@@ -634,6 +675,7 @@ class _TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isDone = task.isCompleted;
     final current = activeState;
     final isTiming =
@@ -642,7 +684,15 @@ class _TaskCard extends StatelessWidget {
         current.entityId == task.id;
     final activeSession = isTiming ? current : null;
 
+    final variant = isTiming
+        ? KratosSurfaceVariant.active
+        : (isDone
+            ? KratosSurfaceVariant.normal
+            : KratosSurfaceVariant.interactive);
+
     return KratosGlassCard(
+      variant: variant,
+      interactive: !isDone,
       padding: const EdgeInsets.all(16),
       accentColor: isDone
           ? const Color(0xFFC6F135).withValues(alpha: 0.1)
@@ -678,7 +728,7 @@ class _TaskCard extends StatelessWidget {
                             border: Border.all(
                               color: isDone
                                   ? const Color(0xFFC6F135)
-                                  : Colors.white38,
+                                  : (isDark ? Colors.white38 : Colors.black38),
                               width: 1.8,
                             ),
                           ),
@@ -704,11 +754,13 @@ class _TaskCard extends StatelessWidget {
                   child: Text(
                     task.title,
                     style: TextStyle(
-                      color: isDone ? Colors.white38 : Colors.white,
+                      color: isDone
+                          ? (isDark ? Colors.white38 : Colors.black38)
+                          : (isDark ? Colors.white : KratosTheme.lightTextPrimary),
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                       decoration: isDone ? TextDecoration.lineThrough : null,
-                      decorationColor: Colors.white38,
+                      decorationColor: isDark ? Colors.white38 : Colors.black38,
                     ),
                   ),
                 ),
@@ -778,7 +830,10 @@ class _TaskCard extends StatelessWidget {
                   task.projectTitle,
                   task.goalTitle,
                 ].whereType<String>().join(' · '),
-                style: const TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(
+                  color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
+                  fontSize: 12,
+                ),
               ),
             ),
           ],
@@ -787,8 +842,8 @@ class _TaskCard extends StatelessWidget {
               padding: const EdgeInsets.only(top: 7, left: 36),
               child: Text(
                 task.categoryName!,
-                style: const TextStyle(
-                  color: KratosTheme.acidLime,
+                style: TextStyle(
+                  color: isDark ? KratosTheme.acidLime : KratosTheme.lightAcidLime,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
@@ -851,7 +906,9 @@ class _TaskCard extends StatelessWidget {
                 Text(
                   task.status.toUpperCase(),
                   style: TextStyle(
-                    color: isDone ? const Color(0xFFC6F135) : Colors.white38,
+                    color: isDone
+                        ? (isDark ? const Color(0xFFC6F135) : KratosTheme.lightAcidLime)
+                        : (isDark ? Colors.white38 : KratosTheme.lightTextSecondary),
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1,
@@ -876,41 +933,59 @@ class _Info extends StatelessWidget {
     this.animateNumber = false,
   });
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(icon, size: 15, color: Colors.white38),
-      const SizedBox(width: 5),
-      animateNumber
-          ? KratosNumberPopIn(
-              text,
-              style: const TextStyle(color: Colors.white60, fontSize: 11),
-            )
-          : Text(
-              text,
-              style: const TextStyle(color: Colors.white60, fontSize: 11),
-            ),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 15,
+          color: isDark ? Colors.white38 : Colors.black38,
+        ),
+        const SizedBox(width: 5),
+        animateNumber
+            ? KratosNumberPopIn(
+                text,
+                style: TextStyle(
+                  color: isDark ? Colors.white60 : KratosTheme.lightTextSecondary,
+                  fontSize: 11,
+                ),
+              )
+            : Text(
+                text,
+                style: TextStyle(
+                  color: isDark ? Colors.white60 : KratosTheme.lightTextSecondary,
+                  fontSize: 11,
+                ),
+              ),
+      ],
+    );
+  }
 }
 
 class _EmptyState extends StatelessWidget {
   final String message;
   const _EmptyState({required this.message});
   @override
-  Widget build(BuildContext context) => KratosGlassCard(
-    padding: EdgeInsets.zero,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Center(
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white54),
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return KratosGlassCard(
+      padding: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
+            ),
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _ErrorState extends StatelessWidget {

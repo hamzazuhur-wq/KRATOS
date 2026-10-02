@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column;
 
 import '../../../app/kratos_skeleton.dart';
+import '../../../app/kratos_theme.dart';
 import '../../../app/kratos_visuals.dart';
 import '../../../app/kratos_dropdown.dart';
 import '../../../app/kratos_motion.dart';
@@ -96,15 +97,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'PROJECTS',
               style: TextStyle(
                 color: Color(0xFFC6F135),
@@ -115,7 +117,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             ),
             Text(
               'Strategic workspaces, roadmap timelines & execution',
-              style: TextStyle(color: Colors.white38, fontSize: 11),
+              style: TextStyle(
+                color: isDark ? Colors.white38 : KratosTheme.lightTextSecondary,
+                fontSize: 11,
+              ),
             ),
           ],
         ),
@@ -308,29 +313,49 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   // â”€â”€â”€ Filter Widgets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildSearchField() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextField(
       onChanged: (val) => setState(() => _searchQuery = val),
-      style: const TextStyle(color: Colors.white, fontSize: 13),
+      style: TextStyle(
+        color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
+        fontSize: 13,
+      ),
       decoration: InputDecoration(
         hintText: 'Search projects by title or description...',
-        hintStyle: const TextStyle(color: Colors.white38),
-        prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+        hintStyle: TextStyle(
+          color: isDark ? Colors.white38 : KratosTheme.lightTextMuted,
+        ),
+        prefixIcon: Icon(
+          Icons.search,
+          color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
+          size: 20,
+        ),
         suffixIcon: _searchQuery.isNotEmpty
             ? IconButton(
-                icon: const Icon(Icons.clear, color: Colors.white54, size: 18),
+                icon: Icon(
+                  Icons.clear,
+                  color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
+                  size: 18,
+                ),
                 onPressed: () => setState(() => _searchQuery = ''),
               )
             : null,
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.03),
+        fillColor: isDark
+            ? Colors.white.withValues(alpha: 0.03)
+            : Colors.black.withValues(alpha: 0.03),
         isDense: true,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.white12),
+          borderSide: BorderSide(
+            color: isDark ? Colors.white12 : Colors.black12,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.white12),
+          borderSide: BorderSide(
+            color: isDark ? Colors.white12 : Colors.black12,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -341,6 +366,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 
   Widget _buildStatusFilterRow() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final statuses = [
       {'key': 'all', 'label': 'All'},
       {'key': 'active', 'label': 'Active'},
@@ -359,14 +385,20 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               label: Text(item['label']!),
               selected: isSelected,
               selectedColor: const Color(0xFFC6F135),
-              backgroundColor: Colors.white.withValues(alpha: 0.03),
+              backgroundColor: isDark
+                  ? Colors.white.withValues(alpha: 0.03)
+                  : Colors.black.withValues(alpha: 0.03),
               labelStyle: TextStyle(
-                color: isSelected ? const Color(0xFF0D0D0D) : Colors.white70,
+                color: isSelected
+                    ? const Color(0xFF0D0D0D)
+                    : (isDark ? Colors.white70 : KratosTheme.lightTextSecondary),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 fontSize: 12,
               ),
               side: BorderSide(
-                color: isSelected ? const Color(0xFFC6F135) : Colors.white12,
+                color: isSelected
+                    ? const Color(0xFFC6F135)
+                    : (isDark ? Colors.white12 : Colors.black12),
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -461,6 +493,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   // â”€â”€â”€ Project Card Widget â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildProjectCard(ProjectWithDetails item) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final p = item.project;
     final romanDiff = ProjectDifficulty.toRoman(p.difficulty);
 
@@ -478,6 +511,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         );
       },
       child: KratosGlassCard(
+        variant: KratosSurfaceVariant.interactive,
         borderRadius: BorderRadius.circular(14),
         interactive: true,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -536,8 +570,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               p.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.2,
@@ -554,8 +588,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   children: [
                     Text(
                       '${item.completedTaskCount}/${item.taskCount} tasks · ${item.activityCount} acts',
-                      style: const TextStyle(
-                        color: Colors.white38,
+                      style: TextStyle(
+                        color: isDark ? Colors.white38 : KratosTheme.lightTextSecondary,
                         fontSize: 10,
                       ),
                     ),
@@ -575,7 +609,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   child: LinearProgressIndicator(
                     value: item.progress / 100.0,
                     minHeight: 3,
-                    backgroundColor: Colors.white10,
+                    backgroundColor: isDark ? Colors.white10 : Colors.black12,
                     valueColor: const AlwaysStoppedAnimation(
                       Color(0xFFC6F135),
                     ),

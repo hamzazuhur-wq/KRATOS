@@ -130,6 +130,8 @@ class _StatusCard extends StatelessWidget {
     final detailColor = isDark ? Colors.white54 : KratosTheme.lightTextSecondary;
 
     return KratosGlassCard(
+      variant: KratosSurfaceVariant.interactive,
+      interactive: true,
       dashboardGlass: true,
       accentColor: color,
       borderRadius: BorderRadius.circular(16),
@@ -201,6 +203,8 @@ class DashboardNotificationsCard extends StatelessWidget {
         final unread = records.where((record) => !record.isRead).length;
         final latest = records.isEmpty ? null : records.first;
         return KratosGlassCard(
+          variant: KratosSurfaceVariant.interactive,
+          interactive: true,
           dashboardGlass: true,
           accentColor: const Color(0xFFFF2D55),
           borderRadius: BorderRadius.circular(18),

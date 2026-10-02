@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../app/kratos_dropdown.dart';
 import '../../../app/kratos_motion.dart';
 import '../../../app/kratos_skeleton.dart';
+import '../../../app/kratos_theme.dart';
 import '../../../app/kratos_visuals.dart';
 import '../../../data/drift/app_database.dart';
 import '../../../domain/hlc.dart';
@@ -38,15 +39,16 @@ class LifeAreasScreen extends StatefulWidget {
 class _LifeAreasScreenState extends State<LifeAreasScreen> {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'VISION & LONG-TERM',
               style: TextStyle(
                 color: Color(0xFFC6F135),
@@ -55,11 +57,11 @@ class _LifeAreasScreenState extends State<LifeAreasScreen> {
                 fontSize: 15,
               ),
             ),
-            SizedBox(height: 2),
+            const SizedBox(height: 2),
             Text(
               'Define the direction your life is moving toward',
               style: TextStyle(
-                color: Colors.white38,
+                color: isDark ? Colors.white38 : KratosTheme.lightTextSecondary,
                 fontSize: 11,
                 fontWeight: FontWeight.normal,
               ),
@@ -384,9 +386,12 @@ class _DomainCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: KratosGlassCard(
+        variant: KratosSurfaceVariant.interactive,
+        interactive: true,
         dashboardGlass: true,
         accentColor: const Color(0xFFC6F135),
         borderRadius: BorderRadius.circular(20),
@@ -423,8 +428,8 @@ class _DomainCard extends StatelessWidget {
                           children: [
                             Text(
                               area.name,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -436,8 +441,8 @@ class _DomainCard extends StatelessWidget {
                                 area.description!,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white60,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white60 : KratosTheme.lightTextSecondary,
                                   fontSize: 12,
                                   height: 1.3,
                                 ),
@@ -447,7 +452,10 @@ class _DomainCard extends StatelessWidget {
                         ),
                       ),
                       KratosPopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, color: Colors.white38),
+                        icon: Icon(
+                          Icons.more_vert,
+                          color: isDark ? Colors.white38 : KratosTheme.lightTextSecondary,
+                        ),
                         onSelected: (value) {
                           if (value == 'edit') onEdit();
                           if (value == 'archive') onArchive();

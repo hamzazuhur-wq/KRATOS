@@ -26,6 +26,7 @@ class XpSummaryCard extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: KratosGlassCard(
+        variant: KratosSurfaceVariant.elevated,
         dashboardGlass: true,
         accentColor: lime,
         borderRadius: BorderRadius.circular(20),

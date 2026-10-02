@@ -77,6 +77,8 @@ class LifeAreaLevelCard extends StatelessWidget {
     final progressPct = entry.progression.progressPct;
 
     return KratosGlassCard(
+      variant: KratosSurfaceVariant.interactive,
+      interactive: true,
       dashboardGlass: true,
       accentColor: tierColor,
       borderRadius: BorderRadius.circular(20),

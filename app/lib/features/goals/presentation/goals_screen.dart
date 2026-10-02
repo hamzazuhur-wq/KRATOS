@@ -8,6 +8,7 @@ import 'package:drift/drift.dart' as drift;
 import '../../../app/kratos_dropdown.dart';
 import '../../../app/kratos_motion.dart';
 import '../../../app/kratos_skeleton.dart';
+import '../../../app/kratos_theme.dart';
 import '../../../app/kratos_visuals.dart';
 import '../../../data/drift/app_database.dart';
 import 'dialogs/create_goal_dialog.dart';
@@ -39,7 +40,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF020302),
+      backgroundColor: Colors.transparent,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -47,8 +48,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
           SafeArea(
             child: Column(
               children: [
-                _buildHeader(),
-                _buildFiltersSection(),
+                _buildHeader(context),
+                _buildFiltersSection(context),
                 const SizedBox(height: 8),
                 Expanded(
                   child: _buildGoalsList(),
@@ -76,7 +77,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       child: Row(
@@ -97,14 +99,14 @@ class _GoalsScreenState extends State<GoalsScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'GOALS COMMAND',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
                     fontWeight: FontWeight.w900,
                     fontSize: 18,
                     letterSpacing: 1.5,
@@ -113,7 +115,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                 Text(
                   'Hierarchical progression & life alignment',
                   style: TextStyle(
-                    color: Colors.white38,
+                    color: isDark ? Colors.white38 : KratosTheme.lightTextSecondary,
                     fontSize: 11,
                   ),
                 ),
@@ -125,14 +127,23 @@ class _GoalsScreenState extends State<GoalsScreen> {
     );
   }
 
-  Widget _buildFiltersSection() {
+  Widget _buildFiltersSection(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
-        border: const Border(
-          top: BorderSide(color: Colors.white10, width: 0.5),
-          bottom: BorderSide(color: Colors.white10, width: 0.5),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.02)
+            : Colors.black.withValues(alpha: 0.02),
+        border: Border(
+          top: BorderSide(
+            color: isDark ? Colors.white10 : Colors.black12,
+            width: 0.5,
+          ),
+          bottom: BorderSide(
+            color: isDark ? Colors.white10 : Colors.black12,
+            width: 0.5,
+          ),
         ),
       ),
       child: Column(
@@ -331,6 +342,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
     Color? badgeColor,
   }) {
     final activeColor = badgeColor ?? const Color(0xFFC6F135);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -342,10 +354,14 @@ class _GoalsScreenState extends State<GoalsScreen> {
           decoration: BoxDecoration(
             color: isSelected
                 ? activeColor.withValues(alpha: 0.18)
-                : Colors.white.withValues(alpha: 0.04),
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.04)
+                    : Colors.black.withValues(alpha: 0.03)),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSelected ? activeColor : Colors.white12,
+              color: isSelected
+                  ? activeColor
+                  : (isDark ? Colors.white12 : Colors.black12),
               width: isSelected ? 1.2 : 0.8,
             ),
           ),
@@ -366,7 +382,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.white60,
+                  color: isSelected
+                      ? (isDark ? Colors.white : KratosTheme.lightTextPrimary)
+                      : (isDark ? Colors.white60 : KratosTheme.lightTextSecondary),
                   fontSize: 11,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 ),
