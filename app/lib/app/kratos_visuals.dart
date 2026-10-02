@@ -4,6 +4,27 @@ import 'package:flutter/material.dart';
 
 import 'kratos_theme.dart';
 
+/// Surface variant types for the unified KRATOS Liquid Glass card system.
+enum KratosSurfaceVariant {
+  /// Standard calm translucent glass with specular reflection rim and gentle depth.
+  normal,
+
+  /// Slightly higher prominence with deeper ambient drop shadow.
+  elevated,
+
+  /// Active equipment surface with thin Acid/Lime active stroke (#EEFF08) and subtle ambient glow.
+  active,
+
+  /// Interactive surface with hover highlight and tactile physics.
+  interactive,
+
+  /// Dimmed, muted surface with reduced border contrast and disabled interactions.
+  disabled,
+
+  /// Selected state with subtle lime tint and active stroke.
+  selected,
+}
+
 /// KRATOS Premium Apple-inspired Liquid Glass Card.
 /// Multi-layered physical surface with depth shadow, dark translucent glass body,
 /// inner reflection sheen, thin specular rim, and interactive tactile response.
@@ -14,6 +35,10 @@ class KratosGlassCard extends StatefulWidget {
   final EdgeInsetsGeometry? padding;
   final bool interactive;
   final bool dashboardGlass;
+  final KratosSurfaceVariant variant;
+  final bool selected;
+  final bool disabled;
+  final VoidCallback? onTap;
 
   const KratosGlassCard({
     super.key,
@@ -23,6 +48,10 @@ class KratosGlassCard extends StatefulWidget {
     this.padding,
     this.interactive = false,
     this.dashboardGlass = true,
+    this.variant = KratosSurfaceVariant.normal,
+    this.selected = false,
+    this.disabled = false,
+    this.onTap,
   });
 
   @override
@@ -40,135 +69,306 @@ class _KratosGlassCardState extends State<KratosGlassCard> {
     final accent = widget.accentColor ??
         (isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime);
 
-    final baseBorderColor = isDark
-        ? (_hovered
-            ? accent.withValues(alpha: 0.35)
-            : Colors.white.withValues(alpha: 0.10))
-        : (_hovered
-            ? accent.withValues(alpha: 0.50)
-            : KratosTheme.lightBorderGlass);
+    final isDisabled = widget.disabled || widget.variant == KratosSurfaceVariant.disabled;
+    final isActive = !isDisabled &&
+        (widget.selected ||
+            widget.variant == KratosSurfaceVariant.active ||
+            widget.variant == KratosSurfaceVariant.selected);
+    final isElevated = widget.variant == KratosSurfaceVariant.elevated;
+    final isInteractive = !isDisabled &&
+        (widget.interactive ||
+            widget.variant == KratosSurfaceVariant.interactive ||
+            widget.onTap != null);
+
+    // Border styling
+    final Color baseBorderColor;
+    final double borderWidth;
+    if (isDisabled) {
+      baseBorderColor = isDark
+          ? Colors.white.withValues(alpha: 0.05)
+          : const Color(0x0F0F172A);
+      borderWidth = 1.0;
+    } else if (isActive) {
+      baseBorderColor = accent.withValues(alpha: isDark ? 0.70 : 0.80);
+      borderWidth = 1.2;
+    } else if (isElevated) {
+      baseBorderColor = isDark
+          ? (_hovered
+              ? accent.withValues(alpha: 0.40)
+              : Colors.white.withValues(alpha: 0.14))
+          : (_hovered
+              ? accent.withValues(alpha: 0.55)
+              : KratosTheme.lightBorderGlass);
+      borderWidth = 1.0;
+    } else {
+      baseBorderColor = isDark
+          ? (_hovered
+              ? accent.withValues(alpha: 0.35)
+              : Colors.white.withValues(alpha: 0.10))
+          : (_hovered
+              ? accent.withValues(alpha: 0.50)
+              : KratosTheme.lightBorderGlass);
+      borderWidth = 1.0;
+    }
+
+    // Shadow layering (Layer 1)
+    final List<BoxShadow> shadows;
+    if (isDisabled) {
+      shadows = [
+        BoxShadow(
+          color: isDark ? Colors.black.withValues(alpha: 0.15) : const Color(0x050F172A),
+          blurRadius: 6,
+          offset: const Offset(0, 2),
+        ),
+      ];
+    } else if (isActive) {
+      shadows = [
+        // Subtle external equipment glow
+        BoxShadow(
+          color: accent.withValues(alpha: isDark ? (_hovered ? 0.20 : 0.14) : (_hovered ? 0.15 : 0.10)),
+          blurRadius: _hovered ? 24 : 18,
+          offset: const Offset(0, 4),
+        ),
+        // Ambient depth
+        BoxShadow(
+          color: isDark ? Colors.black.withValues(alpha: 0.48) : const Color(0x0E0F172A),
+          blurRadius: 22,
+          offset: const Offset(0, 6),
+        ),
+        if (isDark)
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.04),
+            blurRadius: 1,
+            offset: const Offset(0, 1),
+          )
+        else
+          const BoxShadow(
+            color: Color(0x05000000),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+      ];
+    } else if (isElevated) {
+      shadows = [
+        BoxShadow(
+          color: isDark
+              ? Colors.black.withValues(alpha: _hovered ? 0.60 : 0.50)
+              : const Color(0x140F172A),
+          blurRadius: _hovered ? 32 : 24,
+          offset: const Offset(0, 8),
+        ),
+        if (isDark)
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.04),
+            blurRadius: 1,
+            offset: const Offset(0, 1),
+          )
+        else
+          const BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+      ];
+    } else {
+      shadows = [
+        BoxShadow(
+          color: isDark
+              ? Colors.black.withValues(alpha: _hovered ? 0.50 : 0.38)
+              : const Color(0x0C0F172A),
+          blurRadius: _hovered ? 24 : 18,
+          offset: const Offset(0, 6),
+        ),
+        if (isDark)
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.03),
+            blurRadius: 1,
+            offset: const Offset(0, 1),
+          )
+        else
+          const BoxShadow(
+            color: Color(0x05000000),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+      ];
+    }
+
+    // Body gradient (Layer 2)
+    final Gradient bodyGradient;
+    if (isDark) {
+      if (isActive) {
+        bodyGradient = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF171B18).withValues(alpha: 0.98),
+            const Color(0xFF111412).withValues(alpha: 0.98),
+            const Color(0xFF090B09),
+          ],
+          stops: const [0.0, 0.45, 1.0],
+        );
+      } else if (isElevated) {
+        bodyGradient = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF191D1A).withValues(alpha: 0.98),
+            const Color(0xFF121613).withValues(alpha: 0.98),
+            const Color(0xFF0B0D0B),
+          ],
+          stops: const [0.0, 0.45, 1.0],
+        );
+      } else {
+        bodyGradient = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF151816).withValues(alpha: 0.96),
+            const Color(0xFF0F1210).withValues(alpha: 0.98),
+            const Color(0xFF080A08),
+          ],
+          stops: const [0.0, 0.45, 1.0],
+        );
+      }
+    } else {
+      bodyGradient = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: isActive
+            ? const [
+                Colors.white,
+                Color(0xFFF9FDF5),
+                Color(0xFFF1F6EC),
+              ]
+            : const [
+                Colors.white,
+                Color(0xFFFAFBFC),
+                Color(0xFFF2F4F8),
+              ],
+        stops: const [0.0, 0.50, 1.0],
+      );
+    }
 
     final content = Padding(
       padding: widget.padding ?? const EdgeInsets.all(16),
       child: widget.child,
     );
 
+    Widget cardWidget = Container(
+      decoration: BoxDecoration(
+        borderRadius: widget.borderRadius,
+        gradient: bodyGradient,
+        border: Border.all(
+          color: baseBorderColor,
+          width: borderWidth,
+        ),
+        boxShadow: shadows,
+      ),
+      child: ClipRRect(
+        borderRadius: widget.borderRadius,
+        child: Stack(
+          fit: StackFit.passthrough,
+          children: [
+            // Layer 3: Inner hairline sheen gradient
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        (isDark ? Colors.white : accent).withValues(
+                          alpha: isDark ? 0.025 : 0.04,
+                        ),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.25],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Layer 5: Top specular reflection line
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1.2,
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        (isDark ? (isActive ? accent : Colors.white) : accent).withValues(
+                          alpha: isDark
+                              ? (isActive ? 0.35 : 0.18)
+                              : (isActive ? 0.40 : 0.25),
+                        ),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.5, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            DefaultTextStyle.merge(
+              style: TextStyle(
+                color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
+                fontFamily: 'Roboto',
+              ),
+              child: IconTheme.merge(
+                data: IconThemeData(
+                  color: isDark ? Colors.white70 : KratosTheme.lightTextSecondary,
+                ),
+                child: content,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (isDisabled) {
+      return Opacity(
+        opacity: 0.55,
+        child: cardWidget,
+      );
+    }
+
+    if (!isInteractive) {
+      return cardWidget;
+    }
+
     return MouseRegion(
+      cursor: widget.onTap != null ? SystemMouseCursors.click : MouseCursor.defer,
       onEnter: (_) {
-        if (widget.interactive && mounted) setState(() => _hovered = true);
+        if (mounted) setState(() => _hovered = true);
       },
       onExit: (_) {
-        if (widget.interactive && mounted) setState(() => _hovered = false);
+        if (mounted) setState(() => _hovered = false);
       },
-      child: Listener(
-        onPointerDown: (_) {
-          if (widget.interactive && mounted) setState(() => _pressed = true);
-        },
-        onPointerUp: (_) {
-          if (widget.interactive && mounted) setState(() => _pressed = false);
-        },
-        onPointerCancel: (_) {
-          if (widget.interactive && mounted) setState(() => _pressed = false);
-        },
-        child: AnimatedScale(
-          scale: widget.interactive
-              ? (_pressed ? 0.985 : (_hovered ? 1.008 : 1.0))
-              : 1.0,
-          duration: Duration(milliseconds: _pressed ? 80 : 180),
-          curve: Curves.easeOutCubic,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: widget.borderRadius,
-              gradient: isDark
-                  ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFF151816).withValues(alpha: 0.96),
-                        const Color(0xFF0F1210).withValues(alpha: 0.98),
-                        const Color(0xFF080A08),
-                      ],
-                      stops: const [0.0, 0.45, 1.0],
-                    )
-                  : const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white,
-                        Color(0xFFFAFBFC),
-                        Color(0xFFF2F4F8),
-                      ],
-                      stops: [0.0, 0.50, 1.0],
-                    ),
-              border: Border.all(
-                color: baseBorderColor,
-                width: 1.0,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? Colors.black.withValues(alpha: _hovered ? 0.50 : 0.38)
-                      : const Color(0x0C0F172A),
-                  blurRadius: _hovered ? 24 : 18,
-                  offset: const Offset(0, 6),
-                ),
-                if (isDark)
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.03),
-                    blurRadius: 1,
-                    offset: const Offset(0, 1),
-                  )
-                else
-                  const BoxShadow(
-                    color: Color(0x05000000),
-                    blurRadius: 4,
-                    offset: Offset(0, 1),
-                  ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: widget.borderRadius,
-              child: Stack(
-                fit: StackFit.passthrough,
-                children: [
-                  // Subtle top specular reflection layer
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 1.2,
-                    child: IgnorePointer(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.transparent,
-                              (isDark ? Colors.white : accent).withValues(
-                                alpha: isDark ? 0.18 : 0.25,
-                              ),
-                              Colors.transparent,
-                            ],
-                            stops: const [0.0, 0.5, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  DefaultTextStyle.merge(
-                    style: TextStyle(
-                      color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
-                      fontFamily: 'Roboto',
-                    ),
-                    child: IconTheme.merge(
-                      data: IconThemeData(
-                        color: isDark ? Colors.white70 : KratosTheme.lightTextSecondary,
-                      ),
-                      child: content,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Listener(
+          onPointerDown: (_) {
+            if (mounted) setState(() => _pressed = true);
+          },
+          onPointerUp: (_) {
+            if (mounted) setState(() => _pressed = false);
+          },
+          onPointerCancel: (_) {
+            if (mounted) setState(() => _pressed = false);
+          },
+          child: AnimatedScale(
+            scale: _pressed ? 0.985 : (_hovered ? 1.006 : 1.0),
+            duration: Duration(milliseconds: _pressed ? 80 : 180),
+            curve: Curves.easeOutCubic,
+            child: cardWidget,
           ),
         ),
       ),

@@ -96,7 +96,7 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: ActiveGlassCard(
-          active: false,
+          active: true,
           borderRadius: BorderRadius.circular(24),
           padding: EdgeInsets.zero,
           child: FutureBuilder<(List<LifeArea>, List<Category>, List<Skill>)>(
