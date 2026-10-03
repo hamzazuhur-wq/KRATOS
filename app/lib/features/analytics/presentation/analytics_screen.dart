@@ -331,26 +331,33 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ],
         ),
       );
-  Widget _range(String label, AnalyticsPeriod value) => GestureDetector(
-    onTap: () {
-      setState(() => _period = value);
-      _load();
-    },
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        color: _period == value ? KratosTheme.acidLime : Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: _period == value ? Colors.black : Colors.white70,
-          fontWeight: FontWeight.w800,
+  Widget _range(String label, AnalyticsPeriod value) => Builder(
+    builder: (context) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      return GestureDetector(
+        onTap: () {
+          setState(() => _period = value);
+          _load();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: _period == value ? KratosTheme.acidLime : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: _period == value
+                  ? Colors.black
+                  : (isDark ? Colors.white70 : KratosTheme.lightTextSecondary),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ),
-      ),
-    ),
+      );
+    },
   );
   Widget _chips(List<String> values) => Wrap(
     spacing: 8,
@@ -478,23 +485,29 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              DateFormat('MMM d').format(d.range.start),
-              style: const TextStyle(color: Colors.white38, fontSize: 10),
-            ),
-            const Text(
-              'Previous period comparison',
-              style: TextStyle(color: Colors.white38, fontSize: 10),
-            ),
-            Text(
-              DateFormat('MMM d')
-                  .format(d.range.end.subtract(const Duration(days: 1))),
-              style: const TextStyle(color: Colors.white38, fontSize: 10),
-            ),
-          ],
+        Builder(
+          builder: (context) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final subColor = isDark ? Colors.white38 : KratosTheme.lightTextMuted;
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  DateFormat('MMM d').format(d.range.start),
+                  style: TextStyle(color: subColor, fontSize: 10),
+                ),
+                Text(
+                  'Previous period comparison',
+                  style: TextStyle(color: subColor, fontSize: 10),
+                ),
+                Text(
+                  DateFormat('MMM d')
+                      .format(d.range.end.subtract(const Duration(days: 1))),
+                  style: TextStyle(color: subColor, fontSize: 10),
+                ),
+              ],
+            );
+          },
         ),
       ],
     ),

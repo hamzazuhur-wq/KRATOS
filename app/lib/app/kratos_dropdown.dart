@@ -117,19 +117,21 @@ class _KratosDropdownState<T> extends State<KratosDropdown<T>> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final selected = _selectedItem;
     final hasValue = selected != null;
-    final accent = widget.accentColor ?? KratosTheme.acidLime;
+    final defaultAccent = isDark ? KratosTheme.acidLime : KratosTheme.lightAcidLime;
+    final accent = widget.accentColor ?? defaultAccent;
 
     final borderColor = widget.hasError
         ? const Color(0xFFFF5252).withValues(alpha: 0.6)
         : _isOpen
         ? accent.withValues(alpha: 0.6)
         : hasValue
-        ? accent.withValues(alpha: 0.35)
+        ? accent.withValues(alpha: isDark ? 0.35 : 0.5)
         : _isHovered
-        ? Colors.white.withValues(alpha: 0.22)
-        : Colors.white.withValues(alpha: 0.12);
+        ? (isDark ? Colors.white.withValues(alpha: 0.22) : const Color(0x3D0F172A))
+        : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0x1F0F172A));
 
     final content = MouseRegion(
       cursor: widget.enabled
@@ -145,28 +147,30 @@ class _KratosDropdownState<T> extends State<KratosDropdown<T>> {
         onTap: widget.enabled ? _openMenu : null,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          /* TEMP PERFORMANCE TEST — GLASS DISABLED
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: AnimatedContainer(
-          */
           child: AnimatedContainer(
               duration: const Duration(milliseconds: 140),
               height: widget.height,
               padding: widget.padding,
               decoration: BoxDecoration(
-                color: const Color(0xCC080B08),
+                color: isDark ? const Color(0xCC080B08) : const Color(0xF2FFFFFF),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: borderColor, width: 1.0),
                 boxShadow: _isOpen
                     ? [
                         BoxShadow(
-                          color: accent.withValues(alpha: 0.12),
+                          color: accent.withValues(alpha: isDark ? 0.12 : 0.15),
                           blurRadius: 12,
                           spreadRadius: 0,
                         ),
                       ]
-                    : null,
+                    : [
+                        if (!isDark)
+                          const BoxShadow(
+                            color: Color(0x0A0F172A),
+                            blurRadius: 4,
+                            offset: Offset(0, 1),
+                          ),
+                      ],
               ),
               child: Row(
                 mainAxisSize: widget.isExpanded
@@ -182,7 +186,7 @@ class _KratosDropdownState<T> extends State<KratosDropdown<T>> {
                   ] else if (widget.prefixIcon != null) ...[
                     Icon(
                       widget.prefixIcon,
-                      color: hasValue ? accent : Colors.white38,
+                      color: hasValue ? accent : (isDark ? Colors.white38 : KratosTheme.lightTextMuted),
                       size: 15,
                     ),
                     const SizedBox(width: 8),
@@ -192,7 +196,9 @@ class _KratosDropdownState<T> extends State<KratosDropdown<T>> {
                       child: Text(
                         hasValue ? selected.label : widget.hint,
                         style: TextStyle(
-                          color: hasValue ? Colors.white : Colors.white54,
+                          color: hasValue
+                              ? (isDark ? Colors.white : KratosTheme.lightTextPrimary)
+                              : (isDark ? Colors.white54 : KratosTheme.lightTextSecondary),
                           fontSize: 12.5,
                           fontWeight: hasValue
                               ? FontWeight.w600
@@ -207,7 +213,9 @@ class _KratosDropdownState<T> extends State<KratosDropdown<T>> {
                     Text(
                       hasValue ? selected.label : widget.hint,
                       style: TextStyle(
-                        color: hasValue ? Colors.white : Colors.white54,
+                        color: hasValue
+                            ? (isDark ? Colors.white : KratosTheme.lightTextPrimary)
+                            : (isDark ? Colors.white54 : KratosTheme.lightTextSecondary),
                         fontSize: 12.5,
                         fontWeight: hasValue
                             ? FontWeight.w600
@@ -225,16 +233,13 @@ class _KratosDropdownState<T> extends State<KratosDropdown<T>> {
                       Icons.keyboard_arrow_down_rounded,
                       color: hasValue || _isOpen
                           ? accent
-                          : Colors.white54,
+                          : (isDark ? Colors.white54 : KratosTheme.lightTextMuted),
                       size: 17,
                     ),
                   ),
                 ],
               ),
             ),
-          /* TEMP PERFORMANCE TEST — GLASS DISABLED
-          ),
-          */
         ),
       ),
     );
@@ -548,37 +553,50 @@ class _KratosDropdownRoute<T> extends PopupRoute<_DropdownResult<T>> {
 
     final disableAnimations = MediaQuery.of(context).disableAnimations;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final defaultAccent = isDark ? KratosTheme.acidLime : KratosTheme.lightAcidLime;
+
     Widget menu = Container(
       width: targetWidth,
       decoration: BoxDecoration(
-        color: const Color(0xEB060806), // Frosted translucent deep black
+        color: isDark ? const Color(0xEB060806) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.14),
+          color: isDark ? Colors.white.withValues(alpha: 0.14) : KratosTheme.lightBorderGlass,
           width: 1.0,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.75),
-            blurRadius: 28,
-            spreadRadius: 0,
-            offset: const Offset(0, 10),
-          ),
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.04),
-            blurRadius: 1,
-            spreadRadius: 0,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.75),
+                  blurRadius: 28,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 10),
+                ),
+                BoxShadow(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  blurRadius: 1,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 1),
+                ),
+              ]
+            : [
+                const BoxShadow(
+                  color: Color(0x1F0F172A),
+                  blurRadius: 24,
+                  spreadRadius: 0,
+                  offset: Offset(0, 8),
+                ),
+                const BoxShadow(
+                  color: Color(0x0A0F172A),
+                  blurRadius: 4,
+                  spreadRadius: 0,
+                  offset: Offset(0, 1),
+                ),
+              ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        /* TEMP PERFORMANCE TEST — GLASS DISABLED
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: ConstrainedBox(
-        */
         child: ConstrainedBox(
             constraints: BoxConstraints(maxHeight: actualMaxHeight),
             child: SingleChildScrollView(
@@ -593,7 +611,7 @@ class _KratosDropdownRoute<T> extends PopupRoute<_DropdownResult<T>> {
                       return _KratosDropdownItemWidget<T>(
                         item: item,
                         isSelected: isSelected,
-                        defaultAccent: accentColor ?? KratosTheme.acidLime,
+                        defaultAccent: accentColor ?? defaultAccent,
                       );
                     }),
                   if (menuEntries != null)
@@ -762,6 +780,7 @@ class _KratosPopupItemWidgetState<T> extends State<_KratosPopupItemWidget<T>> {
   Widget build(BuildContext context) {
     final entry = widget.entry;
     final isEnabled = entry.enabled;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return MouseRegion(
       cursor: isEnabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
@@ -784,15 +803,17 @@ class _KratosPopupItemWidgetState<T> extends State<_KratosPopupItemWidget<T>> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: _isHovered && isEnabled
-                ? Colors.white.withValues(alpha: 0.08)
+                ? (isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : const Color(0x0F0F172A))
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Opacity(
             opacity: isEnabled ? 1.0 : 0.4,
             child: DefaultTextStyle(
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -827,6 +848,7 @@ class _KratosDropdownItemWidgetState<T>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = widget.isSelected;
     final accent = widget.item.accentColor ?? widget.defaultAccent;
 
@@ -845,14 +867,16 @@ class _KratosDropdownItemWidgetState<T>
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected
-                ? accent.withValues(alpha: 0.12)
+                ? accent.withValues(alpha: isDark ? 0.12 : 0.16)
                 : _isHovered
-                ? Colors.white.withValues(alpha: 0.06)
+                ? (isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : const Color(0x0A0F172A))
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             border: isSelected
                 ? Border.all(
-                    color: accent.withValues(alpha: 0.25),
+                    color: accent.withValues(alpha: isDark ? 0.25 : 0.4),
                     width: 1,
                   )
                 : null,
@@ -873,7 +897,9 @@ class _KratosDropdownItemWidgetState<T>
                       style: TextStyle(
                         color: isSelected
                             ? accent
-                            : Colors.white.withValues(alpha: 0.9),
+                            : (isDark
+                                ? Colors.white.withValues(alpha: 0.9)
+                                : KratosTheme.lightTextPrimary),
                         fontSize: 12.5,
                         fontWeight: isSelected
                             ? FontWeight.w700
@@ -888,7 +914,9 @@ class _KratosDropdownItemWidgetState<T>
                       Text(
                         widget.item.subtitle!,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.4),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.4)
+                              : KratosTheme.lightTextMuted,
                           fontSize: 10.5,
                         ),
                         maxLines: 1,

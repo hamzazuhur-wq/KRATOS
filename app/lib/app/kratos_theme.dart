@@ -188,6 +188,73 @@ class KratosTheme {
         side: const BorderSide(color: Colors.white38, width: 1.2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? electricLime : Colors.white38,
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: Color(0x1AFFFFFF),
+        thickness: 0.8,
+        space: 1,
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: const Color(0x0FFFFFFF),
+        selectedColor: const Color(0x2EEFFF08),
+        disabledColor: const Color(0x08FFFFFF),
+        labelStyle: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+        secondaryLabelStyle: const TextStyle(color: electricLime, fontSize: 12, fontWeight: FontWeight.w700),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: Color(0x1FFFFFFF), width: 0.8),
+        ),
+        elevation: 0,
+        pressElevation: 0,
+      ),
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: const Color(0xEE121512),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0x26FFFFFF), width: 0.8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        textStyle: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        waitDuration: const Duration(milliseconds: 400),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xF2121512),
+        contentTextStyle: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: Color(0x2EFFFFFF), width: 1.0),
+        ),
+        behavior: SnackBarBehavior.floating,
+        elevation: 6,
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: electricLime,
+        linearTrackColor: Color(0x1AFFFFFF),
+        circularTrackColor: Color(0x1AFFFFFF),
+      ),
+      scrollbarTheme: ScrollbarThemeData(
+        thumbVisibility: const WidgetStatePropertyAll(false),
+        trackVisibility: const WidgetStatePropertyAll(false),
+        thickness: const WidgetStatePropertyAll(5.0),
+        radius: const Radius.circular(8),
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.hovered)
+              ? const Color(0x4DEEFF08)
+              : const Color(0x26FFFFFF),
+        ),
+      ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
           TargetPlatform.android: KratosGlobalPageTransitionsBuilder(),
@@ -347,6 +414,73 @@ class KratosTheme {
         ),
         side: const BorderSide(color: Color(0x4D0F172A), width: 1.2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? lightAcidLime : const Color(0x4D0F172A),
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: Color(0x1F0F172A),
+        thickness: 0.8,
+        space: 1,
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: const Color(0x0A0F172A),
+        selectedColor: const Color(0x24658F00),
+        disabledColor: const Color(0x050F172A),
+        labelStyle: const TextStyle(color: lightTextPrimary, fontSize: 12, fontWeight: FontWeight.w500),
+        secondaryLabelStyle: const TextStyle(color: lightAcidLime, fontSize: 12, fontWeight: FontWeight.w700),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: Color(0x1F0F172A), width: 0.8),
+        ),
+        elevation: 0,
+        pressElevation: 0,
+      ),
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: const Color(0xF7FFFFFF),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0x1F0F172A), width: 0.8),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0x140F172A),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        textStyle: const TextStyle(color: lightTextPrimary, fontSize: 11, fontWeight: FontWeight.w500),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        waitDuration: const Duration(milliseconds: 400),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: Colors.white,
+        contentTextStyle: const TextStyle(color: lightTextPrimary, fontSize: 13, fontWeight: FontWeight.w500),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: Color(0x290F172A), width: 1.0),
+        ),
+        behavior: SnackBarBehavior.floating,
+        elevation: 6,
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: lightAcidLime,
+        linearTrackColor: Color(0x1A0F172A),
+        circularTrackColor: Color(0x1A0F172A),
+      ),
+      scrollbarTheme: ScrollbarThemeData(
+        thumbVisibility: const WidgetStatePropertyAll(false),
+        trackVisibility: const WidgetStatePropertyAll(false),
+        thickness: const WidgetStatePropertyAll(5.0),
+        radius: const Radius.circular(8),
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.hovered)
+              ? const Color(0x4D658F00)
+              : const Color(0x260F172A),
+        ),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {

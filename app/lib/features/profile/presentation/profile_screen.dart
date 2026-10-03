@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../app/active_glass_card.dart';
+import '../../../app/kratos_theme.dart';
 import '../../../data/drift/app_database.dart';
 import '../../auth/domain/auth_service.dart';
 import '../data/profile_repository.dart';
@@ -339,41 +340,52 @@ class _ProfileHeaderCard extends StatelessWidget {
             const SizedBox(height: 16),
 
             // User Name
-            Text(
-              profile.displayName,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.0,
-                fontSize: 20,
-              ),
-            ),
-            const SizedBox(height: 6),
+            Builder(
+              builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Column(
+                  children: [
+                    Text(
+                      profile.displayName,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.0,
+                        fontSize: 20,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
 
-            // Caption / "Who you are and who you want to be"
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white10),
-              ),
-              child: Text(
-                (profile.caption != null && profile.caption!.isNotEmpty)
-                    ? profile.caption!
-                    : 'Who you are and who you want to be',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: (profile.caption != null && profile.caption!.isNotEmpty)
-                      ? const Color(0xFFC6F135)
-                      : Colors.white38,
-                  fontSize: 12,
-                  fontStyle: (profile.caption == null || profile.caption!.isEmpty)
-                      ? FontStyle.italic
-                      : FontStyle.normal,
-                ),
-              ),
+                    // Caption / "Who you are and who you want to be"
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0x0A0F172A),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? Colors.white10 : KratosTheme.lightBorderGlass,
+                        ),
+                      ),
+                      child: Text(
+                        (profile.caption != null && profile.caption!.isNotEmpty)
+                            ? profile.caption!
+                            : 'Who you are and who you want to be',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: (profile.caption != null && profile.caption!.isNotEmpty)
+                              ? (isDark ? const Color(0xFFC6F135) : KratosTheme.lightAcidLime)
+                              : (isDark ? Colors.white38 : KratosTheme.lightTextMuted),
+                          fontSize: 12,
+                          fontStyle: (profile.caption == null || profile.caption!.isEmpty)
+                              ? FontStyle.italic
+                              : FontStyle.normal,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -416,14 +428,28 @@ class _ProgressionIdentityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? const Color(0xFFC6F135) : KratosTheme.lightAcidLime;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
+        color: isDark
+            ? const Color(0xFF0D0F0D).withValues(alpha: 0.9)
+            : const Color(0xF2FFFFFF),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFFC6F135).withValues(alpha: 0.25),
+          color: accent.withValues(alpha: isDark ? 0.25 : 0.4),
         ),
+        boxShadow: isDark
+            ? null
+            : const [
+                BoxShadow(
+                  color: Color(0x0A0F172A),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
       ),
       child: Row(
         children: [
@@ -432,14 +458,14 @@ class _ProgressionIdentityCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.stars, color: Color(0xFFC6F135), size: 14),
-                    SizedBox(width: 6),
+                    Icon(Icons.stars, color: accent, size: 14),
+                    const SizedBox(width: 6),
                     Text(
                       'PRIMARY XP DOMAIN',
                       style: TextStyle(
-                        color: Colors.white38,
+                        color: isDark ? Colors.white38 : KratosTheme.lightTextMuted,
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
@@ -452,8 +478,8 @@ class _ProgressionIdentityCard extends StatelessWidget {
                   profile.primaryXpDomain,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFC6F135),
+                  style: TextStyle(
+                    color: accent,
                     fontWeight: FontWeight.w900,
                     fontSize: 15,
                   ),
@@ -464,7 +490,7 @@ class _ProgressionIdentityCard extends StatelessWidget {
           Container(
             height: 36,
             width: 1,
-            color: Colors.white12,
+            color: isDark ? Colors.white12 : const Color(0x1F0F172A),
             margin: const EdgeInsets.symmetric(horizontal: 12),
           ),
           // Highest Level Reached
@@ -472,14 +498,14 @@ class _ProgressionIdentityCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.military_tech, color: Color(0xFFFFD700), size: 14),
-                    SizedBox(width: 6),
+                    const Icon(Icons.military_tech, color: Color(0xFFFFD700), size: 14),
+                    const SizedBox(width: 6),
                     Text(
                       'HIGHEST LEVEL',
                       style: TextStyle(
-                        color: Colors.white38,
+                        color: isDark ? Colors.white38 : KratosTheme.lightTextMuted,
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
@@ -492,8 +518,8 @@ class _ProgressionIdentityCard extends StatelessWidget {
                   profile.highestLevel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
                     fontWeight: FontWeight.w900,
                     fontSize: 15,
                   ),
@@ -518,12 +544,26 @@ class _AccountDetailsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dividerColor = isDark ? Colors.white10 : const Color(0x1F0F172A);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+        color: isDark ? Colors.white.withValues(alpha: 0.03) : const Color(0xF2FFFFFF),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(
+          color: isDark ? Colors.white10 : KratosTheme.lightBorderGlass,
+        ),
+        boxShadow: isDark
+            ? null
+            : const [
+                BoxShadow(
+                  color: Color(0x0A0F172A),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
       ),
       child: Column(
         children: [
@@ -532,21 +572,21 @@ class _AccountDetailsCard extends StatelessWidget {
             value: profile.email ?? 'Not provided',
             icon: Icons.email_outlined,
           ),
-          const Divider(color: Colors.white10, height: 16),
+          Divider(color: dividerColor, height: 16),
           _DetailRow(
             label: 'Account Status',
             value: 'Active • Supabase / Offline',
             icon: Icons.verified_user_outlined,
-            valueColor: const Color(0xFFC6F135),
+            valueColor: isDark ? const Color(0xFFC6F135) : KratosTheme.lightAcidLime,
           ),
-          const Divider(color: Colors.white10, height: 16),
+          Divider(color: dividerColor, height: 16),
           _DetailRow(
             label: 'User ID',
             value: profile.userId.value,
             icon: Icons.fingerprint,
             isMonospace: true,
           ),
-          const Divider(color: Colors.white10, height: 16),
+          Divider(color: dividerColor, height: 16),
           _DetailRow(
             label: 'Member Since',
             value: '${profile.createdAt.year}-${profile.createdAt.month.toString().padLeft(2, '0')}-${profile.createdAt.day.toString().padLeft(2, '0')}',
@@ -575,13 +615,17 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
-        Icon(icon, color: Colors.white38, size: 16),
+        Icon(icon, color: isDark ? Colors.white38 : KratosTheme.lightTextMuted, size: 16),
         const SizedBox(width: 10),
         Text(
           label,
-          style: const TextStyle(color: Colors.white54, fontSize: 12),
+          style: TextStyle(
+            color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
+            fontSize: 12,
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -590,7 +634,7 @@ class _DetailRow extends StatelessWidget {
             textAlign: TextAlign.end,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: valueColor ?? Colors.white70,
+              color: valueColor ?? (isDark ? Colors.white70 : KratosTheme.lightTextPrimary),
               fontSize: 12,
               fontWeight: FontWeight.w600,
               fontFamily: isMonospace ? 'monospace' : null,
@@ -619,18 +663,21 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive ? const Color(0xFFFF3B30) : const Color(0xFFC6F135);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isDestructive
+        ? const Color(0xFFFF3B30)
+        : (isDark ? const Color(0xFFC6F135) : KratosTheme.lightAcidLime);
 
     return Container(
       decoration: BoxDecoration(
         color: isDestructive
-            ? const Color(0xFFFF3B30).withValues(alpha: 0.05)
-            : Colors.white.withValues(alpha: 0.03),
+            ? const Color(0xFFFF3B30).withValues(alpha: isDark ? 0.05 : 0.08)
+            : (isDark ? Colors.white.withValues(alpha: 0.03) : const Color(0xF2FFFFFF)),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDestructive
-              ? const Color(0xFFFF3B30).withValues(alpha: 0.3)
-              : Colors.white10,
+              ? const Color(0xFFFF3B30).withValues(alpha: isDark ? 0.3 : 0.4)
+              : (isDark ? Colors.white10 : KratosTheme.lightBorderGlass),
         ),
       ),
       child: Material(
@@ -658,7 +705,9 @@ class _ActionTile extends StatelessWidget {
                       Text(
                         title,
                         style: TextStyle(
-                          color: isDestructive ? const Color(0xFFFF3B30) : Colors.white,
+                          color: isDestructive
+                              ? const Color(0xFFFF3B30)
+                              : (isDark ? Colors.white : KratosTheme.lightTextPrimary),
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
@@ -666,7 +715,10 @@ class _ActionTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: const TextStyle(color: Colors.white54, fontSize: 11),
+                        style: TextStyle(
+                          color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
@@ -675,7 +727,7 @@ class _ActionTile extends StatelessWidget {
                   Icons.chevron_right,
                   color: isDestructive
                       ? const Color(0xFFFF3B30).withValues(alpha: 0.5)
-                      : Colors.white30,
+                      : (isDark ? Colors.white30 : KratosTheme.lightTextMuted),
                   size: 18,
                 ),
               ],
@@ -694,12 +746,13 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Text(
         title,
-        style: const TextStyle(
-          color: Colors.white38,
+        style: TextStyle(
+          color: isDark ? Colors.white38 : KratosTheme.lightTextMuted,
           fontSize: 10,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.5,

@@ -3,6 +3,7 @@ import 'package:drift/drift.dart' hide Column;
 
 import '../../../app/kratos_skeleton.dart';
 import '../../../app/kratos_visuals.dart';
+import '../../../app/kratos_theme.dart';
 import '../../../app/kratos_dropdown.dart';
 import '../../../app/kratos_motion.dart';
 import '../../../app/kratos_text_prompt.dart';
@@ -201,9 +202,9 @@ class _SkillsRegistryScreenState extends State<SkillsRegistryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final mastered = _skills.where((skill) => skill.masteryLevel == 5).length;
     return Scaffold(
-      backgroundColor: const Color(0xFF020302),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: const Text(
@@ -239,9 +240,11 @@ class _SkillsRegistryScreenState extends State<SkillsRegistryScreen> {
             child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
           children: [
-            const Text(
+            Text(
               'Build, track and master your capabilities.',
-              style: TextStyle(color: Colors.white60),
+              style: TextStyle(
+                color: isDark ? Colors.white60 : KratosTheme.lightTextSecondary,
+              ),
             ),
             const SizedBox(height: 18),
             Row(
@@ -255,17 +258,29 @@ class _SkillsRegistryScreenState extends State<SkillsRegistryScreen> {
             // Futuristic Liquid Glass Search Input (No white underline)
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF121412),
+                color: isDark ? const Color(0xFF121412) : Colors.black.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white12),
+                border: Border.all(
+                  color: isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.08),
+                ),
               ),
               child: TextField(
                 controller: _searchController,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
+                style: TextStyle(
+                  color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
+                  fontSize: 13,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Search skills...',
-                  hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
-                  prefixIcon: const Icon(Icons.search, color: Color(0xFFC6F135), size: 19),
+                  hintStyle: TextStyle(
+                    color: isDark ? Colors.white38 : KratosTheme.lightTextMuted,
+                    fontSize: 13,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: isDark ? const Color(0xFFC6F135) : const Color(0xFF658200),
+                    size: 19,
+                  ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -274,7 +289,11 @@ class _SkillsRegistryScreenState extends State<SkillsRegistryScreen> {
                       ? null
                       : IconButton(
                           onPressed: _searchController.clear,
-                          icon: const Icon(Icons.clear, color: Colors.white54, size: 18),
+                          icon: Icon(
+                            Icons.clear,
+                            color: isDark ? Colors.white54 : KratosTheme.lightTextMuted,
+                            size: 18,
+                          ),
                         ),
                 ),
               ),
@@ -741,6 +760,7 @@ class _SkillCard extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final mastery = SkillMastery.fromValue(skill.masteryLevel);
     final color = _masteryColor(skill.masteryLevel);
     return KratosGlassCard(
@@ -776,8 +796,8 @@ class _SkillCard extends StatelessWidget {
                 children: [
                   Text(
                     skill.name,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
                     ),
@@ -794,8 +814,8 @@ class _SkillCard extends StatelessWidget {
                   if (groupName != null)
                     Text(
                       groupName!.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white54,
+                      style: TextStyle(
+                        color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
                         fontSize: 10,
                         letterSpacing: 1.1,
                       ),
@@ -805,15 +825,18 @@ class _SkillCard extends StatelessWidget {
                       skill.description!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white54,
+                      style: TextStyle(
+                        color: isDark ? Colors.white54 : KratosTheme.lightTextMuted,
                         fontSize: 12,
                       ),
                     ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.white38),
+            Icon(
+              Icons.chevron_right,
+              color: isDark ? Colors.white38 : KratosTheme.lightTextMuted,
+            ),
           ],
         ),
       ),
