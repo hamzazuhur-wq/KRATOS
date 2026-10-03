@@ -132,102 +132,122 @@ class _LifeAreasScreenState extends State<LifeAreasScreen> {
                   onCreate: () => _openEditor(context),
                 );
               } else {
-                content = ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-                  children: [
-                    // Hero Direction Statement
-                    KratosGlassCard(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFC6F135)
-                                    .withValues(alpha: 0.12),
-                                shape: BoxShape.circle,
+                content = KratosPageEntrance(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                    children: [
+                      // Hero Direction Statement
+                      KratosGlassCard(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFC6F135)
+                                      .withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.auto_awesome,
+                                  color: Color(0xFFC6F135),
+                                  size: 20,
+                                ),
                               ),
-                              child: const Icon(
-                                Icons.auto_awesome,
-                                color: Color(0xFFC6F135),
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'PERSISTENT DOMAINS',
-                                    style: TextStyle(
-                                      color: Color(0xFFC6F135),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.5,
+                              const SizedBox(width: 14),
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'PERSISTENT DOMAINS',
+                                      style: TextStyle(
+                                        color: Color(0xFFC6F135),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.5,
+                                      ),
                                     ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    'Shape your long-term focus across core life domains.',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 13,
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Shape your long-term focus across core life domains.',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 13,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 18),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'DOMAINS OF LIFE',
-                          style: TextStyle(
-                            color: Colors.white38,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
+                      const SizedBox(height: 18),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'DOMAINS OF LIFE',
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2,
+                            ),
                           ),
-                        ),
-                        Text(
-                          '${areas.length} ACTIVE',
-                          style: const TextStyle(
-                            color: Color(0xFFC6F135),
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              KratosAnimatedMetric(
+                                value: areas.length,
+                                formatter: (val) => '${val.toInt()}',
+                                style: const TextStyle(
+                                  color: Color(0xFFC6F135),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                              const Text(
+                                ' ACTIVE',
+                                style: TextStyle(
+                                  color: Color(0xFFC6F135),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ...areas.map(
-                      (area) => _DomainCard(
-                        database: widget.database,
-                        ownerId: widget.ownerId,
-                        area: area,
-                        onOpen: () => Navigator.of(context).push(
-                          KratosPageRoute<void>(
-                            page: LifeAreaDashboardScreen(
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      KratosStaggerList(
+                        children: [
+                          for (final area in areas)
+                            _DomainCard(
                               database: widget.database,
                               ownerId: widget.ownerId,
                               area: area,
+                              onOpen: () => Navigator.of(context).push(
+                                KratosPageRoute<void>(
+                                  page: LifeAreaDashboardScreen(
+                                    database: widget.database,
+                                    ownerId: widget.ownerId,
+                                    area: area,
+                                  ),
+                                ),
+                              ),
+                              onEdit: () => _openEditor(context, area: area),
+                              onArchive: () => _archive(context, area),
                             ),
-                          ),
-                        ),
-                        onEdit: () => _openEditor(context, area: area),
-                        onArchive: () => _archive(context, area),
+                        ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 );
               }
 

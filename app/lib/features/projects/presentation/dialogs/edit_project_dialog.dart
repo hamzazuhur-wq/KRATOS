@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/active_glass_card.dart';
 import '../../../../app/kratos_dropdown.dart';
+import '../../../../app/kratos_motion.dart';
 import '../../../../data/drift/app_database.dart';
 import '../../../xp/data/xp_ledger_writer_impl.dart';
 import '../../data/projects_repository.dart';
@@ -175,7 +176,8 @@ class _EditProjectDialogState extends State<EditProjectDialog> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 580, maxHeight: 680),
-        child: ActiveGlassCard(
+        child: KratosModalEntrance(
+          child: ActiveGlassCard(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -409,6 +411,7 @@ class _EditProjectDialogState extends State<EditProjectDialog> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

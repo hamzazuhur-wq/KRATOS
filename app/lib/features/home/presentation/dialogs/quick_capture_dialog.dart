@@ -125,9 +125,10 @@ class _QuickCaptureDialogState extends State<QuickCaptureDialog> {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 520),
-        decoration: BoxDecoration(
+      child: KratosModalEntrance(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 520),
+          decoration: BoxDecoration(
           color: const Color(0xFF111411).withValues(alpha: 0.98),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: Colors.white12, width: 1.2),
@@ -278,6 +279,7 @@ class _QuickCaptureDialogState extends State<QuickCaptureDialog> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/kratos_dropdown.dart';
+import '../../../app/kratos_motion.dart';
 import '../../../app/kratos_skeleton.dart';
 import '../../../app/kratos_visuals.dart';
 import '../../../app/kratos_theme.dart';
@@ -86,10 +87,11 @@ class _TasksScreenState extends State<TasksScreen> {
             skeleton: const TasksPageSkeleton(),
             child: tasks == null
                 ? const SizedBox.shrink()
-                : ListView(
-                    padding: const EdgeInsets.fromLTRB(18, 24, 18, 110),
-                    children: [
-                      _Header(onNewTask: _openCreateDialog),
+                : KratosPageEntrance(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(18, 24, 18, 110),
+                      children: [
+                        _Header(onNewTask: _openCreateDialog),
                       const SizedBox(height: 18),
                       _StatusFilters(
                         selected: _status,
@@ -127,6 +129,7 @@ class _TasksScreenState extends State<TasksScreen> {
                       ),
                     ],
                   ),
+                ),
           );
         },
       );
@@ -639,18 +642,21 @@ class _Section extends StatelessWidget {
         if (tasks.isEmpty)
           _EmptyState(message: emptyMessage)
         else
-          ...tasks.map(
-            (task) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _TaskCard(
-                task: task,
-                activeState: activeState,
-                onStatusChanged: onStatusChanged,
-                onFocus: onFocus,
-                onComplete: onComplete,
-                onDelete: onDelete,
-              ),
-            ),
+          KratosStaggerList(
+            children: [
+              for (final task in tasks)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _TaskCard(
+                    task: task,
+                    activeState: activeState,
+                    onStatusChanged: onStatusChanged,
+                    onFocus: onFocus,
+                    onComplete: onComplete,
+                    onDelete: onDelete,
+                  ),
+                ),
+            ],
           ),
       ],
     );

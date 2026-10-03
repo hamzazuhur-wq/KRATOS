@@ -7,6 +7,8 @@ import 'dart:ui';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 
+import '../../../../app/kratos_motion.dart';
+
 import '../../../../data/drift/app_database.dart';
 import '../../../../domain/hlc.dart';
 import '../../../../domain/ids.dart';
@@ -46,15 +48,16 @@ class _AttachProjectDialogState extends State<AttachProjectDialog> {
   Widget build(BuildContext context) {
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.72,
-        decoration: BoxDecoration(
-          color: const Color(0xFF0D0F0D).withValues(alpha: 0.94),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: Colors.white12, width: 1),
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-        child: Column(
+      child: KratosModalEntrance(
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.72,
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D0F0D).withValues(alpha: 0.94),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(color: Colors.white12, width: 1),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
@@ -271,7 +274,8 @@ class _AttachProjectDialogState extends State<AttachProjectDialog> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Future<void> _attachProject() async {

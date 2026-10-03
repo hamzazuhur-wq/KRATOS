@@ -162,9 +162,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
               final projects = snapshot.data ?? [];
 
-              return CustomScrollView(
-                slivers: [
-                  // Search & Filter controls
+              return KratosPageEntrance(
+                child: CustomScrollView(
+                  slivers: [
+                    // Search & Filter controls
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -291,7 +292,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         },
                       ),
                     ),
-                ],
+                  ],
+                ),
               );
             },
           ),
@@ -593,8 +595,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         fontSize: 10,
                       ),
                     ),
-                    Text(
-                      '${item.progress.round()}%',
+                    KratosAnimatedMetric(
+                      value: item.progress.round(),
+                      formatter: (v) => '${v.round()}%',
                       style: const TextStyle(
                         color: Color(0xFFC6F135),
                         fontWeight: FontWeight.bold,
@@ -606,12 +609,15 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 const SizedBox(height: 4),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(2),
-                  child: LinearProgressIndicator(
-                    value: item.progress / 100.0,
-                    minHeight: 3,
-                    backgroundColor: isDark ? Colors.white10 : Colors.black12,
-                    valueColor: const AlwaysStoppedAnimation(
-                      Color(0xFFC6F135),
+                  child: KratosProgressAnimation(
+                    value: (item.progress / 100.0).clamp(0.0, 1.0),
+                    builder: (context, animatedVal) => LinearProgressIndicator(
+                      value: animatedVal,
+                      minHeight: 3,
+                      backgroundColor: isDark ? Colors.white10 : Colors.black12,
+                      valueColor: const AlwaysStoppedAnimation(
+                        Color(0xFFC6F135),
+                      ),
                     ),
                   ),
                 ),

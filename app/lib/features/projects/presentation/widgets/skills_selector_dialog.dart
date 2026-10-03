@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../app/active_glass_card.dart';
+import '../../../../app/kratos_motion.dart';
 import '../../../../data/drift/app_database.dart';
 
 /// Modal dialog providing search and unlimited multi-selection of real persisted Skills.
@@ -40,7 +41,8 @@ class _SkillsSelectorDialogState extends State<SkillsSelectorDialog> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 480, maxHeight: 580),
-        child: ActiveGlassCard(
+        child: KratosModalEntrance(
+          child: ActiveGlassCard(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -173,6 +175,7 @@ class _SkillsSelectorDialogState extends State<SkillsSelectorDialog> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../../../../app/kratos_motion.dart';
 import '../../../../app/kratos_visuals.dart';
 import '../../data/projects_repository.dart';
 
@@ -116,21 +117,22 @@ class _CreatePhaseDialogState extends State<CreatePhaseDialog> {
         const KratosEnvironment(),
         BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF0D0F0D).withValues(alpha: 0.94),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
+          child: KratosModalEntrance(
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D0F0D).withValues(alpha: 0.94),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
+                border: Border.all(color: Colors.white12, width: 1),
               ),
-              border: Border.all(color: Colors.white12, width: 1),
-            ),
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-              left: 20,
-              right: 20,
-              top: 16,
-            ),
-            child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                left: 20,
+                right: 20,
+                top: 16,
+              ),
+              child: SingleChildScrollView(
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -428,6 +430,7 @@ class _CreatePhaseDialogState extends State<CreatePhaseDialog> {
               ),
             ),
           ),
+        ),
         ),
       ],
     );

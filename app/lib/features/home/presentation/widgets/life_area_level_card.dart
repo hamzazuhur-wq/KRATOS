@@ -163,8 +163,9 @@ class LifeAreaLevelCard extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    Text(
-                      '${progressPct.toStringAsFixed(0)}%',
+                    KratosAnimatedMetric(
+                      value: progressPct,
+                      formatter: (v) => '${v.toStringAsFixed(0)}%',
                       style: TextStyle(
                         color: secondaryTextColor,
                         fontSize: 12,
@@ -184,18 +185,21 @@ class LifeAreaLevelCard extends StatelessWidget {
                     color: isDark
                         ? Colors.white.withValues(alpha: 0.08)
                         : const Color(0x14000000),
-                    child: FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: (progressPct / 100.0).clamp(0.0, 1.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: tierColor,
-                          boxShadow: [
-                            BoxShadow(
-                              color: tierColor.withValues(alpha: isDark ? 0.5 : 0.3),
-                              blurRadius: 6,
-                            ),
-                          ],
+                    child: KratosProgressAnimation(
+                      value: (progressPct / 100.0).clamp(0.0, 1.0),
+                      builder: (context, animatedFactor) => FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: animatedFactor,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: tierColor,
+                            boxShadow: [
+                              BoxShadow(
+                                color: tierColor.withValues(alpha: isDark ? 0.5 : 0.3),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

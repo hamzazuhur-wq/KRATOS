@@ -7,6 +7,7 @@ import 'dart:ui';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 
+import '../../../../app/kratos_motion.dart';
 import '../../../../data/drift/app_database.dart';
 import '../../../../domain/hlc.dart';
 import '../../../../domain/ids.dart';
@@ -78,19 +79,20 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
   Widget build(BuildContext context) {
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF0D0F0D).withValues(alpha: 0.94),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: Colors.white12, width: 1),
-        ),
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          left: 20,
-          right: 20,
-          top: 16,
-        ),
-        child: SingleChildScrollView(
+      child: KratosModalEntrance(
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D0F0D).withValues(alpha: 0.94),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(color: Colors.white12, width: 1),
+          ),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            left: 20,
+            right: 20,
+            top: 16,
+          ),
+          child: SingleChildScrollView(
           child: Form(
             key: _formKey,
             child: Column(
@@ -386,7 +388,8 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildLifeAreaPicker() {

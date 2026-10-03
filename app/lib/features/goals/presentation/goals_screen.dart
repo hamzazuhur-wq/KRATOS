@@ -451,25 +451,27 @@ class _GoalsScreenState extends State<GoalsScreen> {
                               for (var c in (categoriesSnapshot.data ?? [])) c.id: c.name
                             };
 
-                            return ListView.builder(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-                              itemCount: filteredGoals.length,
-                              itemBuilder: (context, index) {
-                                final goal = filteredGoals[index];
-                                final lifeAreaName = goal.lifeAreaId != null
-                                    ? areasMap[goal.lifeAreaId]
-                                    : null;
-                                final categoryName = goal.categoryId != null
-                                    ? categoriesMap[goal.categoryId]
-                                    : null;
+                            return KratosPageEntrance(
+                              child: ListView.builder(
+                                padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                                itemCount: filteredGoals.length,
+                                itemBuilder: (context, index) {
+                                  final goal = filteredGoals[index];
+                                  final lifeAreaName = goal.lifeAreaId != null
+                                      ? areasMap[goal.lifeAreaId]
+                                      : null;
+                                  final categoryName = goal.categoryId != null
+                                      ? categoriesMap[goal.categoryId]
+                                      : null;
 
-                                return GoalCard(
-                                  goal: goal,
-                                  lifeAreaName: lifeAreaName,
-                                  categoryName: categoryName,
-                                  onTap: () => _openGoalDetail(goal),
-                                );
-                              },
+                                  return GoalCard(
+                                    goal: goal,
+                                    lifeAreaName: lifeAreaName,
+                                    categoryName: categoryName,
+                                    onTap: () => _openGoalDetail(goal),
+                                  );
+                                },
+                              ),
                             );
                           },
                         );

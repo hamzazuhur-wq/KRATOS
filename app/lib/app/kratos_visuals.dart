@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import 'kratos_motion.dart';
 import 'kratos_theme.dart';
 
 /// Surface variant types for the unified KRATOS Liquid Glass card system.
@@ -255,7 +256,14 @@ class _KratosGlassCardState extends State<KratosGlassCard> {
       child: widget.child,
     );
 
-    Widget cardWidget = Container(
+    final disableAnimations =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+    Widget cardWidget = AnimatedContainer(
+      duration: disableAnimations
+          ? Duration.zero
+          : const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         borderRadius: widget.borderRadius,
         gradient: bodyGradient,
@@ -343,6 +351,15 @@ class _KratosGlassCardState extends State<KratosGlassCard> {
       return cardWidget;
     }
 
+    final isWeb = KratosMotion.isWebOrDesktop;
+    final targetScale = disableAnimations
+        ? 1.0
+        : (_pressed
+            ? (isWeb
+                ? KratosMotion.buttonPressScaleWeb
+                : KratosMotion.buttonPressScaleMobile)
+            : (isWeb && _hovered ? 1.006 : 1.0));
+
     return MouseRegion(
       cursor: widget.onTap != null ? SystemMouseCursors.click : MouseCursor.defer,
       onEnter: (_) {
@@ -365,9 +382,13 @@ class _KratosGlassCardState extends State<KratosGlassCard> {
             if (mounted) setState(() => _pressed = false);
           },
           child: AnimatedScale(
-            scale: _pressed ? 0.985 : (_hovered ? 1.006 : 1.0),
-            duration: Duration(milliseconds: _pressed ? 80 : 180),
-            curve: Curves.easeOutCubic,
+            scale: targetScale,
+            duration: Duration(
+              milliseconds: _pressed
+                  ? KratosMotion.pressDownDuration.inMilliseconds
+                  : KratosMotion.pressReleaseDuration.inMilliseconds,
+            ),
+            curve: _pressed ? KratosMotion.pressCurve : KratosMotion.releaseCurve,
             child: cardWidget,
           ),
         ),
@@ -453,6 +474,13 @@ class _KratosNavButtonState extends State<_KratosNavButton> {
     final unselectedColor =
         isDark ? Colors.white54 : KratosTheme.lightTextSecondary;
 
+    final disableAnimations =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final isWeb = KratosMotion.isWebOrDesktop;
+    final navPressScale = isWeb
+        ? KratosMotion.buttonPressScaleWeb
+        : KratosMotion.buttonPressScaleMobile;
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
@@ -464,8 +492,13 @@ class _KratosNavButtonState extends State<_KratosNavButton> {
         onTapUp: (_) => setState(() => _pressed = false),
         onTapCancel: () => setState(() => _pressed = false),
         child: AnimatedScale(
-          scale: _pressed ? 0.94 : 1.0,
-          duration: const Duration(milliseconds: 100),
+          scale: disableAnimations ? 1.0 : (_pressed ? navPressScale : 1.0),
+          duration: Duration(
+            milliseconds: _pressed
+                ? KratosMotion.pressDownDuration.inMilliseconds
+                : KratosMotion.pressReleaseDuration.inMilliseconds,
+          ),
+          curve: _pressed ? KratosMotion.pressCurve : KratosMotion.releaseCurve,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
             curve: Curves.easeOutCubic,

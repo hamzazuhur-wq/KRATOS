@@ -199,30 +199,32 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                           ? const SizedBox.shrink()
                           : (items.isEmpty
                                 ? _buildEmptyState()
-                                : ListView.separated(
-                                    padding: const EdgeInsets.all(16),
-                                    itemCount: items.length,
-                                    separatorBuilder: (_, _) =>
-                                        const SizedBox(height: 12),
-                                    itemBuilder: (context, index) {
-                                      final item = items[index];
-                                      return _ActivityCard(
-                                        item: item,
-                                        database: widget.database,
-                                        ownerId: widget.ownerId,
-                                        onTap: () {
-                                          Navigator.of(context).push(
-                                            KratosPageRoute(
-                                              page: ActivityDetailScreen(
-                                                database: widget.database,
-                                                ownerId: widget.ownerId,
-                                                activityId: item.id,
+                                : KratosPageEntrance(
+                                    child: ListView.separated(
+                                      padding: const EdgeInsets.all(16),
+                                      itemCount: items.length,
+                                      separatorBuilder: (_, _) =>
+                                          const SizedBox(height: 12),
+                                      itemBuilder: (context, index) {
+                                        final item = items[index];
+                                        return _ActivityCard(
+                                          item: item,
+                                          database: widget.database,
+                                          ownerId: widget.ownerId,
+                                          onTap: () {
+                                            Navigator.of(context).push(
+                                              KratosPageRoute(
+                                                page: ActivityDetailScreen(
+                                                  database: widget.database,
+                                                  ownerId: widget.ownerId,
+                                                  activityId: item.id,
+                                                ),
                                               ),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
                                   )),
                     );
                   },

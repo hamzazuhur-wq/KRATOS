@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 
 import '../../../app/kratos_dropdown.dart';
+import '../../../app/kratos_motion.dart';
 import '../../../app/kratos_text_prompt.dart';
 import '../../../data/drift/app_database.dart';
 import '../../categories/data/categories_dao.dart';
@@ -243,9 +244,10 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
+      child: KratosModalEntrance(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
             constraints: const BoxConstraints(maxWidth: 540, maxHeight: 720),
@@ -716,7 +718,8 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildPresetChip(String key, String label) {

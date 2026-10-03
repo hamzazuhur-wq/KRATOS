@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../../../app/kratos_motion.dart';
 import '../../../../app/kratos_theme.dart';
 import '../../../../app/kratos_visuals.dart';
 import '../../../../data/drift/app_database.dart';
@@ -30,51 +31,7 @@ class GoalCard extends StatefulWidget {
   State<GoalCard> createState() => _GoalCardState();
 }
 
-class _GoalCardState extends State<GoalCard>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulseController;
-  late final Animation<double> _pulseAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2400),
-    );
-
-    _pulseAnimation = Tween<double>(begin: 0.35, end: 0.85).animate(
-      CurvedAnimation(
-        parent: _pulseController,
-        curve: Curves.easeInOut,
-      ),
-    );
-
-    if (widget.goal.status == 'active' ||
-        widget.goal.status == 'paused' ||
-        widget.goal.status == 'stopped') {
-      _pulseController.forward(from: 0);
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant GoalCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.goal.status != oldWidget.goal.status) {
-      if (widget.goal.status == 'completed' || widget.goal.status == 'abandoned') {
-        _pulseController.stop();
-      } else if (!_pulseController.isAnimating) {
-        _pulseController.forward(from: 0);
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    super.dispose();
-  }
-
+class _GoalCardState extends State<GoalCard> {
   Color _getStatusColor() {
     switch (widget.goal.status.toLowerCase()) {
       case 'active':
@@ -109,29 +66,23 @@ class _GoalCardState extends State<GoalCard>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final statusColor = _getStatusColor();
-    final isStatic = widget.goal.status == 'completed' || widget.goal.status == 'abandoned';
 
-    return AnimatedBuilder(
-      animation: _pulseAnimation,
-      builder: (context, child) {
-        final glowOpacity = isStatic ? 0.2 : _pulseAnimation.value * 0.45;
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 14),
-          child: KratosGlassCard(
-            variant: KratosSurfaceVariant.interactive,
-            interactive: true,
-            accentColor: statusColor.withValues(alpha: glowOpacity < 0.22 ? 0.22 : glowOpacity),
-            borderRadius: BorderRadius.circular(18),
-            padding: EdgeInsets.zero,
-            child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: widget.onTap,
-                  splashColor: statusColor.withValues(alpha: 0.1),
-                  highlightColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: KratosGlassCard(
+        variant: KratosSurfaceVariant.interactive,
+        interactive: true,
+        accentColor: statusColor.withValues(alpha: isDark ? 0.40 : 0.45),
+        borderRadius: BorderRadius.circular(18),
+        padding: EdgeInsets.zero,
+        child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onTap,
+              splashColor: statusColor.withValues(alpha: 0.1),
+              highlightColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -275,19 +226,26 @@ class _GoalCardState extends State<GoalCard>
                             Expanded(
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(4),
-                                child: LinearProgressIndicator(
+                                child: KratosProgressAnimation(
                                   value: widget.goal.progress.clamp(0.0, 1.0),
-                                  backgroundColor: isDark ? Colors.white12 : Colors.black12,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    statusColor,
+                                  builder: (context, animatedVal) =>
+                                      LinearProgressIndicator(
+                                    value: animatedVal,
+                                    backgroundColor: isDark
+                                        ? Colors.white12
+                                        : Colors.black12,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      statusColor,
+                                    ),
+                                    minHeight: 5,
                                   ),
-                                  minHeight: 5,
                                 ),
                               ),
                             ),
                             const SizedBox(width: 10),
-                            Text(
-                              '${(widget.goal.progress * 100).toInt()}%',
+                            KratosAnimatedMetric(
+                              value: (widget.goal.progress * 100).round(),
+                              formatter: (v) => '${v.round()}%',
                               style: TextStyle(
                                 color: statusColor,
                                 fontSize: 11,
@@ -348,10 +306,8 @@ class _GoalCardState extends State<GoalCard>
                   ),
                 ),
             ),
-            ),
+          ),
         );
-      },
-    );
   }
 
   String _formatDate(DateTime dt) {

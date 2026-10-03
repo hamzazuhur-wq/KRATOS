@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/active_glass_card.dart';
 import '../../../app/kratos_dropdown.dart';
+import '../../../app/kratos_motion.dart';
 import '../../../app/kratos_theme.dart';
 import '../../../data/drift/app_database.dart';
 import '../../../domain/hlc.dart';
@@ -95,11 +96,12 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
-        child: ActiveGlassCard(
-          active: true,
-          borderRadius: BorderRadius.circular(24),
-          padding: EdgeInsets.zero,
-          child: FutureBuilder<(List<LifeArea>, List<Category>, List<Skill>)>(
+        child: KratosModalEntrance(
+          child: ActiveGlassCard(
+            active: true,
+            borderRadius: BorderRadius.circular(24),
+            padding: EdgeInsets.zero,
+            child: FutureBuilder<(List<LifeArea>, List<Category>, List<Skill>)>(
             future: _loadPrerequisites(),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
@@ -867,7 +869,8 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildLabel(String text) {
