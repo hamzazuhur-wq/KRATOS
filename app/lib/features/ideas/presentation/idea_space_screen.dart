@@ -63,7 +63,6 @@ class _IdeaSpaceScreenState extends State<IdeaSpaceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0F0D),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

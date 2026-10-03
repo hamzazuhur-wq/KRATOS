@@ -96,7 +96,6 @@ class _ProgressionSettingsScreenState extends State<ProgressionSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF020302),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

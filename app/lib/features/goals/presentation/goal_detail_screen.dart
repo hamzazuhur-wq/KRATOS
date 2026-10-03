@@ -56,7 +56,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return Scaffold(
-            backgroundColor: const Color(0xFF020302),
             appBar: AppBar(
               backgroundColor: Colors.transparent,
               leading: IconButton(
@@ -80,7 +79,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         final goal = snapshot.data;
         if (goal == null || goal.deletedAt != null) {
           return Scaffold(
-            backgroundColor: const Color(0xFF020302),
             appBar: AppBar(backgroundColor: Colors.transparent),
             body: const Center(
               child: Text(
@@ -92,7 +90,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         }
 
         return Scaffold(
-          backgroundColor: const Color(0xFF020302),
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,

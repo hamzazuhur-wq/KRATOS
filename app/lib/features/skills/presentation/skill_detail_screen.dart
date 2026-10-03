@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column;
 
 import '../../../app/kratos_visuals.dart';
@@ -187,7 +187,6 @@ class _SkillDetailScreenState extends State<SkillDetailScreen> {
   Widget build(BuildContext context) {
     final skill = _skill;
     return Scaffold(
-      backgroundColor: const Color(0xFF020302),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(skill?.name.toUpperCase() ?? 'SKILL'),

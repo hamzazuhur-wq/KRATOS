@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/active_glass_card.dart';
 import '../../../app/kratos_dropdown.dart';
+import '../../../app/kratos_visuals.dart';
 import '../../../data/drift/app_database.dart';
 import '../../../domain/hlc.dart';
 import '../../../domain/ids.dart';
@@ -126,7 +127,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF020302),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -155,8 +155,12 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const KratosEnvironment(),
+          ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
         children: [
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
@@ -199,6 +203,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   _openCategoryEditor(category: cat, type: group.key),
             );
           }),
+        ],
+      ),
         ],
       ),
     );

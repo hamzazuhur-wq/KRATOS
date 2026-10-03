@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/active_glass_card.dart';
 import '../../../app/kratos_dropdown.dart';
+import '../../../app/kratos_visuals.dart';
 import '../../activities/domain/activity_xp_calculator.dart';
 import '../../xp/domain/base_xp_config.dart';
 
@@ -44,7 +45,6 @@ class _XpCategoriesScreenState extends State<XpCategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF020302),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -62,22 +62,28 @@ class _XpCategoriesScreenState extends State<XpCategoriesScreen> {
           ),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+      body: Stack(
+        fit: StackFit.expand,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 12),
-            child: Text(
-              'XP RULES',
-              style: TextStyle(
-                color: Color(0xFFC6F135),
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.4,
+          const KratosEnvironment(),
+          ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(left: 4, bottom: 12),
+                child: Text(
+                  'XP RULES',
+                  style: TextStyle(
+                    color: Color(0xFFC6F135),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.4,
+                  ),
+                ),
               ),
-            ),
+              for (final source in _sources) _ruleCard(source),
+            ],
           ),
-          for (final source in _sources) _ruleCard(source),
         ],
       ),
     );

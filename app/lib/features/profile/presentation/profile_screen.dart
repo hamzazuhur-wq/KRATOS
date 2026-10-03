@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../app/active_glass_card.dart';
 import '../../../app/kratos_theme.dart';
+import '../../../app/kratos_visuals.dart';
 import '../../../data/drift/app_database.dart';
 import '../../auth/domain/auth_service.dart';
 import '../data/profile_repository.dart';
@@ -147,7 +148,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF020302),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -175,9 +175,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<UserProfileData>(
-        stream: _profileStream,
-        builder: (context, snapshot) {
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const KratosEnvironment(),
+          StreamBuilder<UserProfileData>(
+            stream: _profileStream,
+            builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
               child: Padding(
@@ -253,6 +257,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           );
         },
+      ),
+        ],
       ),
     );
   }

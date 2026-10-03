@@ -383,7 +383,6 @@ class _IdeaEditorScreenState extends State<IdeaEditorScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: Color(0xFF0D0F0D),
         body: Center(
           child: CircularProgressIndicator(color: Color(0xFFC6F135)),
         ),
@@ -391,9 +390,7 @@ class _IdeaEditorScreenState extends State<IdeaEditorScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0F0D),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0F0D),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white70),
