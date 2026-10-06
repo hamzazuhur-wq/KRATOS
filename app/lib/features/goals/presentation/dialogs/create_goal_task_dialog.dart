@@ -97,52 +97,62 @@ class _CreateGoalTaskDialogState extends State<CreateGoalTaskDialog> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFC6F135).withValues(alpha: 0.15),
+                        color: const Color(0xFF141714),
                         borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFFEEFF08).withValues(alpha: 0.35),
+                        ),
                       ),
-                      child: const Icon(Icons.add_task, color: Color(0xFFC6F135), size: 20),
+                      child: const Icon(Icons.add_task, color: Color(0xFFEEFF08), size: 18),
                     ),
                     const SizedBox(width: 12),
                     Text(
                       _isContextSubGoal ? 'ADD TASK TO SUB-GOAL' : 'ADD TASK TO GOAL',
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
+                        fontFamily: 'Space Grotesk',
+                        color: Color(0xFFF3F1E8),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
 
                 // Context banner (shows exclusivity: Goal OR Sub-goal)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.04),
+                    color: const Color(0xFF141714),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white10),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         _isContextSubGoal ? Icons.subdirectory_arrow_right : Icons.track_changes,
-                        size: 14,
-                        color: const Color(0xFFC6F135),
+                        size: 13,
+                        color: const Color(0xFFEEFF08),
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        _isContextSubGoal ? 'Attached to Sub-goal: ' : 'Attached to Main Goal: ',
-                        style: const TextStyle(color: Colors.white38, fontSize: 11),
+                        _isContextSubGoal ? 'ATTACHED TO SUB-GOAL: ' : 'ATTACHED TO MAIN GOAL: ',
+                        style: const TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF686D65),
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       Expanded(
                         child: Text(
                           widget.goalContext.title,
                           style: const TextStyle(
-                            color: Colors.white,
+                            fontFamily: 'Inter',
+                            color: Color(0xFFF3F1E8),
                             fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -155,18 +165,43 @@ class _CreateGoalTaskDialogState extends State<CreateGoalTaskDialog> {
                 // Task Title *
                 const Text(
                   'TASK NAME *',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: Color(0xFF686D65),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _titleController,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    color: Color(0xFFF3F1E8),
+                    fontSize: 14,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'e.g. Implement Drift DAO unit tests',
-                    hintStyle: const TextStyle(color: Colors.white24),
+                    hintStyle: const TextStyle(
+                      fontFamily: 'Inter',
+                      color: Color(0xFF686D65),
+                    ),
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.04),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    fillColor: const Color(0xFF141714),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFEEFF08)),
+                    ),
                   ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'Please enter task name' : null,
                 ),
@@ -175,7 +210,13 @@ class _CreateGoalTaskDialogState extends State<CreateGoalTaskDialog> {
                 // Task Category * (from Task Categories, NOT Goal Categories)
                 const Text(
                   'TASK CATEGORY * (SETTINGS → TASK CATEGORIES)',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: Color(0xFF686D65),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 _buildTaskCategoryPicker(),
@@ -184,7 +225,13 @@ class _CreateGoalTaskDialogState extends State<CreateGoalTaskDialog> {
                 // Time / Duration
                 const Text(
                   'FOCUS DURATION',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: Color(0xFF686D65),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Wrap(
@@ -192,16 +239,26 @@ class _CreateGoalTaskDialogState extends State<CreateGoalTaskDialog> {
                   children: _durations.map((d) {
                     final isSel = _selectedDuration == d;
                     return ChoiceChip(
-                      label: Text(d),
+                      label: Text(
+                        d,
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: isSel ? const Color(0xFF020302) : const Color(0xFF979C92),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                       selected: isSel,
                       onSelected: (val) {
                         if (val) setState(() => _selectedDuration = d);
                       },
-                      selectedColor: const Color(0xFFC6F135).withValues(alpha: 0.25),
-                      backgroundColor: Colors.white.withValues(alpha: 0.04),
-                      labelStyle: TextStyle(
-                        color: isSel ? const Color(0xFFC6F135) : Colors.white70,
-                        fontSize: 11,
+                      selectedColor: const Color(0xFFEEFF08),
+                      backgroundColor: const Color(0xFF141714),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                        side: BorderSide(
+                          color: isSel ? const Color(0xFFEEFF08) : Colors.white.withValues(alpha: 0.08),
+                        ),
                       ),
                     );
                   }).toList(),
@@ -211,7 +268,13 @@ class _CreateGoalTaskDialogState extends State<CreateGoalTaskDialog> {
                 // Skills (optional)
                 const Text(
                   'SKILLS ATTRIBUTION (OPTIONAL)',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: Color(0xFF686D65),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 _buildSkillsPicker(),
@@ -220,19 +283,44 @@ class _CreateGoalTaskDialogState extends State<CreateGoalTaskDialog> {
                 // Notes
                 const Text(
                   'NOTES / CHECKLIST',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: Color(0xFF686D65),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _notesController,
                   maxLines: 2,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    color: Color(0xFFF3F1E8),
+                    fontSize: 13,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Acceptance criteria or instructions',
-                    hintStyle: const TextStyle(color: Colors.white24),
+                    hintStyle: const TextStyle(
+                      fontFamily: 'Inter',
+                      color: Color(0xFF686D65),
+                    ),
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.04),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    fillColor: const Color(0xFF141714),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFEEFF08)),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -242,14 +330,23 @@ class _CreateGoalTaskDialogState extends State<CreateGoalTaskDialog> {
                   contentPadding: EdgeInsets.zero,
                   value: _startTimerImmediately,
                   onChanged: (val) => setState(() => _startTimerImmediately = val),
-                  activeThumbColor: const Color(0xFFC6F135),
+                  activeThumbColor: const Color(0xFFEEFF08),
                   title: const Text(
                     'Start Timer immediately after creation',
-                    style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      color: Color(0xFFF3F1E8),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   subtitle: const Text(
                     'Launches global focus capture session',
-                    style: TextStyle(color: Colors.white30, fontSize: 11),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      color: Color(0xFF686D65),
+                      fontSize: 11,
+                    ),
                   ),
                 ),
 
@@ -265,11 +362,20 @@ class _CreateGoalTaskDialogState extends State<CreateGoalTaskDialog> {
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white70,
+                          foregroundColor: const Color(0xFF979C92),
+                          side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                         ),
-                        child: const Text('Cancel'),
+                        child: const Text(
+                          'CANCEL',
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Mono',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -278,18 +384,28 @@ class _CreateGoalTaskDialogState extends State<CreateGoalTaskDialog> {
                       child: ElevatedButton(
                         onPressed: _isSaving ? null : _saveTask,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFC6F135),
+                          backgroundColor: const Color(0xFFEEFF08),
                           foregroundColor: const Color(0xFF020302),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                         ),
                         child: _isSaving
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
+                                width: 18,
+                                height: 18,
                                 child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF020302)),
                               )
-                            : const Text('CREATE TASK', style: TextStyle(fontWeight: FontWeight.w900)),
+                            : const Text(
+                                'CREATE TASK',
+                                style: TextStyle(
+                                  fontFamily: 'IBM Plex Mono',
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.8,
+                                  color: Color(0xFF020302),
+                                ),
+                              ),
                       ),
                     ),
                   ],

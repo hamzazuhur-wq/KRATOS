@@ -152,7 +152,7 @@ class _CreateLevelScreenState extends State<CreateLevelScreen> {
     final boundary = KratosTierSystem.getBoundary(_selectedTier, _tiers);
 
     return Scaffold(
-      backgroundColor: KratosTheme.volcanic,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

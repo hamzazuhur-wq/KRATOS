@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../app/active_glass_card.dart';
 import '../../../../app/kratos_dropdown.dart';
 import '../../../../app/kratos_motion.dart';
+import '../../../../app/kratos_theme.dart';
+import '../../../../app/kratos_visuals.dart';
 import '../../../../data/drift/app_database.dart';
 import '../../../xp/data/xp_ledger_writer_impl.dart';
 import '../../data/projects_repository.dart';
@@ -171,247 +172,326 @@ class _EditProjectDialogState extends State<EditProjectDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final textColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+    final mutedColor = isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary;
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: Container(
+      child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 580, maxHeight: 680),
         child: KratosModalEntrance(
-          child: ActiveGlassCard(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'EDIT PROJECT',
-                    style: TextStyle(
-                      color: Color(0xFFC6F135),
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                      fontSize: 16,
+          child: KratosGlassCard(
+            variant: KratosSurfaceVariant.elevated,
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'EDIT PROJECT',
+                      style: TextStyle(
+                        fontFamily: 'Space Grotesk',
+                        color: lime,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
+                        fontSize: 16,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white54, size: 20),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
+                    IconButton(
+                      icon: Icon(Icons.close, color: mutedColor, size: 20),
+                      onPressed: () => Navigator.pop(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
 
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Title
-                      TextField(
-                        controller: _titleController,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        decoration: const InputDecoration(
-                          labelText: 'Project Name *',
-                          labelStyle: TextStyle(color: Colors.white70),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Title
+                        TextField(
+                          controller: _titleController,
+                          style: TextStyle(fontFamily: 'Inter', color: textColor, fontWeight: FontWeight.bold),
+                          decoration: InputDecoration(
+                            labelText: 'Project Name *',
+                            labelStyle: TextStyle(fontFamily: 'IBM Plex Mono', color: mutedColor),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 14),
+                        const SizedBox(height: 14),
 
-                      // Description
-                      TextField(
-                        controller: _descriptionController,
-                        maxLines: 2,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          labelText: 'Description',
-                          labelStyle: TextStyle(color: Colors.white70),
+                        // Description
+                        TextField(
+                          controller: _descriptionController,
+                          maxLines: 2,
+                          style: TextStyle(fontFamily: 'Inter', color: textColor),
+                          decoration: InputDecoration(
+                            labelText: 'Description',
+                            labelStyle: TextStyle(fontFamily: 'IBM Plex Mono', color: mutedColor),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                      // Status Dropdown
-                      KratosDropdownFormField<String>(
-                        initialValue: _status,
-                        labelText: 'STATUS',
-                        hint: 'Status',
-                        items: const [
-                          KratosDropdownItem(value: 'active', label: 'Active'),
-                          KratosDropdownItem(value: 'paused', label: 'Paused'),
-                          KratosDropdownItem(value: 'completed', label: 'Completed'),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) setState(() => _status = val);
-                        },
-                      ),
-                      const SizedBox(height: 16),
+                        // Status Dropdown
+                        KratosDropdownFormField<String>(
+                          initialValue: _status,
+                          labelText: 'STATUS',
+                          hint: 'Status',
+                          items: const [
+                            KratosDropdownItem(value: 'active', label: 'Active'),
+                            KratosDropdownItem(value: 'paused', label: 'Paused'),
+                            KratosDropdownItem(value: 'completed', label: 'Completed'),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) setState(() => _status = val);
+                          },
+                        ),
+                        const SizedBox(height: 16),
 
-                      // Difficulty
-                      const Text(
-                        'DIFFICULTY',
-                        style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 1.2),
-                      ),
-                      const SizedBox(height: 8),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: List.generate(10, (idx) {
-                            final d = idx + 1;
-                            final roman = ProjectDifficulty.toRoman(d);
-                            final isSelected = _difficulty == d;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 6),
-                              child: ChoiceChip(
-                                label: Text(roman),
-                                selected: isSelected,
-                                selectedColor: const Color(0xFFC6F135),
-                                labelStyle: TextStyle(
-                                  color: isSelected ? Colors.black : Colors.white70,
-                                  fontWeight: FontWeight.bold,
+                        // Difficulty
+                        Text(
+                          'DIFFICULTY',
+                          style: TextStyle(fontFamily: 'IBM Plex Mono', color: mutedColor, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2),
+                        ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: List.generate(10, (idx) {
+                              final d = idx + 1;
+                              final roman = ProjectDifficulty.toRoman(d);
+                              final isSelected = _difficulty == d;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: ChoiceChip(
+                                  label: Text(roman),
+                                  selected: isSelected,
+                                  selectedColor: lime,
+                                  backgroundColor: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.04),
+                                  side: BorderSide(
+                                    color: isSelected ? lime : (isDark ? Colors.white12 : Colors.black12),
+                                  ),
+                                  labelStyle: TextStyle(
+                                    fontFamily: 'IBM Plex Mono',
+                                    color: isSelected ? (isDark ? Colors.black : Colors.white) : textColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  onSelected: (sel) {
+                                    if (sel) setState(() => _difficulty = d);
+                                  },
                                 ),
-                                onSelected: (sel) {
-                                  if (sel) setState(() => _difficulty = d);
+                              );
+                            }),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Assign To
+                        Text(
+                          'ASSIGN TO',
+                          style: TextStyle(fontFamily: 'IBM Plex Mono', color: mutedColor, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: KratosDropdownFormField<ProjectAssignmentType>(
+                                initialValue: _selectedAssignmentType,
+                                labelText: 'TYPE',
+                                hint: 'Type',
+                                items: ProjectAssignmentType.values.map((t) {
+                                  return KratosDropdownItem(value: t, label: t.label);
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setState(() => _selectedAssignmentType = val);
+                                    _loadTargetsForType(val);
+                                  }
                                 },
                               ),
-                            );
-                          }),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Assign To
-                      const Text(
-                        'ASSIGN TO',
-                        style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 1.2),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: KratosDropdownFormField<ProjectAssignmentType>(
-                              initialValue: _selectedAssignmentType,
-                              labelText: 'TYPE',
-                              hint: 'Type',
-                              items: ProjectAssignmentType.values.map((t) {
-                                return KratosDropdownItem(value: t, label: t.label);
-                              }).toList(),
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setState(() => _selectedAssignmentType = val);
-                                  _loadTargetsForType(val);
-                                }
-                              },
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            flex: 3,
-                            child: _loadingTargets
-                                ? const Center(child: CircularProgressIndicator(color: Color(0xFFC6F135)))
-                                : KratosDropdownFormField<String>(
-                                    initialValue: _selectedTargetId,
-                                    labelText: _selectedAssignmentType.label.toUpperCase(),
-                                    hint: _selectedAssignmentType.label,
-                                    items: _availableTargets.map((t) {
-                                      return KratosDropdownItem(value: t.id, label: t.title);
-                                    }).toList(),
-                                    onChanged: (val) => setState(() => _selectedTargetId = val),
-                                  ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Skills
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'SKILLS',
-                            style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 1.2),
-                          ),
-                          TextButton(
-                            onPressed: _openSkillsDialog,
-                            child: const Text('+ Edit Skills', style: TextStyle(color: Color(0xFFC6F135))),
-                          ),
-                        ],
-                      ),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: _allUserSkills
-                            .where((s) => _selectedSkillIds.contains(s.id))
-                            .map((s) => Chip(
-                                  label: Text(s.name, style: const TextStyle(fontSize: 11)),
-                                  onDeleted: () => setState(() => _selectedSkillIds.remove(s.id)),
-                                ))
-                            .toList(),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton.icon(
-                    onPressed: () async {
-                      final nav = Navigator.of(context);
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          title: const Text('Delete Project?'),
-                          content: Text('Delete “${widget.projectDetails.project.title}”?'),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                            FilledButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
-                              child: const Text('Delete'),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              flex: 3,
+                              child: _loadingTargets
+                                  ? Center(child: CircularProgressIndicator(color: lime))
+                                  : KratosDropdownFormField<String>(
+                                      initialValue: _selectedTargetId,
+                                      labelText: _selectedAssignmentType.label.toUpperCase(),
+                                      hint: _selectedAssignmentType.label,
+                                      items: _availableTargets.map((t) {
+                                        return KratosDropdownItem(value: t.id, label: t.title);
+                                      }).toList(),
+                                      onChanged: (val) => setState(() => _selectedTargetId = val),
+                                    ),
                             ),
                           ],
                         ),
-                      );
-                      if (confirmed == true) {
-                        await _repository.softDeleteProject(
-                          widget.projectDetails.project.id,
-                          widget.ownerId,
-                        );
-                        if (mounted) {
-                          nav.pop('deleted');
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
-                    label: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
-                  ),
-                  Row(
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton(
-                        onPressed: _saving ? null : _saveChanges,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFFC6F135),
-                          foregroundColor: const Color(0xFF0D0D0D),
+                        const SizedBox(height: 16),
+
+                        // Skills
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'SKILLS',
+                              style: TextStyle(fontFamily: 'IBM Plex Mono', color: mutedColor, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.2),
+                            ),
+                            TextButton(
+                              onPressed: _openSkillsDialog,
+                              child: Text('+ Edit Skills', style: TextStyle(fontFamily: 'IBM Plex Mono', color: lime, fontSize: 12)),
+                            ),
+                          ],
                         ),
-                        child: const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    ],
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: _allUserSkills
+                              .where((s) => _selectedSkillIds.contains(s.id))
+                              .map((s) => Chip(
+                                    label: Text(s.name, style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: textColor)),
+                                    backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+                                    side: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
+                                    deleteIconColor: mutedColor,
+                                    onDeleted: () => setState(() => _selectedSkillIds.remove(s.id)),
+                                  ))
+                              .toList(),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: 16),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () async {
+                        final nav = Navigator.of(context);
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (dialogCtx) => Dialog(
+                            backgroundColor: Colors.transparent,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 400),
+                              child: KratosModalEntrance(
+                                child: KratosGlassCard(
+                                  variant: KratosSurfaceVariant.elevated,
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'DELETE PROJECT?',
+                                        style: TextStyle(
+                                          fontFamily: 'Space Grotesk',
+                                          color: Colors.redAccent,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        'Delete "${widget.projectDetails.project.title}"?',
+                                        style: TextStyle(fontFamily: 'Inter', color: textColor, fontSize: 13),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(dialogCtx, false),
+                                            child: Text('Cancel', style: TextStyle(fontFamily: 'IBM Plex Mono', color: mutedColor)),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          KratosPressable(
+                                            onTap: () => Navigator.pop(dialogCtx, true),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                              decoration: BoxDecoration(
+                                                color: Colors.redAccent,
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              child: const Text(
+                                                'DELETE',
+                                                style: TextStyle(
+                                                  fontFamily: 'IBM Plex Mono',
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                        if (confirmed == true) {
+                          await _repository.softDeleteProject(
+                            widget.projectDetails.project.id,
+                            widget.ownerId,
+                          );
+                          if (mounted) {
+                            nav.pop('deleted');
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                      label: const Text('Delete', style: TextStyle(fontFamily: 'IBM Plex Mono', color: Colors.redAccent)),
+                    ),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text('Cancel', style: TextStyle(fontFamily: 'IBM Plex Mono', color: mutedColor)),
+                        ),
+                        const SizedBox(width: 8),
+                        KratosPressable(
+                          onTap: _saving ? null : _saveChanges,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                            decoration: BoxDecoration(
+                              color: lime,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'SAVE CHANGES',
+                              style: TextStyle(
+                                fontFamily: 'IBM Plex Mono',
+                                color: isDark ? const Color(0xFF0D0D0D) : Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 }

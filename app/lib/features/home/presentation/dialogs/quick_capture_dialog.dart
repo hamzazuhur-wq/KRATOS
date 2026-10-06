@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/kratos_motion.dart';
-
+import '../../../../app/kratos_theme.dart';
+import '../../../../app/kratos_visuals.dart';
 import '../../../../data/drift/app_database.dart';
 import '../../../../domain/ids.dart';
 import '../../../ideas/data/ideas_repository.dart';
@@ -59,7 +60,6 @@ class _QuickCaptureDialogState extends State<QuickCaptureDialog> {
 
     setState(() => _saving = true);
     try {
-      // First line as title, remainder as description
       final lines = text.split('\n');
       final title = lines.first;
       final description = lines.length > 1
@@ -85,9 +85,11 @@ class _QuickCaptureDialogState extends State<QuickCaptureDialog> {
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Idea captured successfully'),
-            backgroundColor: Color(0xFF1E281E),
+          SnackBar(
+            content: const Text('Idea captured successfully'),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF1E281E)
+                : KratosTheme.lightSurface,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -122,164 +124,163 @@ class _QuickCaptureDialogState extends State<QuickCaptureDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final textColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+    final mutedColor = isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary;
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: KratosModalEntrance(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 520),
-          decoration: BoxDecoration(
-          color: const Color(0xFF111411).withValues(alpha: 0.98),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white12, width: 1.2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.6),
-              blurRadius: 32,
-              offset: const Offset(0, 16),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: KratosModalEntrance(
+          child: KratosGlassCard(
+            variant: KratosSurfaceVariant.elevated,
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFC6F135).withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.bolt,
-                    color: Color(0xFFC6F135),
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'QUICK CAPTURE',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.0,
-                    fontSize: 13,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(
-                    Icons.close,
-                    color: Colors.white54,
-                    size: 20,
-                  ),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: _textController,
-              autofocus: true,
-              maxLines: 4,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                height: 1.5,
-              ),
-              decoration: InputDecoration(
-                hintText: 'What are you thinking or working on?...',
-                hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
-                filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.04),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Colors.white10),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFC6F135),
-                    width: 1.2,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Foundation bar: voice capture foundation chip
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.04),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white10),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.mic_none, color: Colors.white38, size: 14),
-                      SizedBox(width: 6),
-                      Text(
-                        'Voice ready',
-                        style: TextStyle(color: Colors.white38, fontSize: 11),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: lime.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
                       ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
-                TextButton(
-                  onPressed: _openFullEditor,
-                  child: const Text(
-                    'Open Editor',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _saving ? null : _captureQuick,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFC6F135),
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      child: Icon(Icons.bolt, color: lime, size: 18),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 12,
-                    ),
-                  ),
-                  child: _saving
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.black,
-                          ),
-                        )
-                      : const Text(
-                          'Capture',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'QUICK CAPTURE',
+                        style: TextStyle(
+                          fontFamily: 'Space Grotesk',
+                          color: textColor,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.5,
+                          fontSize: 13,
                         ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: mutedColor, size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _textController,
+                  autofocus: true,
+                  maxLines: 4,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    color: textColor,
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'What are you thinking or working on?...',
+                    hintStyle: TextStyle(color: mutedColor, fontSize: 13),
+                    filled: true,
+                    fillColor: isDark
+                        ? Colors.white.withValues(alpha: 0.04)
+                        : Colors.black.withValues(alpha: 0.03),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: isDark ? Colors.white10 : Colors.black12,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: lime, width: 1.2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.04)
+                            : Colors.black.withValues(alpha: 0.03),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? Colors.white10 : Colors.black12,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.mic_none, color: mutedColor, size: 14),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Voice ready',
+                            style: TextStyle(
+                              fontFamily: 'IBM Plex Mono',
+                              color: mutedColor,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: _openFullEditor,
+                      child: Text(
+                        'Open Editor',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          color: mutedColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    KratosPressable(
+                      onTap: _saving ? null : _captureQuick,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                        decoration: BoxDecoration(
+                          color: lime,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: _saving
+                            ? SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: isDark ? Colors.black : Colors.white,
+                                ),
+                              )
+                            : Text(
+                                'Capture',
+                                style: TextStyle(
+                                  fontFamily: 'IBM Plex Mono',
+                                  color: isDark ? const Color(0xFF020302) : Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12.5,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 }

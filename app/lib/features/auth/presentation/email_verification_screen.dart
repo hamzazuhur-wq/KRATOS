@@ -165,45 +165,10 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     final canVerify = code.length == 6 && !_isVerifying;
 
     return Scaffold(
-      backgroundColor: KratosTheme.volcanic,
+      backgroundColor: Colors.transparent,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background ambient gradient
-          Positioned(
-            top: -120,
-            left: -120,
-            child: Container(
-              width: 320,
-              height: 320,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    KratosTheme.acidLime.withValues(alpha: 0.12),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -100,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    KratosTheme.cyan.withValues(alpha: 0.08),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
 
           // Main Card
           Center(

@@ -1355,17 +1355,6 @@ class _CreateTaskDialogState extends State<CreateTaskDialog> {
       initialDate: _dueDate ?? now,
       firstDate: now.subtract(const Duration(days: 365)),
       lastDate: now.add(const Duration(days: 365 * 5)),
-      builder: (context, child) => Theme(
-        data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(
-            primary: KratosTheme.acidLime,
-            onPrimary: Color(0xFF0D0D0D),
-            surface: Color(0xFF1A1A1A),
-            onSurface: Colors.white,
-          ),
-        ),
-        child: child!,
-      ),
     );
 
     if (picked != null) {

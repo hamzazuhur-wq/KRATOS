@@ -1,11 +1,12 @@
 // ignore_for_file: public_member_api_docs
-import 'dart:ui';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 
 import '../../../app/kratos_dropdown.dart';
 import '../../../app/kratos_motion.dart';
 import '../../../app/kratos_text_prompt.dart';
+import '../../../app/kratos_theme.dart';
+import '../../../app/kratos_visuals.dart';
 import '../../../data/drift/app_database.dart';
 import '../../categories/data/categories_dao.dart';
 import '../../sessions/domain/global_active_session_controller.dart';
@@ -241,34 +242,23 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final textColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+    final mutedColor = isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary;
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: KratosModalEntrance(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: KratosGlassCard(
+          variant: KratosSurfaceVariant.elevated,
+          padding: EdgeInsets.zero,
           child: Container(
             constraints: const BoxConstraints(maxWidth: 540, maxHeight: 720),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0D0D0D).withValues(alpha: 0.94),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: const Color(0xFFC6F135).withValues(alpha: 0.35),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFC6F135).withValues(alpha: 0.08),
-                  blurRadius: 30,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFC6F135)),
+                ? Center(
+                    child: CircularProgressIndicator(color: lime),
                   )
                 : Form(
                     key: _formKey,
@@ -281,7 +271,7 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                           decoration: BoxDecoration(
                             border: Border(
                               bottom: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.08),
+                                color: isDark ? Colors.white10 : Colors.black12,
                               ),
                             ),
                           ),
@@ -290,29 +280,30 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                               Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFC6F135).withValues(alpha: 0.15),
+                                  color: lime.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.local_activity,
-                                  color: Color(0xFFC6F135),
+                                  color: lime,
                                   size: 18,
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              const Expanded(
+                              Expanded(
                                 child: Text(
                                   'NEW ACTIVITY',
                                   style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1.5,
+                                    fontFamily: 'Space Grotesk',
+                                    color: textColor,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.2,
                                     fontSize: 15,
                                   ),
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.close, color: Colors.white54, size: 20),
+                                icon: Icon(Icons.close, color: mutedColor, size: 20),
                                 onPressed: () => Navigator.of(context).pop(),
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
@@ -342,36 +333,37 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                                 ),
 
                               // 1. Activity Name
-                              const Text(
+                              Text(
                                 'ACTIVITY NAME *',
                                 style: TextStyle(
-                                  color: Color(0xFFC6F135),
+                                  fontFamily: 'IBM Plex Mono',
+                                  color: lime,
                                   fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.2,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.0,
                                 ),
                               ),
                               const SizedBox(height: 6),
                               TextFormField(
                                 controller: _nameController,
                                 autofocus: true,
-                                style: const TextStyle(color: Colors.white, fontSize: 14),
+                                style: TextStyle(fontFamily: 'Inter', color: textColor, fontSize: 14),
                                 decoration: InputDecoration(
                                   hintText: 'e.g. Reading, Gym, Studying English, Coding Practice',
-                                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                                  hintStyle: TextStyle(color: mutedColor),
                                   filled: true,
-                                  fillColor: Colors.white.withValues(alpha: 0.04),
+                                  fillColor: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                                    borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                                    borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(color: Color(0xFFC6F135), width: 1.2),
+                                    borderSide: BorderSide(color: lime, width: 1.2),
                                   ),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                 ),
@@ -385,13 +377,14 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                               const SizedBox(height: 16),
 
                               // 2. Life Area
-                              const Text(
+                              Text(
                                 'LIFE AREA *',
                                 style: TextStyle(
-                                  color: Color(0xFFC6F135),
+                                  fontFamily: 'IBM Plex Mono',
+                                  color: lime,
                                   fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.2,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.0,
                                 ),
                               ),
                               const SizedBox(height: 6),
@@ -417,21 +410,26 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'ACTIVITY CATEGORY',
                                     style: TextStyle(
-                                      color: Colors.white70,
+                                      fontFamily: 'IBM Plex Mono',
+                                      color: mutedColor,
                                       fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 1.2,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.0,
                                     ),
                                   ),
                                   TextButton.icon(
                                     onPressed: _showAddCategoryDialog,
-                                    icon: const Icon(Icons.add, size: 14, color: Color(0xFFC6F135)),
-                                    label: const Text(
+                                    icon: Icon(Icons.add, size: 14, color: lime),
+                                    label: Text(
                                       'Add Category',
-                                      style: TextStyle(color: Color(0xFFC6F135), fontSize: 11),
+                                      style: TextStyle(
+                                        fontFamily: 'IBM Plex Mono',
+                                        color: lime,
+                                        fontSize: 11,
+                                      ),
                                     ),
                                     style: TextButton.styleFrom(
                                       padding: EdgeInsets.zero,
@@ -461,13 +459,14 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                               const SizedBox(height: 16),
 
                               // 4. Target Duration Presets
-                              const Text(
+                              Text(
                                 'TARGET DURATION (OPTIONAL)',
                                 style: TextStyle(
-                                  color: Colors.white70,
+                                  fontFamily: 'IBM Plex Mono',
+                                  color: mutedColor,
                                   fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.2,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.0,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -487,17 +486,17 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                                 TextFormField(
                                   controller: _customDurationController,
                                   keyboardType: TextInputType.number,
-                                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                                  style: TextStyle(fontFamily: 'Inter', color: textColor, fontSize: 14),
                                   decoration: InputDecoration(
                                     hintText: 'Target duration in minutes (e.g. 45)',
-                                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                                    hintStyle: TextStyle(color: mutedColor),
                                     filled: true,
-                                    fillColor: Colors.white.withValues(alpha: 0.04),
+                                    fillColor: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
                                     suffixText: 'mins',
-                                    suffixStyle: const TextStyle(color: Color(0xFFC6F135)),
+                                    suffixStyle: TextStyle(color: lime),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(10),
-                                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                                      borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
                                     ),
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                                   ),
@@ -509,19 +508,21 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'DIFFICULTY & MAX XP (1–10)',
                                     style: TextStyle(
-                                      color: Color(0xFFC6F135),
+                                      fontFamily: 'IBM Plex Mono',
+                                      color: lime,
                                       fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 1.2,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.0,
                                     ),
                                   ),
                                   Text(
                                     'Max: ${ActivityXpCalculator.ceilingXp(_difficulty)} XP / 12h',
-                                    style: const TextStyle(
-                                      color: Colors.white70,
+                                    style: TextStyle(
+                                      fontFamily: 'IBM Plex Mono',
+                                      color: mutedColor,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -544,19 +545,20 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                       decoration: BoxDecoration(
                                         color: isSel
-                                            ? const Color(0xFFC6F135).withValues(alpha: 0.2)
-                                            : Colors.white.withValues(alpha: 0.04),
+                                            ? lime.withValues(alpha: 0.18)
+                                            : (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03)),
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
-                                          color: isSel ? const Color(0xFFC6F135) : Colors.white12,
+                                          color: isSel ? lime : (isDark ? Colors.white12 : Colors.black12),
                                           width: isSel ? 1.5 : 1,
                                         ),
                                       ),
                                       child: Text(
                                         'D$diff ($ceil XP)',
                                         style: TextStyle(
-                                          color: isSel ? const Color(0xFFC6F135) : Colors.white70,
-                                          fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                          fontFamily: 'IBM Plex Mono',
+                                          color: isSel ? lime : mutedColor,
+                                          fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                                           fontSize: 11,
                                         ),
                                       ),
@@ -568,13 +570,14 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
 
                               // 5. Linked Skills
                               if (_skills.isNotEmpty) ...[
-                                const Text(
+                                Text(
                                   'LINKED SKILLS (MULTI-SELECT)',
                                   style: TextStyle(
-                                    color: Colors.white70,
+                                    fontFamily: 'IBM Plex Mono',
+                                    color: mutedColor,
                                     fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.2,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.0,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -585,14 +588,21 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                                     final isSelected = _selectedSkillIds.contains(s.id);
                                     return FilterChip(
                                       selected: isSelected,
-                                      label: Text(s.name, style: TextStyle(fontSize: 12, color: isSelected ? Colors.black : Colors.white70)),
-                                      selectedColor: const Color(0xFFC6F135),
-                                      backgroundColor: Colors.white.withValues(alpha: 0.05),
-                                      checkmarkColor: Colors.black,
+                                      label: Text(
+                                        s.name,
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 12,
+                                          color: isSelected ? (isDark ? Colors.black : Colors.white) : textColor,
+                                        ),
+                                      ),
+                                      selectedColor: lime,
+                                      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+                                      checkmarkColor: isDark ? Colors.black : Colors.white,
                                       side: BorderSide(
                                         color: isSelected
-                                            ? const Color(0xFFC6F135)
-                                            : Colors.white.withValues(alpha: 0.12),
+                                            ? lime
+                                            : (isDark ? Colors.white12 : Colors.black12),
                                       ),
                                       onSelected: (selected) {
                                         setState(() {
@@ -610,28 +620,29 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                               ],
 
                               // 6. Description / Notes
-                              const Text(
+                              Text(
                                 'DESCRIPTION / GOAL OF PRACTICE',
                                 style: TextStyle(
-                                  color: Colors.white70,
+                                  fontFamily: 'IBM Plex Mono',
+                                  color: mutedColor,
                                   fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.2,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.0,
                                 ),
                               ),
                               const SizedBox(height: 6),
                               TextFormField(
                                 controller: _descriptionController,
                                 maxLines: 3,
-                                style: const TextStyle(color: Colors.white, fontSize: 13),
+                                style: TextStyle(fontFamily: 'Inter', color: textColor, fontSize: 13),
                                 decoration: InputDecoration(
                                   hintText: 'Describe this repeatable habit or practice routine...',
-                                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                                  hintStyle: TextStyle(color: mutedColor),
                                   filled: true,
-                                  fillColor: Colors.white.withValues(alpha: 0.04),
+                                  fillColor: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                                    borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
                                   ),
                                   contentPadding: const EdgeInsets.all(12),
                                 ),
@@ -642,26 +653,31 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.04),
+                                  color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: _startTimerImmediately
-                                        ? const Color(0xFFC6F135).withValues(alpha: 0.4)
-                                        : Colors.white10,
+                                        ? lime.withValues(alpha: 0.4)
+                                        : (isDark ? Colors.white10 : Colors.black12),
                                   ),
                                 ),
                                 child: SwitchListTile(
                                   contentPadding: EdgeInsets.zero,
                                   value: _startTimerImmediately,
                                   onChanged: (val) => setState(() => _startTimerImmediately = val),
-                                  activeThumbColor: const Color(0xFFC6F135),
-                                  title: const Text(
+                                  activeThumbColor: lime,
+                                  title: Text(
                                     'Start Focus Timer immediately',
-                                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      color: textColor,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                  subtitle: const Text(
+                                  subtitle: Text(
                                     'Launches the active practice timer upon creating this activity',
-                                    style: TextStyle(color: Colors.white38, fontSize: 11),
+                                    style: TextStyle(fontFamily: 'Inter', color: mutedColor, fontSize: 11),
                                   ),
                                 ),
                               ),
@@ -674,7 +690,7 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                           decoration: BoxDecoration(
                             border: Border(
-                              top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                              top: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
                             ),
                           ),
                           child: Row(
@@ -682,32 +698,37 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                             children: [
                               TextButton(
                                 onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
-                                child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                                child: Text('Cancel', style: TextStyle(fontFamily: 'IBM Plex Mono', color: mutedColor)),
                               ),
                               const SizedBox(width: 12),
-                              ElevatedButton(
-                                onPressed: _isSubmitting ? null : _submit,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFC6F135),
+                              KratosPressable(
+                                onTap: _isSubmitting ? null : _submit,
+                                child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-                                  shape: RoundedRectangleBorder(
+                                  decoration: BoxDecoration(
+                                    color: lime,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                ),
-                                child: _isSubmitting
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                                      )
-                                    : const Text(
-                                        'Create Activity',
-                                        style: TextStyle(
-                                          color: Color(0xFF0D0D0D),
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 13,
+                                  child: _isSubmitting
+                                      ? SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: isDark ? Colors.black : Colors.white,
+                                          ),
+                                        )
+                                      : Text(
+                                          'Create Activity',
+                                          style: TextStyle(
+                                            fontFamily: 'IBM Plex Mono',
+                                            color: isDark ? const Color(0xFF0D0D0D) : Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 12,
+                                            letterSpacing: 0.6,
+                                          ),
                                         ),
-                                      ),
+                                ),
                               ),
                             ],
                           ),
@@ -718,26 +739,30 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _buildPresetChip(String key, String label) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final textColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
     final isSelected = _selectedPreset == key;
+
     return ChoiceChip(
       selected: isSelected,
       label: Text(
         label,
         style: TextStyle(
-          color: isSelected ? Colors.black : Colors.white70,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          fontFamily: 'IBM Plex Mono',
+          color: isSelected ? (isDark ? Colors.black : Colors.white) : textColor,
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
           fontSize: 12,
         ),
       ),
-      selectedColor: const Color(0xFFC6F135),
-      backgroundColor: Colors.white.withValues(alpha: 0.05),
+      selectedColor: lime,
+      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
       side: BorderSide(
-        color: isSelected ? const Color(0xFFC6F135) : Colors.white.withValues(alpha: 0.12),
+        color: isSelected ? lime : (isDark ? Colors.white12 : Colors.black12),
       ),
       onSelected: (_) => _onPresetChanged(key),
     );

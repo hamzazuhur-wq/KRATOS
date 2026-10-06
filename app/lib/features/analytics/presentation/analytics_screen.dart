@@ -66,7 +66,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     body: Stack(
       fit: StackFit.expand,
       children: [
-        const KratosEnvironment(),
         FutureBuilder<List<({String id, String name})>>(
           future: _areas,
           builder: (context, areas) {
@@ -790,3 +789,4 @@ class _BarsPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _BarsPainter old) => old.values != values;
 }
+

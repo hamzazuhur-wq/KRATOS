@@ -1041,7 +1041,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return Scaffold(
-        backgroundColor: KratosTheme.volcanic,
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -1065,7 +1065,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
     if (_details == null) {
       return Scaffold(
-        backgroundColor: KratosTheme.volcanic,
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -1088,55 +1088,83 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final baseXp = ProjectDifficultyXpCalculator.baseXp(p.difficulty);
 
     return Scaffold(
-      backgroundColor: KratosTheme.volcanic,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white70),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFFF3F1E8)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          p.title.toUpperCase(),
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.5,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: KratosTheme.electricLime,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'PROJECTS / ${p.title.toUpperCase()}',
+                style: const TextStyle(
+                  fontFamily: 'IBM Plex Mono',
+                  color: KratosTheme.electricLime,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.6,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
         actions: [
           if (p.status != 'completed')
-            TextButton.icon(
-              onPressed: _completeProject,
-              icon: const Icon(
-                Icons.bolt,
-                color: KratosTheme.acidLime,
-                size: 16,
-              ),
-              label: const Text(
-                'Complete',
-                style: TextStyle(
-                  color: KratosTheme.acidLime,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+              child: OutlinedButton.icon(
+                onPressed: _completeProject,
+                icon: const Icon(
+                  Icons.bolt,
+                  color: KratosTheme.electricLime,
+                  size: 14,
                 ),
-              ),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                label: const Text(
+                  'DONE',
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: KratosTheme.electricLime,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: KratosTheme.electricLime.withValues(alpha: 0.4),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
               ),
             ),
           IconButton(
+            onPressed: _openEditDialog,
             icon: const Icon(
-              Icons.edit_outlined,
-              color: Colors.white70,
+              Icons.tune,
+              color: Color(0xFF979C92),
               size: 18,
             ),
-            tooltip: 'Edit Project',
-            onPressed: _openEditDialog,
+            tooltip: 'Configure Project',
           ),
           const SizedBox(width: 4),
         ],
@@ -1144,9 +1172,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const KratosEnvironment(),
           SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 820),
@@ -1199,80 +1226,80 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final progress = _details!.progress;
 
     return KratosGlassCard(
+      variant: KratosSurfaceVariant.normal,
       borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section Header & Badges
+          // Eyebrow & Badges
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: KratosTheme.acidLime.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: KratosTheme.acidLime.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: const Icon(
-                  Icons.dashboard_outlined,
-                  color: KratosTheme.acidLime,
-                  size: 18,
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: KratosTheme.electricLime,
+                        borderRadius: BorderRadius.circular(1.5),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Flexible(
+                      child: Text(
+                        'PROJECT OVERVIEW // CORE SPEC',
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF686D65),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.6,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 12),
-              const Text(
-                'PROJECT OVERVIEW',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.5,
-                  fontSize: 14,
-                ),
-              ),
+              const SizedBox(width: 8),
+              _buildStatusChip(p.status),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // Identity badges
+          // Identity chips row
           Wrap(
             spacing: 8,
             runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               _buildDifficultyChip(romanDifficulty, baseXp),
-              _buildStatusChip(p.status),
               if (_details!.levelName != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: Colors.amber.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: Colors.amber.withValues(alpha: 0.3),
-                    ),
+                    border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.military_tech,
-                        size: 12,
-                        color: Colors.amber,
-                      ),
+                      const Icon(Icons.military_tech, size: 12, color: Colors.amber),
                       const SizedBox(width: 4),
                       Text(
                         _details!.levelName!.toUpperCase(),
                         style: const TextStyle(
+                          fontFamily: 'IBM Plex Mono',
                           color: Colors.amber,
                           fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
                         ),
                       ),
                     ],
@@ -1280,10 +1307,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 ),
               if (p.dueDate != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(6),
@@ -1292,19 +1316,16 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.calendar_today_outlined,
-                        size: 11,
-                        color: Colors.white54,
-                      ),
+                      const Icon(Icons.calendar_today_outlined, size: 11, color: Color(0xFF979C92)),
                       const SizedBox(width: 4),
                       Text(
                         'DUE ${DateFormat('MMM d, yyyy').format(p.dueDate!)}',
                         style: const TextStyle(
-                          color: Colors.white70,
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF979C92),
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
+                          letterSpacing: 0.6,
                         ),
                       ),
                     ],
@@ -1312,140 +1333,162 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
-          // Title
+          // Hero Title
           Text(
             p.title,
             style: const TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
-              height: 1.25,
+              fontFamily: 'Space Grotesk',
+              color: Color(0xFFF3F1E8),
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.8,
+              height: 1.15,
             ),
           ),
           const SizedBox(height: 12),
 
           // Context pills (Life Area / Goal)
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              if (_details!.lifeArea != null)
-                _buildContextPill(
-                  icon: Icons.public,
-                  label: _details!.lifeArea!.name,
-                  accent: Colors.blueAccent,
-                ),
-              if (_details!.goal != null)
-                _buildContextPill(
-                  icon: Icons.track_changes,
-                  label: _details!.goal!.title,
-                  accent: KratosTheme.acidLime,
-                ),
-              if (_details!.subGoal != null)
-                _buildContextPill(
-                  icon: Icons.subdirectory_arrow_right,
-                  label: _details!.subGoal!.title,
-                  accent: Colors.tealAccent,
-                ),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // Project Progress Bar & Statistics
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'PROJECT PROGRESS',
-                style: TextStyle(
-                  color: Colors.white54,
-                  letterSpacing: 1.2,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                '${progress.round()}%',
-                style: const TextStyle(
-                  color: KratosTheme.acidLime,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: progress / 100.0,
-              minHeight: 7,
-              backgroundColor: Colors.white12,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                KratosTheme.acidLime,
-              ),
+          if (_details!.lifeArea != null || _details!.goal != null || _details!.subGoal != null) ...[
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                if (_details!.lifeArea != null)
+                  _buildContextPill(
+                    icon: Icons.public,
+                    label: _details!.lifeArea!.name,
+                    accent: Colors.blueAccent,
+                  ),
+                if (_details!.goal != null)
+                  _buildContextPill(
+                    icon: Icons.track_changes,
+                    label: _details!.goal!.title,
+                    accent: KratosTheme.electricLime,
+                  ),
+                if (_details!.subGoal != null)
+                  _buildContextPill(
+                    icon: Icons.subdirectory_arrow_right,
+                    label: _details!.subGoal!.title,
+                    accent: Colors.tealAccent,
+                  ),
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${_details!.completedTaskCount} of ${_details!.taskCount} Tasks Complete',
-                style: const TextStyle(color: Colors.white38, fontSize: 11),
-              ),
-              Text(
-                '${_details!.phases.length} Roadmap Phases',
-                style: const TextStyle(color: Colors.white38, fontSize: 11),
-              ),
-            ],
-          ),
-
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 18),
-            child: Divider(color: Colors.white10, height: 1),
-          ),
+            const SizedBox(height: 16),
+          ],
 
           // Description / Objective
-          const Text(
-            'OBJECTIVE & SUMMARY',
-            style: TextStyle(
-              color: Colors.white38,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
+          if (p.description != null && p.description!.trim().isNotEmpty) ...[
+            Text(
+              p.description!,
+              style: const TextStyle(
+                fontFamily: 'Space Grotesk',
+                color: Color(0xFF979C92),
+                fontSize: 14,
+                height: 1.5,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            (p.description != null && p.description!.trim().isNotEmpty)
-                ? p.description!
-                : 'No description provided for this project.',
-            style: TextStyle(
-              color: (p.description != null && p.description!.trim().isNotEmpty)
-                  ? Colors.white70
-                  : Colors.white38,
-              fontSize: 13,
-              height: 1.5,
-              fontStyle:
-                  (p.description != null && p.description!.trim().isNotEmpty)
-                  ? FontStyle.normal
-                  : FontStyle.italic,
+            const SizedBox(height: 18),
+          ],
+
+          // Token Strip for Progress
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF050805).withValues(alpha: 0.84),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0x1FEEFF08)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Flexible(
+                      child: Text(
+                        'TOTAL PROJECT COMPLETION',
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF686D65),
+                          letterSpacing: 1.4,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${progress.round()}%',
+                      style: const TextStyle(
+                        fontFamily: 'IBM Plex Mono',
+                        color: KratosTheme.electricLime,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    height: 4,
+                    color: Colors.white.withValues(alpha: 0.08),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FractionallySizedBox(
+                        widthFactor: (progress / 100.0).clamp(0.0, 1.0),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: KratosTheme.electricLime,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${_details!.completedTaskCount} OF ${_details!.taskCount} TASKS DONE',
+                      style: const TextStyle(
+                        fontFamily: 'IBM Plex Mono',
+                        color: Color(0xFF686D65),
+                        fontSize: 9,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    Text(
+                      '${_details!.phases.length} PHASES',
+                      style: const TextStyle(
+                        fontFamily: 'IBM Plex Mono',
+                        color: Color(0xFF686D65),
+                        fontSize: 9,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 18),
 
           // System Alignment Grid
           const Text(
-            'SYSTEM ALIGNMENT & SPECIFICATION',
+            'ALIGNMENT & ARCHITECTURE',
             style: TextStyle(
-              color: Colors.white38,
+              fontFamily: 'IBM Plex Mono',
+              color: Color(0xFF686D65),
               fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.4,
             ),
           ),
           const SizedBox(height: 10),
@@ -1469,7 +1512,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   icon: Icons.track_changes,
                   label: 'Goal Alignment',
                   value: _details!.goal?.title ?? 'Not Assigned',
-                  accentColor: KratosTheme.acidLime,
+                  accentColor: KratosTheme.electricLime,
                 ),
                 if (_details!.subGoal != null) ...[
                   const Divider(color: Colors.white10, height: 18),
@@ -1492,7 +1535,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   icon: Icons.speed,
                   label: 'Difficulty Rating',
                   value: 'Difficulty $romanDifficulty (+$baseXp XP)',
-                  accentColor: KratosTheme.acidLime,
+                  accentColor: KratosTheme.electricLime,
                 ),
               ],
             ),
@@ -1503,15 +1546,21 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'PROJECT SKILLS',
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
+              const Flexible(
+                child: Text(
+                  'PROJECT SKILLS',
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: Color(0xFF686D65),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.4,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               InkWell(
                 onTap: _manageProjectSkills,
                 borderRadius: BorderRadius.circular(6),
@@ -1523,15 +1572,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                       Icon(
                         Icons.edit_outlined,
                         size: 12,
-                        color: KratosTheme.acidLime,
+                        color: KratosTheme.electricLime,
                       ),
                       SizedBox(width: 4),
                       Text(
-                        'Manage Skills',
+                        'MANAGE SKILLS',
                         style: TextStyle(
-                          color: KratosTheme.acidLime,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                          fontFamily: 'IBM Plex Mono',
+                          color: KratosTheme.electricLime,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
                         ),
                       ),
                     ],
@@ -1544,7 +1595,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           if (_details!.skills.isEmpty)
             const Text(
               'No skills attached to this project.',
-              style: TextStyle(color: Colors.white38, fontSize: 12),
+              style: TextStyle(
+                fontFamily: 'Space Grotesk',
+                color: Color(0xFF686D65),
+                fontSize: 12,
+              ),
             )
           else
             Wrap(
@@ -1557,10 +1612,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: KratosTheme.acidLime.withValues(alpha: 0.12),
+                    color: KratosTheme.electricLime.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: KratosTheme.acidLime.withValues(alpha: 0.3),
+                      color: KratosTheme.electricLime.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -1568,16 +1623,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     children: [
                       const Icon(
                         Icons.bolt,
-                        color: KratosTheme.acidLime,
+                        color: KratosTheme.electricLime,
                         size: 12,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         s.name,
                         style: const TextStyle(
-                          color: KratosTheme.acidLime,
+                          fontFamily: 'IBM Plex Mono',
+                          color: KratosTheme.electricLime,
                           fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -1600,70 +1656,76 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         .firstOrNull;
 
     return KratosGlassCard(
+      variant: KratosSurfaceVariant.normal,
       borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.3),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E5FF),
+                        borderRadius: BorderRadius.circular(1.5),
                       ),
                     ),
-                    child: const Icon(
-                      Icons.alt_route,
-                      color: Color(0xFF00E5FF),
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'ROADMAP',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${phases.length} Phases',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'ROADMAP & PHASES',
+                        style: const TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF686D65),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.6,
+                          fontSize: 10,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${phases.length} STAGES',
+                        style: const TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF979C92),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: _addPhase,
-                icon: const Icon(Icons.add, size: 14, color: Color(0xFF00E5FF)),
+                icon: const Icon(Icons.add, size: 12, color: Color(0xFF00E5FF)),
                 label: const Text(
-                  'Add Phase',
+                  'ADD PHASE',
                   style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
                     color: Color(0xFF00E5FF),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                    letterSpacing: 1.0,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
@@ -1672,10 +1734,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 6,
+                    vertical: 4,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
@@ -1683,13 +1745,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Overview Strip
+          // Overview Token Strip
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white10),
+              color: const Color(0xFF050805).withValues(alpha: 0.84),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0x1FEEFF08)),
             ),
             child: Row(
               children: [
@@ -1697,18 +1759,18 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   child: _buildMetricTile(
                     label: 'TOTAL PHASES',
                     value: '${phases.length}',
-                    color: Colors.white,
+                    color: const Color(0xFFF3F1E8),
                   ),
                 ),
-                Container(width: 1, height: 30, color: Colors.white10),
+                Container(width: 1, height: 26, color: Colors.white10),
                 Expanded(
                   child: _buildMetricTile(
                     label: 'COMPLETED',
                     value: '$completedCount',
-                    color: KratosTheme.acidLime,
+                    color: KratosTheme.electricLime,
                   ),
                 ),
-                Container(width: 1, height: 30, color: Colors.white10),
+                Container(width: 1, height: 26, color: Colors.white10),
                 Expanded(
                   child: _buildMetricTile(
                     label: 'CURRENT PHASE',
@@ -1722,13 +1784,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
           // Phases List / Navigation Preview
           if (phases.isEmpty)
             _buildEmptySectionState(
               icon: Icons.alt_route,
-              message: 'No roadmap phases created yet.\nBreak down this project into phases.',
+              message: 'No roadmap phases created yet.\nBreak down this project into progressive milestones.',
               actionLabel: 'Add First Phase',
               onAction: _addPhase,
             )
@@ -1752,6 +1814,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: InkWell(
+                  key: Key('project_phase_tile_${phase.id}'),
                   onTap: () async {
                     await Navigator.of(context).push(
                       KratosMaterialPageRoute(
@@ -1769,13 +1832,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.03),
+                      color: const Color(0xFF0D0F0D).withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isActive
                             ? const Color(0xFF00E5FF).withValues(alpha: 0.4)
                             : (isCompleted
-                                  ? KratosTheme.acidLime.withValues(alpha: 0.3)
+                                  ? KratosTheme.electricLime.withValues(alpha: 0.3)
                                   : Colors.white10),
                       ),
                     ),
@@ -1790,7 +1853,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: isCompleted
-                                    ? KratosTheme.acidLime
+                                    ? KratosTheme.electricLime
                                     : (isActive
                                           ? const Color(0xFF00E5FF)
                                                 .withValues(alpha: 0.2)
@@ -1804,13 +1867,14 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                         color: Colors.black,
                                       )
                                     : Text(
-                                        '${idx + 1}',
+                                        '0${idx + 1}',
                                         style: TextStyle(
+                                          fontFamily: 'IBM Plex Mono',
                                           color: isActive
                                               ? const Color(0xFF00E5FF)
                                               : Colors.white70,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w900,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                       ),
                               ),
@@ -1820,9 +1884,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                               child: Text(
                                 phase.name,
                                 style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Space Grotesk',
+                                  color: Color(0xFFF3F1E8),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -1833,8 +1898,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             const SizedBox(width: 6),
                             const Icon(
                               Icons.chevron_right,
-                              color: Colors.white38,
-                              size: 18,
+                              color: Color(0xFF686D65),
+                              size: 16,
                             ),
                           ],
                         ),
@@ -1846,7 +1911,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             child: Text(
                               phase.description!,
                               style: const TextStyle(
-                                color: Colors.white54,
+                                fontFamily: 'Space Grotesk',
+                                color: Color(0xFF979C92),
                                 fontSize: 12,
                               ),
                               maxLines: 1,
@@ -1861,38 +1927,49 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '${phaseTasks.where((t) => t.status == 'completed').length}/${phaseTasks.length} Tasks',
+                                '${phaseTasks.where((t) => t.status == 'completed').length}/${phaseTasks.length} TASKS',
                                 style: const TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 11,
+                                  fontFamily: 'IBM Plex Mono',
+                                  color: Color(0xFF686D65),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                               Text(
                                 '${phaseProgress.round()}%',
                                 style: TextStyle(
+                                  fontFamily: 'IBM Plex Mono',
                                   color: isCompleted
-                                      ? KratosTheme.acidLime
+                                      ? KratosTheme.electricLime
                                       : Colors.white70,
                                   fontSize: 11,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 6),
                         Padding(
                           padding: const EdgeInsets.only(left: 34),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: phaseProgress / 100.0,
-                              minHeight: 4,
-                              backgroundColor: Colors.white10,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                isCompleted
-                                    ? KratosTheme.acidLime
-                                    : const Color(0xFF00E5FF),
+                            borderRadius: BorderRadius.circular(999),
+                            child: Container(
+                              height: 4,
+                              color: Colors.white.withValues(alpha: 0.08),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: FractionallySizedBox(
+                                  widthFactor: (phaseProgress / 100.0).clamp(0.0, 1.0),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: isCompleted
+                                          ? KratosTheme.electricLime
+                                          : const Color(0xFF00E5FF),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -1935,7 +2012,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         : (completedCount / totalCount) * 100;
 
     return KratosGlassCard(
+      variant: KratosSurfaceVariant.normal,
       borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1943,79 +2022,83 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: KratosTheme.acidLime.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: KratosTheme.acidLime.withValues(alpha: 0.3),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: KratosTheme.electricLime,
+                        borderRadius: BorderRadius.circular(1.5),
                       ),
                     ),
-                    child: const Icon(
-                      Icons.check_circle_outline,
-                      color: KratosTheme.acidLime,
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'TASKS',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${tasks.length} Tasks',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'TASKS // WORK UNITS',
+                        style: const TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF686D65),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.6,
+                          fontSize: 10,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${tasks.length} ITEMS',
+                        style: const TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF979C92),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: _addTask,
                 icon: const Icon(
                   Icons.add,
-                  size: 14,
-                  color: KratosTheme.acidLime,
+                  size: 12,
+                  color: KratosTheme.electricLime,
                 ),
                 label: const Text(
-                  'Add Task',
+                  'ADD TASK',
                   style: TextStyle(
-                    color: KratosTheme.acidLime,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
+                    fontFamily: 'IBM Plex Mono',
+                    color: KratosTheme.electricLime,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                    letterSpacing: 1.0,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(
-                    color: KratosTheme.acidLime.withValues(alpha: 0.4),
+                    color: KratosTheme.electricLime.withValues(alpha: 0.4),
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 6,
+                    vertical: 4,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
@@ -2023,13 +2106,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Key Metrics Strip (Total, Completed, Active, Remaining)
+          // Key Metrics Token Strip (Total, Completed, Active, Remaining)
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white10),
+              color: const Color(0xFF050805).withValues(alpha: 0.84),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0x1FEEFF08)),
             ),
             child: Column(
               children: [
@@ -2039,18 +2122,18 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                       child: _buildMetricTile(
                         label: 'TOTAL',
                         value: '$totalCount',
-                        color: Colors.white,
+                        color: const Color(0xFFF3F1E8),
                       ),
                     ),
-                    Container(width: 1, height: 30, color: Colors.white10),
+                    Container(width: 1, height: 26, color: Colors.white10),
                     Expanded(
                       child: _buildMetricTile(
                         label: 'COMPLETED',
                         value: '$completedCount',
-                        color: KratosTheme.acidLime,
+                        color: KratosTheme.electricLime,
                       ),
                     ),
-                    Container(width: 1, height: 30, color: Colors.white10),
+                    Container(width: 1, height: 26, color: Colors.white10),
                     Expanded(
                       child: _buildMetricTile(
                         label: 'IN PROGRESS',
@@ -2058,34 +2141,42 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         color: const Color(0xFF00E5FF),
                       ),
                     ),
-                    Container(width: 1, height: 30, color: Colors.white10),
+                    Container(width: 1, height: 26, color: Colors.white10),
                     Expanded(
                       child: _buildMetricTile(
                         label: 'REMAINING',
                         value: '${pendingTasks.length}',
                         color: pendingTasks.isEmpty
-                            ? KratosTheme.acidLime
+                            ? KratosTheme.electricLime
                             : Colors.amberAccent,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: completionPct / 100.0,
-                    minHeight: 5,
-                    backgroundColor: Colors.white10,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      KratosTheme.acidLime,
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    height: 4,
+                    color: Colors.white.withValues(alpha: 0.08),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FractionallySizedBox(
+                        widthFactor: (completionPct / 100.0).clamp(0.0, 1.0),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: KratosTheme.electricLime,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
           // Quick Filter Segmented Chips
           SingleChildScrollView(
@@ -2093,32 +2184,32 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             child: Row(
               children: [
                 _buildTaskFilterChip(
-                  label: 'All (${tasks.length})',
+                  label: 'ALL (${tasks.length})',
                   filter: ProjectTaskFilter.all,
-                  activeColor: KratosTheme.acidLime,
+                  activeColor: KratosTheme.electricLime,
                 ),
                 const SizedBox(width: 8),
                 _buildTaskFilterChip(
-                  label: 'In Progress (${inProgressTasks.length})',
+                  label: 'IN PROGRESS (${inProgressTasks.length})',
                   filter: ProjectTaskFilter.inProgress,
                   activeColor: const Color(0xFF00E5FF),
                 ),
                 const SizedBox(width: 8),
                 _buildTaskFilterChip(
-                  label: 'Pending (${pendingTasks.length})',
+                  label: 'PENDING (${pendingTasks.length})',
                   filter: ProjectTaskFilter.pending,
                   activeColor: Colors.amberAccent,
                 ),
                 const SizedBox(width: 8),
                 _buildTaskFilterChip(
-                  label: 'Completed (${completedTasks.length})',
+                  label: 'COMPLETED (${completedTasks.length})',
                   filter: ProjectTaskFilter.completed,
-                  activeColor: KratosTheme.acidLime,
+                  activeColor: KratosTheme.electricLime,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
           // Task List (Categorized by status)
           if (tasks.isEmpty)
@@ -2146,7 +2237,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 _buildTaskGroupHeader(
                   'PENDING / REMAINING',
                   pendingTasks.length,
-                  Colors.white54,
+                  const Color(0xFF686D65),
                 ),
                 const SizedBox(height: 8),
                 ...pendingTasks.map(_buildTaskItemTile),
@@ -2157,7 +2248,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 _buildTaskGroupHeader(
                   'COMPLETED',
                   completedTasks.length,
-                  KratosTheme.acidLime,
+                  KratosTheme.electricLime,
                 ),
                 const SizedBox(height: 8),
                 ...completedTasks.map(_buildTaskItemTile),
@@ -2192,14 +2283,14 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final isSelected = _taskFilter == filter;
     return InkWell(
       onTap: () => setState(() => _taskFilter = filter),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(6),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: isSelected
               ? activeColor.withValues(alpha: 0.16)
               : Colors.white.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: isSelected
                 ? activeColor.withValues(alpha: 0.5)
@@ -2209,9 +2300,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? activeColor : Colors.white60,
-            fontSize: 11,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontFamily: 'IBM Plex Mono',
+            color: isSelected ? activeColor : const Color(0xFF979C92),
+            fontSize: 10,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            letterSpacing: 0.8,
           ),
         ),
       ),
@@ -2222,17 +2315,18 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return Row(
       children: [
         Container(
-          width: 6,
-          height: 6,
+          width: 5,
+          height: 5,
           decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
         ),
         const SizedBox(width: 8),
         Text(
           title,
           style: TextStyle(
+            fontFamily: 'IBM Plex Mono',
             color: accent,
             fontSize: 10,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
             letterSpacing: 1.2,
           ),
         ),
@@ -2240,9 +2334,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         Text(
           '($count)',
           style: const TextStyle(
-            color: Colors.white38,
+            fontFamily: 'IBM Plex Mono',
+            color: Color(0xFF686D65),
             fontSize: 10,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -2255,7 +2350,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       child: Center(
         child: Text(
           message,
-          style: const TextStyle(color: Colors.white38, fontSize: 12),
+          style: const TextStyle(
+            fontFamily: 'Space Grotesk',
+            color: Color(0xFF686D65),
+            fontSize: 12,
+          ),
         ),
       ),
     );
@@ -2271,11 +2370,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.025),
+          color: const Color(0xFF0D0F0D).withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isDone
-                ? KratosTheme.acidLime.withValues(alpha: 0.2)
+                ? KratosTheme.electricLime.withValues(alpha: 0.25)
                 : Colors.white10,
           ),
         ),
@@ -2297,7 +2396,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               padding: const EdgeInsets.all(4),
               child: Icon(
                 isDone ? Icons.check_box : Icons.check_box_outline_blank,
-                color: isDone ? KratosTheme.acidLime : Colors.white54,
+                color: isDone ? KratosTheme.electricLime : const Color(0xFF686D65),
                 size: 20,
               ),
             ),
@@ -2305,9 +2404,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           title: Text(
             task.title,
             style: TextStyle(
-              color: isDone ? Colors.white54 : Colors.white,
+              fontFamily: 'Space Grotesk',
+              color: isDone ? const Color(0xFF686D65) : const Color(0xFFF3F1E8),
               decoration: isDone ? TextDecoration.lineThrough : null,
-              fontWeight: isDone ? FontWeight.normal : FontWeight.bold,
+              fontWeight: isDone ? FontWeight.normal : FontWeight.w600,
               fontSize: 13,
             ),
           ),
@@ -2330,9 +2430,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                           child: Text(
                             phase.name,
                             style: const TextStyle(
+                              fontFamily: 'IBM Plex Mono',
                               color: Color(0xFF00E5FF),
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -2340,10 +2441,12 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         const SizedBox(width: 8),
                       if (task.dueDate != null)
                         Text(
-                          'Due ${DateFormat('MMM d').format(task.dueDate!)}',
+                          'DUE ${DateFormat('MMM d').format(task.dueDate!).toUpperCase()}',
                           style: const TextStyle(
-                            color: Colors.white38,
-                            fontSize: 10,
+                            fontFamily: 'IBM Plex Mono',
+                            color: Color(0xFF686D65),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                     ],
@@ -2362,86 +2465,92 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final activities = _details!.activities;
 
     return KratosGlassCard(
+      variant: KratosSurfaceVariant.normal,
       borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: KratosTheme.acidLime.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: KratosTheme.acidLime.withValues(alpha: 0.3),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: KratosTheme.electricLime,
+                        borderRadius: BorderRadius.circular(1.5),
                       ),
                     ),
-                    child: const Icon(
-                      Icons.repeat,
-                      color: KratosTheme.acidLime,
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'CONNECTED ACTIVITIES',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${activities.length} Active',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(width: 8),
+                    const Flexible(
+                      child: Text(
+                        'CONNECTED ACTIVITIES // ROUTINES',
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF686D65),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.6,
+                          fontSize: 10,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${activities.length} ACTIVE',
+                        style: const TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF979C92),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: _addActivity,
                 icon: const Icon(
                   Icons.add,
-                  size: 14,
-                  color: KratosTheme.acidLime,
+                  size: 12,
+                  color: KratosTheme.electricLime,
                 ),
                 label: const Text(
-                  'Add Activity',
+                  'ADD ACTIVITY',
                   style: TextStyle(
-                    color: KratosTheme.acidLime,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
+                    fontFamily: 'IBM Plex Mono',
+                    color: KratosTheme.electricLime,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                    letterSpacing: 1.0,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(
-                    color: KratosTheme.acidLime.withValues(alpha: 0.4),
+                    color: KratosTheme.electricLime.withValues(alpha: 0.4),
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 6,
+                    vertical: 4,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
@@ -2480,22 +2589,22 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.025),
+                      color: const Color(0xFF0D0F0D).withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.white10),
                     ),
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: KratosTheme.acidLime.withValues(alpha: 0.1),
+                            color: KratosTheme.electricLime.withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
                             Icons.repeat,
-                            color: KratosTheme.acidLime,
-                            size: 16,
+                            color: KratosTheme.electricLime,
+                            size: 14,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -2506,8 +2615,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                               Text(
                                 act.name,
                                 style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Space Grotesk',
+                                  color: Color(0xFFF3F1E8),
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 13,
                                 ),
                               ),
@@ -2517,7 +2627,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                 Text(
                                   act.description!,
                                   style: const TextStyle(
-                                    color: Colors.white54,
+                                    fontFamily: 'Space Grotesk',
+                                    color: Color(0xFF979C92),
                                     fontSize: 11,
                                   ),
                                   maxLines: 1,
@@ -2531,19 +2642,20 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 3,
+                              horizontal: 6,
+                              vertical: 2,
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              '${act.targetDurationMinutes} min',
+                              '${act.targetDurationMinutes} MIN',
                               style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                                fontFamily: 'IBM Plex Mono',
+                                color: Color(0xFF979C92),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -2551,8 +2663,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         const SizedBox(width: 4),
                         const Icon(
                           Icons.chevron_right,
-                          color: Colors.white38,
-                          size: 18,
+                          color: Color(0xFF686D65),
+                          size: 16,
                         ),
                       ],
                     ),
@@ -2571,70 +2683,76 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final ideas = _details!.ideas;
 
     return KratosGlassCard(
+      variant: KratosSurfaceVariant.normal,
       borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFEA00).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFFFFEA00).withValues(alpha: 0.3),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFEA00),
+                        borderRadius: BorderRadius.circular(1.5),
                       ),
                     ),
-                    child: const Icon(
-                      Icons.lightbulb_outline,
-                      color: Color(0xFFFFEA00),
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'PROJECT IDEAS',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${ideas.length}',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(width: 8),
+                    const Flexible(
+                      child: Text(
+                        'PROJECT IDEAS // CONCEPTS',
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF686D65),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.6,
+                          fontSize: 10,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${ideas.length}',
+                        style: const TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF979C92),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: _showAddIdeaModal,
-                icon: const Icon(Icons.add, size: 14, color: Color(0xFFFFEA00)),
+                icon: const Icon(Icons.add, size: 12, color: Color(0xFFFFEA00)),
                 label: const Text(
-                  'Add Idea',
+                  'ADD IDEA',
                   style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
                     color: Color(0xFFFFEA00),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                    letterSpacing: 1.0,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
@@ -2643,10 +2761,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 6,
+                    vertical: 4,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
@@ -2675,7 +2793,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.025),
+                    color: const Color(0xFF0D0F0D).withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.white10),
                   ),
@@ -2691,7 +2809,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         child: const Icon(
                           Icons.lightbulb_outline,
                           color: Color(0xFFFFEA00),
-                          size: 16,
+                          size: 14,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -2714,8 +2832,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                               Text(
                                 idea.title,
                                 style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Space Grotesk',
+                                  color: Color(0xFFF3F1E8),
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 13,
                                 ),
                                 maxLines: 1,
@@ -2727,7 +2846,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                 Text(
                                   idea.excerpt!,
                                   style: const TextStyle(
-                                    color: Colors.white54,
+                                    fontFamily: 'Space Grotesk',
+                                    color: Color(0xFF979C92),
                                     fontSize: 11,
                                   ),
                                   maxLines: 1,
@@ -2736,10 +2856,12 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                               ] else ...[
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Updated ${DateFormat('MMM d, yyyy').format(idea.updatedAt)}',
+                                  'UPDATED ${DateFormat('MMM d, yyyy').format(idea.updatedAt).toUpperCase()}',
                                   style: const TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: 10,
+                                    fontFamily: 'IBM Plex Mono',
+                                    color: Color(0xFF686D65),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
@@ -2770,7 +2892,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         icon: const Icon(
                           Icons.link_off,
                           size: 16,
-                          color: Colors.white38,
+                          color: Color(0xFF686D65),
                         ),
                         tooltip: 'Unlink from Project',
                         onPressed: () => _unlinkIdea(idea.id),
@@ -2791,86 +2913,92 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final notes = _details!.notes;
 
     return KratosGlassCard(
+      variant: KratosSurfaceVariant.normal,
       borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: KratosTheme.acidLime.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: KratosTheme.acidLime.withValues(alpha: 0.3),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: KratosTheme.electricLime,
+                        borderRadius: BorderRadius.circular(1.5),
                       ),
                     ),
-                    child: const Icon(
-                      Icons.note_alt_outlined,
-                      color: KratosTheme.acidLime,
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'PROJECT NOTES',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${notes.length}',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(width: 8),
+                    const Flexible(
+                      child: Text(
+                        'PROJECT NOTES // LOGS',
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF686D65),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.6,
+                          fontSize: 10,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${notes.length}',
+                        style: const TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF979C92),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: _addNote,
                 icon: const Icon(
                   Icons.add,
-                  size: 14,
-                  color: KratosTheme.acidLime,
+                  size: 12,
+                  color: KratosTheme.electricLime,
                 ),
                 label: const Text(
-                  'Add Note',
+                  'ADD NOTE',
                   style: TextStyle(
-                    color: KratosTheme.acidLime,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
+                    fontFamily: 'IBM Plex Mono',
+                    color: KratosTheme.electricLime,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                    letterSpacing: 1.0,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(
-                    color: KratosTheme.acidLime.withValues(alpha: 0.4),
+                    color: KratosTheme.electricLime.withValues(alpha: 0.4),
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 6,
+                    vertical: 4,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
@@ -2896,24 +3024,32 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 return Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.025),
+                    color: const Color(0xFF0D0F0D).withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.white10),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.note_alt_outlined,
-                        color: KratosTheme.acidLime,
-                        size: 16,
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: KratosTheme.electricLime.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.note_alt_outlined,
+                          color: KratosTheme.electricLime,
+                          size: 14,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           note.bodyText,
                           style: const TextStyle(
-                            color: Colors.white,
+                            fontFamily: 'Space Grotesk',
+                            color: Color(0xFFF3F1E8),
                             fontSize: 13,
                             height: 1.4,
                           ),
@@ -2923,7 +3059,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         icon: const Icon(
                           Icons.delete_outline,
                           size: 16,
-                          color: Colors.white38,
+                          color: Color(0xFF686D65),
                         ),
                         onPressed: () async {
                           await _repository.deleteAttachment(
@@ -2950,74 +3086,80 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final files = _details!.files;
 
     return KratosGlassCard(
+      variant: KratosSurfaceVariant.normal,
       borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.3),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E5FF),
+                        borderRadius: BorderRadius.circular(1.5),
                       ),
                     ),
-                    child: const Icon(
-                      Icons.attach_file,
-                      color: Color(0xFF00E5FF),
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'FILES & ATTACHMENTS',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${files.length}',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(width: 8),
+                    const Flexible(
+                      child: Text(
+                        'FILES & ATTACHMENTS // ASSETS',
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF686D65),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.6,
+                          fontSize: 10,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${files.length}',
+                        style: const TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF979C92),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: _uploadFile,
                 icon: const Icon(
                   Icons.upload_file,
-                  size: 14,
+                  size: 12,
                   color: Color(0xFF00E5FF),
                 ),
                 label: const Text(
-                  'Upload',
+                  'UPLOAD',
                   style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
                     color: Color(0xFF00E5FF),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                    letterSpacing: 1.0,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
@@ -3026,16 +3168,16 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 6,
+                    vertical: 4,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
           if (files.isEmpty)
             _buildEmptySectionState(
@@ -3060,16 +3202,23 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.025),
+                    color: const Color(0xFF0D0F0D).withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.white10),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.insert_drive_file_outlined,
-                        color: Color(0xFF00E5FF),
-                        size: 18,
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.insert_drive_file_outlined,
+                          color: Color(0xFF00E5FF),
+                          size: 14,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -3079,8 +3228,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             Text(
                               name,
                               style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Space Grotesk',
+                                color: Color(0xFFF3F1E8),
+                                fontWeight: FontWeight.w600,
                                 fontSize: 13,
                               ),
                               maxLines: 1,
@@ -3089,8 +3239,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             Text(
                               '${(f.sizeBytes / 1024).round()} KB',
                               style: const TextStyle(
-                                color: Colors.white38,
-                                fontSize: 11,
+                                fontFamily: 'IBM Plex Mono',
+                                color: Color(0xFF686D65),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
@@ -3100,7 +3252,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         icon: const Icon(
                           Icons.delete_outline,
                           size: 16,
-                          color: Colors.white38,
+                          color: Color(0xFF686D65),
                         ),
                         onPressed: () async {
                           await _repository.deleteAttachment(
@@ -3127,70 +3279,76 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final links = _details!.links;
 
     return KratosGlassCard(
+      variant: KratosSurfaceVariant.normal,
       borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFD700).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFFFFD700).withValues(alpha: 0.3),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD700),
+                        borderRadius: BorderRadius.circular(1.5),
                       ),
                     ),
-                    child: const Icon(
-                      Icons.link,
-                      color: Color(0xFFFFD700),
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'EXTERNAL RESOURCES',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${links.length}',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(width: 8),
+                    const Flexible(
+                      child: Text(
+                        'EXTERNAL RESOURCES // LINKS',
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF686D65),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.6,
+                          fontSize: 10,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${links.length}',
+                        style: const TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF979C92),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: _addLink,
-                icon: const Icon(Icons.add, size: 14, color: Color(0xFFFFD700)),
+                icon: const Icon(Icons.add, size: 12, color: Color(0xFFFFD700)),
                 label: const Text(
-                  'Add Link',
+                  'ADD LINK',
                   style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
                     color: Color(0xFFFFD700),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                    letterSpacing: 1.0,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
@@ -3199,16 +3357,16 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 6,
+                    vertical: 4,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
           if (links.isEmpty)
             _buildEmptySectionState(
@@ -3231,16 +3389,23 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.025),
+                    color: const Color(0xFF0D0F0D).withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.white10),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.link,
-                        color: Color(0xFFFFD700),
-                        size: 18,
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFD700).withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.link,
+                          color: Color(0xFFFFD700),
+                          size: 14,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -3250,8 +3415,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             Text(
                               l.title?.isNotEmpty == true ? l.title! : l.url,
                               style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Space Grotesk',
+                                color: Color(0xFFF3F1E8),
+                                fontWeight: FontWeight.w600,
                                 fontSize: 13,
                               ),
                               maxLines: 1,
@@ -3260,8 +3426,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             Text(
                               l.url,
                               style: const TextStyle(
-                                color: Colors.white38,
-                                fontSize: 11,
+                                fontFamily: 'IBM Plex Mono',
+                                color: Color(0xFF686D65),
+                                fontSize: 10,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -3273,7 +3440,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         icon: const Icon(
                           Icons.open_in_new,
                           size: 16,
-                          color: KratosTheme.acidLime,
+                          color: KratosTheme.electricLime,
                         ),
                         onPressed: () => _openUrl(l.url),
                       ),
@@ -3281,7 +3448,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         icon: const Icon(
                           Icons.delete_outline,
                           size: 16,
-                          color: Colors.white38,
+                          color: Color(0xFF686D65),
                         ),
                         onPressed: () async {
                           await _repository.deleteAttachment(
@@ -3324,6 +3491,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           Text(
             label,
             style: TextStyle(
+              fontFamily: 'Space Grotesk',
               color: accent,
               fontSize: 11,
               fontWeight: FontWeight.bold,
@@ -3342,18 +3510,23 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: accentColor),
+        Icon(icon, size: 14, color: accentColor),
         const SizedBox(width: 10),
         Text(
           label,
-          style: const TextStyle(color: Colors.white54, fontSize: 12),
+          style: const TextStyle(
+            fontFamily: 'Space Grotesk',
+            color: Color(0xFF979C92),
+            fontSize: 12,
+          ),
         ),
         const Spacer(),
         Flexible(
           child: Text(
             value,
             style: const TextStyle(
-              color: Colors.white,
+              fontFamily: 'Space Grotesk',
+              color: Color(0xFFF3F1E8),
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
@@ -3377,9 +3550,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         Text(
           label,
           style: const TextStyle(
-            color: Colors.white38,
+            fontFamily: 'IBM Plex Mono',
+            color: Color(0xFF686D65),
             fontSize: 9,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
             letterSpacing: 1.0,
           ),
           textAlign: TextAlign.center,
@@ -3388,9 +3562,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         Text(
           value,
           style: TextStyle(
+            fontFamily: 'IBM Plex Mono',
             color: color,
-            fontWeight: FontWeight.w900,
-            fontSize: isCompact ? 13 : 18,
+            fontWeight: FontWeight.w700,
+            fontSize: isCompact ? 12 : 16,
           ),
           textAlign: TextAlign.center,
           maxLines: 1,
@@ -3409,19 +3584,23 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
+        color: const Color(0xFF0D0F0D).withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white10),
       ),
       child: Center(
         child: Column(
           children: [
-            Icon(icon, size: 28, color: Colors.white24),
+            Icon(icon, size: 28, color: const Color(0xFF686D65)),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white38, fontSize: 12),
+              style: const TextStyle(
+                fontFamily: 'Space Grotesk',
+                color: Color(0xFF979C92),
+                fontSize: 12,
+              ),
             ),
             const SizedBox(height: 12),
             TextButton.icon(
@@ -3429,14 +3608,16 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               icon: const Icon(
                 Icons.add,
                 size: 14,
-                color: KratosTheme.acidLime,
+                color: KratosTheme.electricLime,
               ),
               label: Text(
                 actionLabel,
                 style: const TextStyle(
-                  color: KratosTheme.acidLime,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
+                  fontFamily: 'IBM Plex Mono',
+                  color: KratosTheme.electricLime,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                  letterSpacing: 0.8,
                 ),
               ),
             ),
@@ -3448,17 +3629,18 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   Widget _buildDifficultyChip(String roman, int baseXp) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: KratosTheme.acidLime.withValues(alpha: 0.15),
+        color: KratosTheme.electricLime.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: KratosTheme.acidLime.withValues(alpha: 0.35)),
+        border: Border.all(color: KratosTheme.electricLime.withValues(alpha: 0.35)),
       ),
       child: Text(
         'DIFFICULTY $roman · +$baseXp XP',
         style: const TextStyle(
-          color: KratosTheme.acidLime,
-          fontWeight: FontWeight.w900,
+          fontFamily: 'IBM Plex Mono',
+          color: KratosTheme.electricLime,
+          fontWeight: FontWeight.w700,
           letterSpacing: 0.8,
           fontSize: 10,
         ),
@@ -3471,7 +3653,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     switch (status.toLowerCase()) {
       case 'completed':
       case 'done':
-        c = KratosTheme.acidLime;
+        c = KratosTheme.electricLime;
         break;
       case 'paused':
         c = Colors.amber;
@@ -3481,23 +3663,24 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         c = const Color(0xFF00E5FF);
         break;
       default:
-        c = Colors.white60;
+        c = const Color(0xFF979C92);
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: c.withValues(alpha: 0.15),
+        color: c.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: c.withValues(alpha: 0.3)),
       ),
       child: Text(
         status.toUpperCase(),
         style: TextStyle(
+          fontFamily: 'IBM Plex Mono',
           color: c,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w700,
           fontSize: 10,
-          letterSpacing: 0.5,
+          letterSpacing: 0.6,
         ),
       ),
     );

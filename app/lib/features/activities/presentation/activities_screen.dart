@@ -118,65 +118,61 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final limeColor = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'ACTIVITIES',
-              style: TextStyle(
-                color: Color(0xFFC6F135),
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2.0,
-                fontSize: 16,
+        titleSpacing: 20,
+        title: KratosSectionHeader(
+          eyebrow: 'RECURRENT // EXECUTION',
+          title: 'Activities Command',
+          action: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: limeColor.withValues(alpha: isDark ? 0.1 : 0.12),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: limeColor.withValues(alpha: isDark ? 0.3 : 0.35),
               ),
             ),
-            Text(
-              'Repeatable practices, habits, and tracked routines',
-              style: TextStyle(
-                color: isDark ? Colors.white38 : KratosTheme.lightTextSecondary,
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: ElevatedButton.icon(
-              onPressed: _openNewActivity,
-              icon: const Icon(Icons.add, size: 16, color: Color(0xFF0D0D0D)),
-              label: const Text(
-                'New Activity',
-                style: TextStyle(
-                  color: Color(0xFF0D0D0D),
-                  fontWeight: FontWeight.w900,
-                  fontSize: 12,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: limeColor,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC6F135),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
+                const SizedBox(width: 6),
+                Text(
+                  'ROUTINES & HABITS',
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: limeColor,
+                    letterSpacing: 0.8,
+                  ),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
+              ],
             ),
           ),
+        ),
+        actions: const [
+          SizedBox(width: 12),
         ],
       ),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const KratosEnvironment(),
           Column(
             children: [
               // Filter Bar
@@ -336,62 +332,12 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFC6F135).withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.local_activity_outlined,
-                color: Color(0xFFC6F135),
-                size: 36,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'No Activities Found',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Create repeatable activities like Reading, Gym, Studying, or Coding Practice to track focus sessions and earn XP.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white38, fontSize: 12),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: _openNewActivity,
-              icon: const Icon(Icons.add, color: Colors.black, size: 16),
-              label: const Text(
-                'Create First Activity',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC6F135),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-          ],
-        ),
+      child: KratosEmptyState(
+        icon: Icons.local_activity_outlined,
+        title: 'NO ACTIVITIES FOUND',
+        subtitle: 'Create repeatable activities like Reading, Gym, Studying, or Coding Practice to track focus sessions and earn XP.',
+        actionLabel: 'Create First Activity',
+        onAction: _openNewActivity,
       ),
     );
   }
@@ -475,9 +421,11 @@ class _ActivityCard extends StatelessWidget {
                               Text(
                                 item.name,
                                 style: TextStyle(
-                                  color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
+                                  fontFamily: 'Space Grotesk',
+                                  color: isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary,
                                   fontSize: 15,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.2,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -488,18 +436,18 @@ class _ActivityCard extends StatelessWidget {
                                   if (item.lifeAreaName != null)
                                     _badge(
                                       item.lifeAreaName!,
-                                      const Color(0xFFC6F135),
+                                      KratosTheme.electricLime,
                                     ),
                                   if (item.categoryName != null)
                                     _badge(
                                       item.categoryName!,
-                                      Colors.tealAccent,
+                                      const Color(0xFF00E5FF),
                                     ),
                                   if (item.targetDurationMinutes != null &&
                                       item.targetDurationMinutes! > 0)
                                     _badge(
                                       'Target ${item.formattedTargetDuration}',
-                                      Colors.amberAccent,
+                                      const Color(0xFFE5C07B),
                                     ),
                                 ],
                               ),
@@ -523,14 +471,14 @@ class _ActivityCard extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color:
                                       (isPaused
-                                              ? Colors.amber
-                                              : const Color(0xFFC6F135))
+                                              ? const Color(0xFFE5C07B)
+                                              : KratosTheme.electricLime)
                                           .withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
                                     color: isPaused
-                                        ? Colors.amber
-                                        : const Color(0xFFC6F135),
+                                        ? const Color(0xFFE5C07B)
+                                        : KratosTheme.electricLime,
                                     width: 1,
                                   ),
                                 ),
@@ -543,8 +491,8 @@ class _ActivityCard extends StatelessWidget {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: isPaused
-                                            ? Colors.amber
-                                            : const Color(0xFFC6F135),
+                                            ? const Color(0xFFE5C07B)
+                                            : KratosTheme.electricLime,
                                       ),
                                     ),
                                     const SizedBox(width: 5),
@@ -552,11 +500,11 @@ class _ActivityCard extends StatelessWidget {
                                       activeState.formattedElapsed,
                                       style: TextStyle(
                                         color: isPaused
-                                            ? Colors.amber
-                                            : const Color(0xFFC6F135),
+                                            ? const Color(0xFFE5C07B)
+                                            : KratosTheme.electricLime,
                                         fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: 'monospace',
+                                        fontWeight: FontWeight.w700,
+                                        fontFamily: 'IBM Plex Mono',
                                       ),
                                     ),
                                   ],
@@ -567,8 +515,8 @@ class _ActivityCard extends StatelessWidget {
                                 icon: Icon(
                                   isPaused ? Icons.play_arrow : Icons.pause,
                                   color: isPaused
-                                      ? const Color(0xFFC6F135)
-                                      : Colors.amber,
+                                      ? KratosTheme.electricLime
+                                      : const Color(0xFFE5C07B),
                                   size: 20,
                                 ),
                                 onPressed: () {
@@ -586,7 +534,7 @@ class _ActivityCard extends StatelessWidget {
                               IconButton(
                                 icon: const Icon(
                                   Icons.check_circle,
-                                  color: Color(0xFFC6F135),
+                                  color: KratosTheme.electricLime,
                                   size: 24,
                                 ),
                                 onPressed: () async {
@@ -603,7 +551,7 @@ class _ActivityCard extends StatelessWidget {
                                         content: Text(
                                           'Session completed! +${res['xpEarned']} XP awarded to ${item.lifeAreaName ?? 'Life Area'}.',
                                           style: const TextStyle(
-                                            color: Color(0xFFC6F135),
+                                            color: KratosTheme.electricLime,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
@@ -624,7 +572,7 @@ class _ActivityCard extends StatelessWidget {
                               IconButton(
                                 icon: const Icon(
                                   Icons.check_circle_outline,
-                                  color: Color(0xFFC6F135),
+                                  color: KratosTheme.electricLime,
                                   size: 24,
                                 ),
                                 onPressed: () async {
@@ -646,7 +594,7 @@ class _ActivityCard extends StatelessWidget {
                                         content: Text(
                                           'Logged "${item.name}"! +$earned XP awarded to ${item.lifeAreaName ?? 'Life Area'}.',
                                           style: const TextStyle(
-                                            color: Color(0xFFC6F135),
+                                            color: KratosTheme.electricLime,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
@@ -662,7 +610,7 @@ class _ActivityCard extends StatelessWidget {
                               IconButton(
                                 icon: const Icon(
                                   Icons.play_circle_fill,
-                                  color: Color(0xFFC6F135),
+                                  color: KratosTheme.electricLime,
                                   size: 28,
                                 ),
                                 onPressed: () {
@@ -704,16 +652,18 @@ class _ActivityCard extends StatelessWidget {
                           Text(
                             '${item.periodSessionCount} Sessions • ${item.formattedPeriodDuration}',
                             style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
+                              fontFamily: 'IBM Plex Mono',
+                              color: Color(0xFF979C92),
+                              fontSize: 11,
                             ),
                           ),
                           Text(
                             '+${item.periodXpEarned} XP',
                             style: const TextStyle(
-                              color: Color(0xFFC6F135),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                              fontFamily: 'IBM Plex Mono',
+                              color: KratosTheme.electricLime,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
@@ -731,18 +681,20 @@ class _ActivityCard extends StatelessWidget {
 
   Widget _badge(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         text,
         style: TextStyle(
+          fontFamily: 'IBM Plex Mono',
           color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.6,
         ),
       ),
     );

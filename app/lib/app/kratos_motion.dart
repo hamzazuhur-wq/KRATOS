@@ -253,36 +253,78 @@ class KratosPageRoute<T> extends PageRouteBuilder<T> {
       : super(
           pageBuilder: (context, animation, secondaryAnimation) =>
               _withGlobalHeader(context, page),
+          opaque: true,
           transitionDuration: KratosMotion.pageDuration,
           reverseTransitionDuration: KratosMotion.pageReverseDuration,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             final disableAnimations =
                 MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-            if (disableAnimations) return child;
+            
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final bgDecoration = BoxDecoration(
+              gradient: isDark
+                  ? const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF141815),
+                        Color(0xFF0E110F),
+                        Color(0xFF080A08),
+                      ],
+                    )
+                  : const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFFFFFFFF),
+                        Color(0xFFF8F9FA),
+                        Color(0xFFF0F2F5),
+                      ],
+                    ),
+            );
+
+            if (disableAnimations) {
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  Container(decoration: bgDecoration),
+                  child,
+                ],
+              );
+            }
 
             final curved = CurvedAnimation(
               parent: animation,
               curve: KratosMotion.webCurve,
               reverseCurve: Curves.easeInCubic,
             );
-            return FadeTransition(
-              opacity: curved,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0.03, 0),
-                  end: Offset.zero,
-                ).animate(curved),
-                child: child,
-              ),
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                FadeTransition(
+                  opacity: curved,
+                  child: Container(decoration: bgDecoration),
+                ),
+                FadeTransition(
+                  opacity: curved,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0.03, 0),
+                      end: Offset.zero,
+                    ).animate(curved),
+                    child: child,
+                  ),
+                ),
+              ],
             );
           },
         );
 }
 
 /// Material-style route with global header support.
-class KratosMaterialPageRoute<T> extends MaterialPageRoute<T> {
+class KratosMaterialPageRoute<T> extends KratosPageRoute<T> {
   KratosMaterialPageRoute({required WidgetBuilder builder, super.settings})
-      : super(builder: (context) => _withGlobalHeader(context, builder(context)));
+      : super(page: Builder(builder: builder));
 }
 
 /// Neutral card wrapper replacing spring dynamics and glows.

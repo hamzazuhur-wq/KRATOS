@@ -45,7 +45,6 @@ class _TasksScreenState extends State<TasksScreen> {
     body: Stack(
       fit: StackFit.expand,
       children: [
-        const KratosEnvironment(),
         StreamBuilder<List<TaskDashboardLifeArea>>(
           stream: _repository.watchLifeAreas(widget.ownerId),
           builder: (context, areasSnapshot) {

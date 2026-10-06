@@ -8,6 +8,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 
 import '../../../../app/kratos_motion.dart';
+import '../../../../app/kratos_theme.dart';
 
 import '../../../../data/drift/app_database.dart';
 import '../../../../domain/hlc.dart';
@@ -61,14 +62,22 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final textColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+    final mutedColor = isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary;
+    final surfaceColor = isDark ? const Color(0xFF0D0F0D).withValues(alpha: 0.94) : KratosTheme.lightSurface;
+    final cardColor = isDark ? const Color(0xFF141714) : Colors.black.withValues(alpha: 0.04);
+    final borderColor = isDark ? Colors.white12 : Colors.black12;
+
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
       child: KratosModalEntrance(
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF0D0F0D).withValues(alpha: 0.94),
+            color: surfaceColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(color: Colors.white12, width: 1),
+            border: Border.all(color: borderColor, width: 1),
           ),
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom + 20,
@@ -88,63 +97,135 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                     width: 44,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.white24,
+                      color: isDark ? Colors.white24 : Colors.black26,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'EDIT GOAL',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                  ),
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: lime.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.edit_outlined,
+                        color: lime,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'EDIT GOAL',
+                      style: TextStyle(
+                        fontFamily: 'Space Grotesk',
+                        color: textColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
 
                 // Title
-                const Text(
+                Text(
                   'TITLE *',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: mutedColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _titleController,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    color: textColor,
+                    fontSize: 14,
+                  ),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.04),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    fillColor: cardColor,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: lime),
+                    ),
                   ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'Enter a title' : null,
                 ),
                 const SizedBox(height: 14),
 
                 // Description
-                const Text(
+                Text(
                   'DESCRIPTION',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: mutedColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _descriptionController,
                   maxLines: 2,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    color: textColor,
+                    fontSize: 13,
+                  ),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.04),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    fillColor: cardColor,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: lime),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
 
                 // Status
-                const Text(
+                Text(
                   'STATUS',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: mutedColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Wrap(
@@ -152,17 +233,29 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                   children: ['active', 'paused', 'stopped', 'completed'].map((status) {
                     final isSel = _selectedStatus.toLowerCase() == status;
                     return ChoiceChip(
-                      label: Text(status.toUpperCase()),
+                      label: Text(
+                        status.toUpperCase(),
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: isSel ? (isDark ? const Color(0xFF020302) : Colors.white) : mutedColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
                       selected: isSel,
                       onSelected: (val) {
                         if (val) setState(() => _selectedStatus = status);
                       },
-                      selectedColor: const Color(0xFFC6F135).withValues(alpha: 0.25),
-                      backgroundColor: Colors.white.withValues(alpha: 0.04),
-                      labelStyle: TextStyle(
-                        color: isSel ? const Color(0xFFC6F135) : Colors.white70,
-                        fontSize: 11,
-                        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                      selectedColor: lime,
+                      backgroundColor: cardColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                        side: BorderSide(
+                          color: isSel
+                              ? lime
+                              : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
+                        ),
                       ),
                     );
                   }).toList(),
@@ -170,9 +263,15 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                 const SizedBox(height: 14),
 
                 // Life Area
-                const Text(
+                Text(
                   'LIFE AREA',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: mutedColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 StreamBuilder<List<LifeArea>>(
@@ -186,16 +285,28 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                       children: areas.map((area) {
                         final isSel = _selectedLifeAreaId == area.id;
                         return ChoiceChip(
-                          label: Text(area.name),
+                          label: Text(
+                            area.name,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              color: isSel ? (isDark ? const Color(0xFF020302) : Colors.white) : mutedColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           selected: isSel,
                           onSelected: (val) {
                             if (val) setState(() => _selectedLifeAreaId = area.id);
                           },
-                          selectedColor: const Color(0xFFC6F135).withValues(alpha: 0.25),
-                          backgroundColor: Colors.white.withValues(alpha: 0.04),
-                          labelStyle: TextStyle(
-                            color: isSel ? const Color(0xFFC6F135) : Colors.white70,
-                            fontSize: 11,
+                          selectedColor: lime,
+                          backgroundColor: cardColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                            side: BorderSide(
+                              color: isSel
+                                  ? lime
+                                  : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
+                            ),
                           ),
                         );
                       }).toList(),
@@ -205,9 +316,15 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                 const SizedBox(height: 14),
 
                 // Goal Category
-                const Text(
+                Text(
                   'GOAL CATEGORY',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: mutedColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 StreamBuilder<List<Category>>(
@@ -219,16 +336,28 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                       children: cats.map((cat) {
                         final isSel = _selectedCategoryId == cat.id;
                         return ChoiceChip(
-                          label: Text(cat.name),
+                          label: Text(
+                            cat.name,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              color: isSel ? (isDark ? const Color(0xFF020302) : Colors.white) : mutedColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           selected: isSel,
                           onSelected: (val) {
                             if (val) setState(() => _selectedCategoryId = cat.id);
                           },
-                          selectedColor: const Color(0xFFC6F135).withValues(alpha: 0.25),
-                          backgroundColor: Colors.white.withValues(alpha: 0.04),
-                          labelStyle: TextStyle(
-                            color: isSel ? const Color(0xFFC6F135) : Colors.white70,
-                            fontSize: 11,
+                          selectedColor: lime,
+                          backgroundColor: cardColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                            side: BorderSide(
+                              color: isSel
+                                  ? lime
+                                  : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
+                            ),
                           ),
                         );
                       }).toList(),
@@ -248,11 +377,20 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white70,
+                          foregroundColor: mutedColor,
+                          side: BorderSide(color: borderColor),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                         ),
-                        child: const Text('Cancel'),
+                        child: const Text(
+                          'CANCEL',
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Mono',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -261,18 +399,28 @@ class _EditGoalDialogState extends State<EditGoalDialog> {
                       child: ElevatedButton(
                         onPressed: _isSaving ? null : _saveChanges,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFC6F135),
-                          foregroundColor: const Color(0xFF020302),
+                          backgroundColor: lime,
+                          foregroundColor: isDark ? const Color(0xFF020302) : Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                         ),
                         child: _isSaving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF020302)),
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: isDark ? const Color(0xFF020302) : Colors.white),
                               )
-                            : const Text('SAVE CHANGES', style: TextStyle(fontWeight: FontWeight.bold)),
+                            : Text(
+                                'SAVE CHANGES',
+                                style: TextStyle(
+                                  fontFamily: 'IBM Plex Mono',
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.8,
+                                  color: isDark ? const Color(0xFF020302) : Colors.white,
+                                ),
+                              ),
                       ),
                     ),
                   ],

@@ -8,6 +8,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 
 import '../../../../app/kratos_motion.dart';
+import '../../../../app/kratos_theme.dart';
 import '../../../../data/drift/app_database.dart';
 import '../../../../domain/hlc.dart';
 import '../../../../domain/ids.dart';
@@ -77,14 +78,22 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final textColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+    final mutedColor = isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary;
+    final surfaceColor = isDark ? const Color(0xFF0D0F0D).withValues(alpha: 0.94) : KratosTheme.lightSurface;
+    final cardColor = isDark ? const Color(0xFF141714) : Colors.black.withValues(alpha: 0.04);
+    final borderColor = isDark ? Colors.white12 : Colors.black12;
+
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
       child: KratosModalEntrance(
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF0D0F0D).withValues(alpha: 0.94),
+            color: surfaceColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(color: Colors.white12, width: 1),
+            border: Border.all(color: borderColor, width: 1),
           ),
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom + 20,
@@ -104,7 +113,7 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                     width: 44,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.white24,
+                      color: isDark ? Colors.white24 : Colors.black26,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -117,26 +126,27 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFC6F135).withValues(alpha: 0.15),
+                        color: cardColor,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: const Color(0xFFC6F135).withValues(alpha: 0.5),
+                          color: lime.withValues(alpha: 0.35),
                         ),
                       ),
                       child: Icon(
                         _isSubGoal ? Icons.subdirectory_arrow_right : Icons.track_changes,
-                        color: const Color(0xFFC6F135),
-                        size: 20,
+                        color: lime,
+                        size: 18,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Text(
                       _isSubGoal ? 'ADD SUB-GOAL' : 'CREATE MAIN GOAL',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        fontFamily: 'Space Grotesk',
+                        color: textColor,
                         fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ],
@@ -146,24 +156,31 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.04),
+                      color: const Color(0xFF141714),
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.arrow_upward, size: 12, color: Colors.white38),
+                        const Icon(Icons.arrow_upward, size: 12, color: Color(0xFF686D65)),
                         const SizedBox(width: 6),
                         const Text(
-                          'Parent: ',
-                          style: TextStyle(color: Colors.white38, fontSize: 11),
+                          'PARENT: ',
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Mono',
+                            color: Color(0xFF686D65),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         Expanded(
                           child: Text(
                             widget.parentGoal!.title,
                             style: const TextStyle(
-                              color: Color(0xFFC6F135),
+                              fontFamily: 'Inter',
+                              color: Color(0xFFEEFF08),
                               fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -175,35 +192,44 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                 const SizedBox(height: 20),
 
                 // 1. Goal Title *
-                const Text(
+                Text(
                   'GOAL TITLE *',
                   style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+                    fontFamily: 'IBM Plex Mono',
+                    color: mutedColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 1.0,
                   ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _titleController,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    color: textColor,
+                    fontSize: 14,
+                  ),
                   decoration: InputDecoration(
                     hintText: _isSubGoal ? 'e.g. Master Drift ORM' : 'e.g. Become Lead Architect',
-                    hintStyle: const TextStyle(color: Colors.white24),
+                    hintStyle: TextStyle(
+                      fontFamily: 'Inter',
+                      color: mutedColor,
+                    ),
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.04),
+                    fillColor: cardColor,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.white12),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.white12),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFC6F135)),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: lime),
                     ),
                   ),
                   validator: (val) {
@@ -216,12 +242,13 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                 const SizedBox(height: 16),
 
                 // 2. Description (optional)
-                const Text(
+                Text(
                   'DESCRIPTION',
                   style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+                    fontFamily: 'IBM Plex Mono',
+                    color: mutedColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 1.0,
                   ),
                 ),
@@ -229,31 +256,36 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                 TextFormField(
                   controller: _descriptionController,
                   maxLines: 2,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  style: TextStyle(fontFamily: 'Inter', color: textColor, fontSize: 13),
                   decoration: InputDecoration(
                     hintText: 'What does achieving this look like? Why does it matter?',
-                    hintStyle: const TextStyle(color: Colors.white24),
+                    hintStyle: TextStyle(color: mutedColor),
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.04),
+                    fillColor: cardColor,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.white12),
+                      borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.white12),
+                      borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.black12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: lime),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
 
                 // 3. Life Area *
-                const Text(
+                Text(
                   'LIFE AREA *',
                   style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+                    fontFamily: 'IBM Plex Mono',
+                    color: mutedColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 1.0,
                   ),
                 ),
@@ -262,12 +294,13 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                 const SizedBox(height: 16),
 
                 // 4. Goal Category *
-                const Text(
+                Text(
                   'GOAL CATEGORY *',
                   style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+                    fontFamily: 'IBM Plex Mono',
+                    color: mutedColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 1.0,
                   ),
                 ),
@@ -276,12 +309,13 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                 const SizedBox(height: 16),
 
                 // 5. Time / Duration *
-                const Text(
+                Text(
                   'TIME / DURATION *',
                   style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+                    fontFamily: 'IBM Plex Mono',
+                    color: mutedColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 1.0,
                   ),
                 ),
@@ -290,12 +324,13 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                 const SizedBox(height: 16),
 
                 // 6. Skills (optional)
-                const Text(
+                Text(
                   'SKILLS (OPTIONAL ATTRIBUTION)',
                   style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+                    fontFamily: 'IBM Plex Mono',
+                    color: mutedColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 1.0,
                   ),
                 ),
@@ -339,14 +374,22 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                       child: OutlinedButton(
                         onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white70,
-                          side: const BorderSide(color: Colors.white24),
+                          foregroundColor: mutedColor,
+                          side: BorderSide(color: borderColor),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(999),
                           ),
                         ),
-                        child: const Text('Cancel'),
+                        child: const Text(
+                          'CANCEL',
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Mono',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -355,28 +398,31 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                       child: ElevatedButton(
                         onPressed: _isSaving ? null : _handleSaveGoal,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFC6F135),
-                          foregroundColor: const Color(0xFF020302),
+                          backgroundColor: lime,
+                          foregroundColor: isDark ? const Color(0xFF020302) : Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          elevation: 4,
+                          elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(999),
                           ),
                         ),
                         child: _isSaving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Color(0xFF020302),
+                                  color: isDark ? const Color(0xFF020302) : Colors.white,
                                 ),
                               )
                             : Text(
                                 _isSubGoal ? 'CREATE SUB-GOAL' : 'CREATE MAIN GOAL',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
+                                style: TextStyle(
+                                  fontFamily: 'IBM Plex Mono',
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
                                   letterSpacing: 0.8,
+                                  color: isDark ? const Color(0xFF020302) : Colors.white,
                                 ),
                               ),
                       ),
@@ -393,6 +439,10 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
   }
 
   Widget _buildLifeAreaPicker() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final textColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+
     return StreamBuilder<List<LifeArea>>(
       stream: (widget.database.select(widget.database.lifeAreas)
             ..where((l) =>
@@ -425,15 +475,16 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                         setState(() => _selectedLifeAreaId = area.id);
                       }
                     },
-              selectedColor: const Color(0xFFC6F135).withValues(alpha: 0.25),
-              backgroundColor: Colors.white.withValues(alpha: 0.04),
+              selectedColor: lime.withValues(alpha: 0.25),
+              backgroundColor: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.04),
               labelStyle: TextStyle(
-                color: isSelected ? const Color(0xFFC6F135) : Colors.white70,
+                fontFamily: 'Inter',
+                color: isSelected ? lime : textColor,
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
               side: BorderSide(
-                color: isSelected ? const Color(0xFFC6F135) : Colors.white12,
+                color: isSelected ? lime : (isDark ? Colors.white12 : Colors.black12),
               ),
             );
           }).toList(),
@@ -443,6 +494,10 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
   }
 
   Widget _buildCategoryPicker() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final textColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+
     return StreamBuilder<List<Category>>(
       stream: widget.database.categoriesDao.watchCategoriesByType(
         widget.ownerId,
@@ -455,23 +510,23 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
+              color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.white12),
+              border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
             ),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
                     'No Goal Categories defined yet in Settings.',
-                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                    style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12),
                   ),
                 ),
                 TextButton(
                   onPressed: _seedDefaultGoalCategory,
-                  child: const Text(
+                  child: Text(
                     '+ Add Default',
-                    style: TextStyle(color: Color(0xFFC6F135), fontSize: 12),
+                    style: TextStyle(color: lime, fontSize: 12),
                   ),
                 ),
               ],
@@ -493,15 +548,16 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                   setState(() => _selectedCategoryId = cat.id);
                 }
               },
-              selectedColor: const Color(0xFFC6F135).withValues(alpha: 0.25),
-              backgroundColor: Colors.white.withValues(alpha: 0.04),
+              selectedColor: lime.withValues(alpha: 0.25),
+              backgroundColor: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.04),
               labelStyle: TextStyle(
-                color: isSelected ? const Color(0xFFC6F135) : Colors.white70,
+                fontFamily: 'Inter',
+                color: isSelected ? lime : textColor,
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
               side: BorderSide(
-                color: isSelected ? const Color(0xFFC6F135) : Colors.white12,
+                color: isSelected ? lime : (isDark ? Colors.white12 : Colors.black12),
               ),
             );
           }).toList(),
@@ -534,6 +590,10 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
   }
 
   Widget _buildDurationPicker() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final textColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+
     return Wrap(
       spacing: 8,
       runSpacing: 6,
@@ -548,15 +608,16 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
               setState(() => _selectedDuration = opt);
             }
           },
-          selectedColor: const Color(0xFFC6F135).withValues(alpha: 0.25),
-          backgroundColor: Colors.white.withValues(alpha: 0.04),
+          selectedColor: lime.withValues(alpha: 0.25),
+          backgroundColor: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.04),
           labelStyle: TextStyle(
-            color: isSelected ? const Color(0xFFC6F135) : Colors.white70,
+            fontFamily: 'Inter',
+            color: isSelected ? lime : textColor,
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
           side: BorderSide(
-            color: isSelected ? const Color(0xFFC6F135) : Colors.white12,
+            color: isSelected ? lime : (isDark ? Colors.white12 : Colors.black12),
           ),
         );
       }).toList(),
@@ -564,14 +625,19 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
   }
 
   Widget _buildSkillsPicker() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final textColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+    final mutedColor = isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary;
+
     return StreamBuilder<List<Skill>>(
       stream: widget.database.select(widget.database.skills).watch(),
       builder: (context, snapshot) {
         final skills = snapshot.data ?? [];
         if (skills.isEmpty) {
-          return const Text(
+          return Text(
             'No skills configured yet.',
-            style: TextStyle(color: Colors.white24, fontSize: 11),
+            style: TextStyle(fontFamily: 'Inter', color: mutedColor, fontSize: 11),
           );
         }
 
@@ -593,14 +659,15 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                   }
                 });
               },
-              selectedColor: const Color(0xFFC6F135).withValues(alpha: 0.2),
-              backgroundColor: Colors.white.withValues(alpha: 0.03),
+              selectedColor: lime.withValues(alpha: 0.2),
+              backgroundColor: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.black.withValues(alpha: 0.03),
               labelStyle: TextStyle(
-                color: isSelected ? const Color(0xFFC6F135) : Colors.white60,
+                fontFamily: 'Inter',
+                color: isSelected ? lime : textColor,
                 fontSize: 11,
               ),
               side: BorderSide(
-                color: isSelected ? const Color(0xFFC6F135) : Colors.white10,
+                color: isSelected ? lime : (isDark ? Colors.white10 : Colors.black12),
               ),
             );
           }).toList(),

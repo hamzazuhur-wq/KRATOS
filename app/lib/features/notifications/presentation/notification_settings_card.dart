@@ -4,15 +4,17 @@
 //   * enable/disable the repeating daily deadline check
 //   * pick the reminder time
 //   * request the OS permission and see the live permission state
+//
+// Wave 12: presentation-only restyle (Settings kit). Preferences, scheduler
+// and permission logic are unchanged.
 
 import 'package:flutter/material.dart';
 
 import '../../../data/drift/app_database.dart';
+import '../../settings/presentation/settings_kit.dart';
 import '../data/local_notifications_service.dart';
 import '../domain/deadline_notification_scheduler.dart';
 import '../domain/notification_preferences.dart';
-
-const _acidLime = Color(0xFFC6F135);
 
 class NotificationSettingsCard extends StatefulWidget {
   final AppDatabase database;
@@ -105,126 +107,55 @@ class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
   }
 
   void _snack(String message) {
+    // Colours come from the active theme's SnackBarTheme (Dark / Light).
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: const Color(0xFF141714),
-      ),
+      SnackBar(content: Text(message)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final permissionGranted = _permission == 'granted';
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white12),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.notifications_active_outlined,
-                  color: _acidLime, size: 20),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Phone notifications',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              if (_busy)
-                const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: _acidLime,
-                  ),
-                ),
-            ],
+    return SettingsGroup(
+      children: [
+        SettingsRow(
+          icon: Icons.notifications_active_outlined,
+          title: 'Phone notifications',
+          subtitle: permissionGranted
+              ? 'Due and overdue work is delivered to your phone notification centre.'
+              : 'Grant permission so due and overdue work reaches your phone.',
+          trailing: SettingsStatusPill(
+            label: permissionGranted ? 'Granted' : 'Off',
+            tone: permissionGranted ? SettingsTone.success : SettingsTone.warning,
           ),
-          const SizedBox(height: 6),
-          Text(
-            permissionGranted
-                ? 'Due and overdue work is delivered to your phone notification centre.'
-                : 'Grant permission so due and overdue work reaches your phone.',
-            style: const TextStyle(color: Colors.white54, fontSize: 11.5),
+        ),
+        SettingsToggleRow(
+          icon: Icons.event_repeat_outlined,
+          title: 'Daily deadline check',
+          subtitle: 'Repeats every day at ${_preferences.label}',
+          value: _preferences.dailyReminderEnabled,
+          busy: _busy,
+          onChanged: _busy ? null : _setEnabled,
+        ),
+        SettingsRow(
+          icon: Icons.schedule,
+          title: 'Reminder time',
+          value: _preferences.label,
+          enabled: !_busy,
+          onTap: _busy ? null : _pickTime,
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: SettingsButton(
+            label: permissionGranted ? 'Permission granted' : 'Allow alerts',
+            icon: permissionGranted
+                ? Icons.check_circle_outline
+                : Icons.notifications_none,
+            loading: false,
+            onPressed: _busy || permissionGranted ? null : _requestPermission,
           ),
-          const SizedBox(height: 10),
-          Material(
-            type: MaterialType.transparency,
-            child: SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              value: _preferences.dailyReminderEnabled,
-              activeThumbColor: _acidLime,
-              onChanged: _busy ? null : _setEnabled,
-              title: const Text(
-                'Daily deadline check',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              subtitle: Text(
-                'Repeats every day at ${_preferences.label}',
-                style: const TextStyle(color: Colors.white38, fontSize: 11),
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              OutlinedButton.icon(
-                onPressed: _busy ? null : _pickTime,
-                icon: const Icon(Icons.schedule, size: 15),
-                label: Text('Time • ${_preferences.label}'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white70,
-                  side: const BorderSide(color: Colors.white12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: _busy || permissionGranted
-                      ? null
-                      : _requestPermission,
-                  icon: Icon(
-                    permissionGranted
-                        ? Icons.check_circle_outline
-                        : Icons.notifications_none,
-                    size: 15,
-                  ),
-                  label: Text(
-                    permissionGranted ? 'Permission granted' : 'Allow alerts',
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: _acidLime,
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

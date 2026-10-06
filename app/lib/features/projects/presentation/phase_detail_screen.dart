@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' hide Column;
 
-import '../../../app/active_glass_card.dart';
 import '../../../app/kratos_dropdown.dart';
+import '../../../app/kratos_theme.dart';
 import '../../../app/kratos_visuals.dart';
 import '../../../data/drift/app_database.dart';
 import '../../tasks/data/task_dashboard_repository.dart';
@@ -149,7 +149,7 @@ class _PhaseDetailScreenState extends State<PhaseDetailScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        backgroundColor: Color(0xFF0D0D0D),
+        backgroundColor: Colors.transparent,
         body: Center(
           child: CircularProgressIndicator(color: Color(0xFFC6F135)),
         ),
@@ -158,7 +158,7 @@ class _PhaseDetailScreenState extends State<PhaseDetailScreen> {
 
     if (_phase == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFF0D0D0D),
+        backgroundColor: Colors.transparent,
         appBar: AppBar(backgroundColor: Colors.transparent),
         body: const Center(
           child: Text(
@@ -181,21 +181,35 @@ class _PhaseDetailScreenState extends State<PhaseDetailScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white70),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFFF3F1E8)),
           onPressed: () => Navigator.pop(context, true),
         ),
-        title: Text(
-          'PHASE ${phase.sortOrder + 1}',
-          style: const TextStyle(
-            color: Color(0xFFC6F135),
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2.0,
-            fontSize: 14,
-          ),
+        title: Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: KratosTheme.electricLime,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'ROADMAP / PHASE 0${phase.sortOrder + 1}',
+              style: const TextStyle(
+                fontFamily: 'IBM Plex Mono',
+                color: KratosTheme.electricLime,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.8,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
         actions: [
           KratosPopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.white70),
+            icon: const Icon(Icons.more_vert, color: Color(0xFF979C92)),
             onSelected: (val) async {
               if (val == 'delete') {
                 final confirmed = await showDialog<bool>(
@@ -260,82 +274,142 @@ class _PhaseDetailScreenState extends State<PhaseDetailScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const KratosEnvironment(),
           SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
+                constraints: const BoxConstraints(maxWidth: 820),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Phase Header Card
-                    ActiveGlassCard(
+                    // Phase Header Card (Manus Hero Overview)
+                    KratosGlassCard(
+                      variant: KratosSurfaceVariant.normal,
+                      borderRadius: BorderRadius.circular(20),
+                      padding: const EdgeInsets.all(24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: Text(
-                                  phase.name,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w900,
-                                  ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: KratosTheme.electricLime.withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(
+                                              color: KratosTheme.electricLime.withValues(alpha: 0.35),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'STAGE 0${phase.sortOrder + 1}',
+                                            style: const TextStyle(
+                                              fontFamily: 'IBM Plex Mono',
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w700,
+                                              color: KratosTheme.electricLime,
+                                              letterSpacing: 1.2,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        _buildStatusBadge(phase.status),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      phase.name,
+                                      style: const TextStyle(
+                                        fontFamily: 'Space Grotesk',
+                                        color: Color(0xFFF3F1E8),
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: -0.6,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              _buildStatusBadge(phase.status),
                             ],
                           ),
                           if (phase.description != null &&
                               phase.description!.isNotEmpty) ...[
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 12),
                             Text(
                               phase.description!,
                               style: const TextStyle(
-                                color: Colors.white70,
+                                fontFamily: 'Space Grotesk',
+                                color: Color(0xFF979C92),
                                 fontSize: 13,
+                                height: 1.5,
                               ),
                             ),
                           ],
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
 
-                          // Progress Bar
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'PHASE PROGRESS',
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  letterSpacing: 1.2,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
+                          // Token Strip for Phase Metrics
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF050805).withValues(alpha: 0.84),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0x1FEEFF08)),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      'PHASE COMPLETION RATIO',
+                                      style: TextStyle(
+                                        fontFamily: 'IBM Plex Mono',
+                                        color: Color(0xFF686D65),
+                                        letterSpacing: 1.4,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${progress.round()}%',
+                                      style: const TextStyle(
+                                        fontFamily: 'IBM Plex Mono',
+                                        color: KratosTheme.electricLime,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              Text(
-                                '${progress.round()}%',
-                                style: const TextStyle(
-                                  color: Color(0xFFC6F135),
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 14,
+                                const SizedBox(height: 10),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(999),
+                                  child: Container(
+                                    height: 4,
+                                    color: Colors.white.withValues(alpha: 0.08),
+                                    child: Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: FractionallySizedBox(
+                                        widthFactor: (progress / 100.0).clamp(0.0, 1.0),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: KratosTheme.electricLime,
+                                            borderRadius: BorderRadius.circular(999),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: LinearProgressIndicator(
-                              value: progress / 100.0,
-                              minHeight: 6,
-                              backgroundColor: Colors.white10,
-                              valueColor: const AlwaysStoppedAnimation(
-                                Color(0xFFC6F135),
-                              ),
+                              ],
                             ),
                           ),
                         ],
@@ -344,67 +418,145 @@ class _PhaseDetailScreenState extends State<PhaseDetailScreen> {
                     const SizedBox(height: 20),
 
                     // Phase Tasks Section
-                    ActiveGlassCard(
+                    KratosGlassCard(
+                      variant: KratosSurfaceVariant.normal,
+                      borderRadius: BorderRadius.circular(20),
+                      padding: const EdgeInsets.all(24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Row(
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(
-                                    Icons.check_circle_outline,
-                                    color: Color(0xFFC6F135),
-                                    size: 18,
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 7,
+                                        height: 7,
+                                        decoration: BoxDecoration(
+                                          color: KratosTheme.electricLime,
+                                          borderRadius: BorderRadius.circular(2),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      const Text(
+                                        'PHASE CHECKLIST',
+                                        style: TextStyle(
+                                          fontFamily: 'IBM Plex Mono',
+                                          fontSize: 10,
+                                          letterSpacing: 1.6,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF686D65),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'TASKS (${_tasks.where((t) => t.status == 'completed').length}/${_tasks.length})',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.2,
-                                      fontSize: 12,
-                                    ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      const Text(
+                                        'Associated Tasks',
+                                        style: TextStyle(
+                                          fontFamily: 'Space Grotesk',
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFFF3F1E8),
+                                          letterSpacing: -0.3,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.05),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                                        ),
+                                        child: Text(
+                                          '${_tasks.where((t) => t.status == 'completed').length} / ${_tasks.length}',
+                                          style: const TextStyle(
+                                            fontFamily: 'IBM Plex Mono',
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF979C92),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                              TextButton.icon(
+                              OutlinedButton.icon(
                                 onPressed: _addNewTask,
                                 icon: const Icon(
                                   Icons.add,
-                                  size: 16,
-                                  color: Color(0xFFC6F135),
+                                  size: 14,
+                                  color: KratosTheme.electricLime,
                                 ),
                                 label: const Text(
-                                  '+ Add Task',
+                                  'ADD TASK',
                                   style: TextStyle(
-                                    color: Color(0xFFC6F135),
-                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'IBM Plex Mono',
+                                    color: KratosTheme.electricLime,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 10,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(
+                                    color: KratosTheme.electricLime.withValues(alpha: 0.35),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 16),
 
                           if (_tasks.isEmpty)
                             Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.02),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.white10),
+                                color: const Color(0xFF0F1510).withValues(alpha: 0.5),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                               ),
-                              child: const Center(
-                                child: Text(
-                                  'No tasks linked to this phase.\nTap "+ Add Task" to create one.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: 13,
-                                  ),
+                              child: Center(
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white.withValues(alpha: 0.04),
+                                        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                                      ),
+                                      child: const Icon(Icons.checklist, size: 18, color: Color(0xFF686D65)),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    const Text(
+                                      'No tasks linked to this phase.\nAdd tasks to track execution towards this milestone.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontFamily: 'Space Grotesk',
+                                        color: Color(0xFF979C92),
+                                        fontSize: 12,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             )
@@ -414,61 +566,73 @@ class _PhaseDetailScreenState extends State<PhaseDetailScreen> {
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: _tasks.length,
                               separatorBuilder: (_, index) =>
-                                  const SizedBox(height: 6),
+                                  const SizedBox(height: 8),
                               itemBuilder: (_, idx) {
                                 final task = _tasks[idx];
-                                final isDone = task.status == 'completed';
+                                final isDone = task.status == 'completed' || task.status == 'done';
 
                                 return Container(
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.03),
-                                    borderRadius: BorderRadius.circular(10),
+                                    color: const Color(0xFF0F1510).withValues(alpha: 0.76),
+                                    borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: isDone
-                                          ? const Color(0xFFC6F135)
-                                                .withValues(alpha: 0.2)
-                                          : Colors.white10,
+                                          ? KratosTheme.electricLime.withValues(alpha: 0.22)
+                                          : Colors.white.withValues(alpha: 0.08),
                                     ),
                                   ),
                                   child: ListTile(
                                     dense: true,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                                     leading: InkWell(
                                       onTap: () => _toggleTask(task),
                                       borderRadius: BorderRadius.circular(6),
-                                      child: Icon(
-                                        isDone
-                                            ? Icons.check_box
-                                            : Icons.check_box_outline_blank,
-                                        color: isDone
-                                            ? const Color(0xFFC6F135)
-                                            : Colors.white54,
-                                        size: 20,
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 180),
+                                        width: 22,
+                                        height: 22,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(6),
+                                          color: isDone
+                                              ? KratosTheme.electricLime
+                                              : Colors.white.withValues(alpha: 0.04),
+                                          border: Border.all(
+                                            color: isDone
+                                                ? KratosTheme.electricLime
+                                                : Colors.white.withValues(alpha: 0.2),
+                                            width: 1.2,
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: isDone
+                                              ? const Icon(
+                                                  Icons.check,
+                                                  size: 14,
+                                                  color: Color(0xFF10130F),
+                                                )
+                                              : null,
+                                        ),
                                       ),
                                     ),
                                     title: Text(
                                       task.title,
                                       style: TextStyle(
-                                        color: isDone
-                                            ? Colors.white54
-                                            : Colors.white,
-                                        decoration: isDone
-                                            ? TextDecoration.lineThrough
-                                            : null,
-                                        fontSize: 14,
-                                        fontWeight: isDone
-                                            ? FontWeight.normal
-                                            : FontWeight.bold,
+                                        fontFamily: 'Space Grotesk',
+                                        color: isDone ? const Color(0xFF686D65) : const Color(0xFFF3F1E8),
+                                        decoration: isDone ? TextDecoration.lineThrough : null,
+                                        decorationColor: const Color(0xFF686D65),
+                                        fontSize: 13,
+                                        fontWeight: isDone ? FontWeight.w400 : FontWeight.w500,
                                       ),
                                     ),
-                                    subtitle:
-                                        task.notes != null &&
-                                            task.notes!.isNotEmpty
+                                    subtitle: task.notes != null && task.notes!.isNotEmpty
                                         ? Text(
                                             task.notes!,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(
-                                              color: Colors.white38,
+                                              fontFamily: 'Space Grotesk',
+                                              color: Color(0xFF686D65),
                                               fontSize: 11,
                                             ),
                                           )
@@ -486,50 +650,115 @@ class _PhaseDetailScreenState extends State<PhaseDetailScreen> {
                     if (_notes.isNotEmpty ||
                         _files.isNotEmpty ||
                         _links.isNotEmpty)
-                      ActiveGlassCard(
+                      KratosGlassCard(
+                        variant: KratosSurfaceVariant.normal,
+                        borderRadius: BorderRadius.circular(20),
+                        padding: const EdgeInsets.all(24),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'PHASE ATTACHMENTS',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                letterSpacing: 1.2,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 7,
+                                  height: 7,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF00E5FF),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'PHASE ATTACHMENTS',
+                                  style: TextStyle(
+                                    fontFamily: 'IBM Plex Mono',
+                                    color: Color(0xFF686D65),
+                                    letterSpacing: 1.6,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 14),
                             Wrap(
-                              spacing: 12,
+                              spacing: 10,
                               runSpacing: 8,
                               children: [
                                 if (_notes.isNotEmpty)
-                                  Chip(
-                                    avatar: const Icon(
-                                      Icons.note_alt_outlined,
-                                      size: 16,
-                                      color: Color(0xFFC6F135),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: KratosTheme.electricLime.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: KratosTheme.electricLime.withValues(alpha: 0.3)),
                                     ),
-                                    label: Text('${_notes.length} Notes'),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.note_alt_outlined, size: 14, color: KratosTheme.electricLime),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '${_notes.length} Notes',
+                                          style: const TextStyle(
+                                            fontFamily: 'IBM Plex Mono',
+                                            fontSize: 10,
+                                            color: KratosTheme.electricLime,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 if (_files.isNotEmpty)
-                                  Chip(
-                                    avatar: const Icon(
-                                      Icons.attach_file,
-                                      size: 16,
-                                      color: Color(0xFF00E5FF),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00E5FF).withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3)),
                                     ),
-                                    label: Text('${_files.length} Files'),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.attach_file, size: 14, color: Color(0xFF00E5FF)),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '${_files.length} Files',
+                                          style: const TextStyle(
+                                            fontFamily: 'IBM Plex Mono',
+                                            fontSize: 10,
+                                            color: Color(0xFF00E5FF),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 if (_links.isNotEmpty)
-                                  Chip(
-                                    avatar: const Icon(
-                                      Icons.link,
-                                      size: 16,
-                                      color: Color(0xFFFFD700),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFD700).withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.3)),
                                     ),
-                                    label: Text('${_links.length} Links'),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.link, size: 14, color: Color(0xFFFFD700)),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '${_links.length} Links',
+                                          style: const TextStyle(
+                                            fontFamily: 'IBM Plex Mono',
+                                            fontSize: 10,
+                                            color: Color(0xFFFFD700),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                               ],
                             ),
@@ -550,29 +779,30 @@ class _PhaseDetailScreenState extends State<PhaseDetailScreen> {
     Color color;
     switch (status.toLowerCase()) {
       case 'completed':
-        color = const Color(0xFFC6F135);
+        color = KratosTheme.electricLime;
         break;
       case 'paused':
-        color = Colors.amber;
+        color = const Color(0xFFE5C07B);
         break;
       default:
-        color = Colors.cyanAccent;
+        color = const Color(0xFF00E5FF);
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Text(
         status.toUpperCase(),
         style: TextStyle(
+          fontFamily: 'IBM Plex Mono',
           color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.0,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
         ),
       ),
     );

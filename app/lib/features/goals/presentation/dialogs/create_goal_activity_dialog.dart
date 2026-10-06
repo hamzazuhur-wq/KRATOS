@@ -92,41 +92,59 @@ class _CreateGoalActivityDialogState extends State<CreateGoalActivityDialog> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFC6F135).withValues(alpha: 0.15),
+                        color: const Color(0xFF141714),
                         borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFFEEFF08).withValues(alpha: 0.35),
+                        ),
                       ),
-                      child: const Icon(Icons.repeat, color: Color(0xFFC6F135), size: 20),
+                      child: const Icon(Icons.repeat, color: Color(0xFFEEFF08), size: 18),
                     ),
                     const SizedBox(width: 12),
                     const Text(
                       'ADD ACTIVITY TO GOAL',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
+                        fontFamily: 'Space Grotesk',
+                        color: Color(0xFFF3F1E8),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
 
                 // Inherited Context
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.04),
+                    color: const Color(0xFF141714),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.link, size: 14, color: Color(0xFFC6F135)),
+                      const Icon(Icons.link, size: 13, color: Color(0xFFEEFF08)),
                       const SizedBox(width: 6),
-                      const Text('Linked to Goal: ', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                      const Text(
+                        'LINKED TO GOAL: ',
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF686D65),
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                       Expanded(
                         child: Text(
                           widget.goalContext.title,
-                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            color: Color(0xFFF3F1E8),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -138,18 +156,43 @@ class _CreateGoalActivityDialogState extends State<CreateGoalActivityDialog> {
                 // Name *
                 const Text(
                   'ACTIVITY NAME * (RECURRING / PRACTICE DRILL)',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: Color(0xFF686D65),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _nameController,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    color: Color(0xFFF3F1E8),
+                    fontSize: 14,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'e.g. 30m LeetCode practice, 5km Run, Deep Reading',
-                    hintStyle: const TextStyle(color: Colors.white24),
+                    hintStyle: const TextStyle(
+                      fontFamily: 'Inter',
+                      color: Color(0xFF686D65),
+                    ),
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.04),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    fillColor: const Color(0xFF141714),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFEEFF08)),
+                    ),
                   ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'Please enter activity name' : null,
                 ),
@@ -158,7 +201,13 @@ class _CreateGoalActivityDialogState extends State<CreateGoalActivityDialog> {
                 // Activity Category * (from Activity Categories, NOT Goal/Task)
                 const Text(
                   'ACTIVITY CATEGORY * (SETTINGS → ACTIVITY CATEGORIES)',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: Color(0xFF686D65),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 _buildActivityCategoryPicker(),
@@ -167,19 +216,46 @@ class _CreateGoalActivityDialogState extends State<CreateGoalActivityDialog> {
                 // Base XP Award per Session
                 const Text(
                   'BASE XP PER PRACTICE SESSION',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: Color(0xFF686D65),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _baseXpController,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white),
+                  style: const TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: Color(0xFFEEFF08),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                   decoration: InputDecoration(
                     suffixText: 'XP',
-                    suffixStyle: const TextStyle(color: Color(0xFFC6F135), fontWeight: FontWeight.bold),
+                    suffixStyle: const TextStyle(
+                      fontFamily: 'IBM Plex Mono',
+                      color: Color(0xFFEEFF08),
+                      fontWeight: FontWeight.bold,
+                    ),
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.04),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    fillColor: const Color(0xFF141714),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFEEFF08)),
+                    ),
                   ),
                   validator: (v) => int.tryParse(v ?? '') == null ? 'Enter valid XP' : null,
                 ),
@@ -188,7 +264,13 @@ class _CreateGoalActivityDialogState extends State<CreateGoalActivityDialog> {
                 // Skills Attribution
                 const Text(
                   'SKILLS ATTRIBUTION (OPTIONAL)',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: Color(0xFF686D65),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 _buildSkillsPicker(),
@@ -197,19 +279,44 @@ class _CreateGoalActivityDialogState extends State<CreateGoalActivityDialog> {
                 // Description
                 const Text(
                   'NOTES / PRACTICE INSTRUCTIONS',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: Color(0xFF686D65),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _descriptionController,
                   maxLines: 2,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    color: Color(0xFFF3F1E8),
+                    fontSize: 13,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Guidelines for executing this practice drill',
-                    hintStyle: const TextStyle(color: Colors.white24),
+                    hintStyle: const TextStyle(
+                      fontFamily: 'Inter',
+                      color: Color(0xFF686D65),
+                    ),
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.04),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    fillColor: const Color(0xFF141714),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFEEFF08)),
+                    ),
                   ),
                 ),
 
@@ -225,11 +332,20 @@ class _CreateGoalActivityDialogState extends State<CreateGoalActivityDialog> {
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white70,
+                          foregroundColor: const Color(0xFF979C92),
+                          side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                         ),
-                        child: const Text('Cancel'),
+                        child: const Text(
+                          'CANCEL',
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Mono',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -238,18 +354,28 @@ class _CreateGoalActivityDialogState extends State<CreateGoalActivityDialog> {
                       child: ElevatedButton(
                         onPressed: _isSaving ? null : _saveActivity,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFC6F135),
+                          backgroundColor: const Color(0xFFEEFF08),
                           foregroundColor: const Color(0xFF020302),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                         ),
                         child: _isSaving
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
+                                width: 18,
+                                height: 18,
                                 child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF020302)),
                               )
-                            : const Text('CREATE ACTIVITY', style: TextStyle(fontWeight: FontWeight.w900)),
+                            : const Text(
+                                'CREATE ACTIVITY',
+                                style: TextStyle(
+                                  fontFamily: 'IBM Plex Mono',
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.8,
+                                  color: Color(0xFF020302),
+                                ),
+                              ),
                       ),
                     ),
                   ],

@@ -21,6 +21,11 @@ import '../features/sync/data/supabase_sync_transport.dart';
 import 'app_shell.dart';
 import 'kratos_theme.dart';
 import 'kratos_theme_controller.dart';
+import '../features/preview/wave12_settings_storybook_screen.dart';
+import '../features/preview/wave10_calendar_storybook_screen.dart';
+import '../features/preview/wave13_profile_storybook_screen.dart';
+import '../features/profile/presentation/profile_screen.dart';
+import '../features/settings/presentation/settings_screen.dart';
 
 class KratosApp extends StatefulWidget {
   final AuthService? authService;
@@ -162,10 +167,68 @@ class _KratosAppState extends State<KratosApp> {
           darkTheme: KratosTheme.darkTheme,
           themeMode: controller.themeMode,
           builder: (context, child) => child ?? const SizedBox.shrink(),
-          home: StreamBuilder<AuthState>(
-        stream: _authService.authStateStream,
-        initialData: _authService.currentState,
-        builder: (context, snapshot) {
+          home: Builder(
+            builder: (context) {
+              final uri = Uri.base;
+              final previewKey = uri.queryParameters['preview'];
+              if (previewKey == 'wave10' || uri.fragment.contains('preview=wave10')) {
+                return const Wave10CalendarStorybookScreen();
+              }
+              if (previewKey == 'wave12' || uri.fragment.contains('preview=wave12')) {
+                final themeParam = uri.queryParameters['theme'];
+                if (themeParam == 'light' || themeParam == 'dark') {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    KratosThemeController.instance.setThemeMode(
+                      themeParam == 'light' ? ThemeMode.light : ThemeMode.dark,
+                    );
+                  });
+                }
+                return const Wave12SettingsStorybookScreen();
+              }
+              if (previewKey == 'settings' || uri.fragment.contains('preview=settings')) {
+                final themeParam = uri.queryParameters['theme'];
+                if (themeParam == 'light' || themeParam == 'dark') {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    KratosThemeController.instance.setThemeMode(
+                      themeParam == 'light' ? ThemeMode.light : ThemeMode.dark,
+                    );
+                  });
+                }
+                return SettingsScreen(
+                  database: _database,
+                  ownerId: 'demo-user-wave12',
+                );
+              }
+              if (previewKey == 'wave13' || uri.fragment.contains('preview=wave13')) {
+                final themeParam = uri.queryParameters['theme'];
+                if (themeParam == 'light' || themeParam == 'dark') {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    KratosThemeController.instance.setThemeMode(
+                      themeParam == 'light' ? ThemeMode.light : ThemeMode.dark,
+                    );
+                  });
+                }
+                return const Wave13ProfileStorybookScreen();
+              }
+              if (previewKey == 'profile' || uri.fragment.contains('preview=profile')) {
+                final themeParam = uri.queryParameters['theme'];
+                if (themeParam == 'light' || themeParam == 'dark') {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    KratosThemeController.instance.setThemeMode(
+                      themeParam == 'light' ? ThemeMode.light : ThemeMode.dark,
+                    );
+                  });
+                }
+                return ProfileScreen(
+                  database: _database,
+                  userId: 'demo-user-wave13',
+                  previewDialog: uri.queryParameters['dialog'],
+                );
+              }
+              return StreamBuilder<AuthState>(
+                stream: _authService.authStateStream,
+                initialData: _authService.currentState,
+                builder: (context, snapshot) {
           final state = snapshot.data;
 
           if (state is AuthAuthenticated) {
@@ -247,10 +310,13 @@ class _KratosAppState extends State<KratosApp> {
             },
           );
         },
-      ),
-    );
+      );
+    },
+  ),
+);
       },
     );
   }
 }
+
 

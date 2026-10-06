@@ -275,7 +275,6 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const KratosEnvironment(),
           StreamBuilder<HomeDashboardData>(
             initialData: widget.initialData,
             stream: _dashboardStream,

@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 
 import '../../../app/kratos_dropdown.dart';
 import '../../../app/kratos_skeleton.dart';
-import '../../../app/kratos_visuals.dart';
 import '../../../app/number_pop_in.dart';
 import '../../../data/drift/app_database.dart';
 import '../../../domain/hlc.dart';
@@ -261,7 +260,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -296,7 +295,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const KratosEnvironment(),
           StreamBuilder<ActivityDetailData?>(
             stream: _detailStream,
             builder: (context, snapshot) {
@@ -890,20 +888,29 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   }
 
   Widget _buildRecentSessionsCard() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final acidLime = isDark ? const Color(0xFFC6F135) : const Color(0xFF658F00);
+    final surfaceColor = theme.cardTheme.color ?? theme.colorScheme.surface;
+    final borderColor = theme.cardTheme.shape is RoundedRectangleBorder
+        ? (theme.cardTheme.shape as RoundedRectangleBorder).side.color
+        : theme.dividerColor;
+    final textSecondary = theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7) ?? Colors.white70;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'RECENT SESSIONS',
             style: TextStyle(
-              color: Color(0xFFC6F135),
+              color: acidLime,
               fontSize: 12,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.2,
@@ -915,11 +922,11 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
             builder: (context, snapshot) {
               final sessions = snapshot.data ?? [];
               if (sessions.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Text(
                     'No completed sessions yet. Start a focus session above to record time and earn XP.',
-                    style: TextStyle(color: Colors.white38, fontSize: 12),
+                    style: TextStyle(color: textSecondary, fontSize: 12),
                   ),
                 );
               }
@@ -929,7 +936,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: sessions.length,
                 separatorBuilder: (_, _) => Divider(
-                  color: Colors.white.withValues(alpha: 0.06),
+                  color: theme.dividerColor,
                   height: 16,
                 ),
                 itemBuilder: (context, index) {
@@ -939,13 +946,13 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFC6F135).withValues(alpha: 0.1),
+                          color: acidLime.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.check,
                           size: 14,
-                          color: Color(0xFFC6F135),
+                          color: acidLime,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -957,8 +964,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                               DateFormat.yMMMd().add_jm().format(
                                 s.startedAt.toLocal(),
                               ),
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: theme.textTheme.bodyLarge?.color ?? Colors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -966,8 +973,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                             if (s.note != null && s.note!.isNotEmpty)
                               Text(
                                 s.note!,
-                                style: const TextStyle(
-                                  color: Colors.white54,
+                                style: TextStyle(
+                                  color: textSecondary,
                                   fontSize: 11,
                                 ),
                               ),
@@ -976,8 +983,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                       ),
                       Text(
                         s.formattedDuration,
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: textSecondary,
                           fontSize: 12,
                           fontFamily: 'monospace',
                         ),
@@ -989,14 +996,13 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFC6F135)
-                              .withValues(alpha: 0.15),
+                          color: acidLime.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           '+${s.xpEarned} XP',
-                          style: const TextStyle(
-                            color: Color(0xFFC6F135),
+                          style: TextStyle(
+                            color: acidLime,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),

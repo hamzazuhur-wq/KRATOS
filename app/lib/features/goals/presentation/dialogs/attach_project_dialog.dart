@@ -78,10 +78,13 @@ class _AttachProjectDialogState extends State<AttachProjectDialog> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFC6F135).withValues(alpha: 0.15),
+                    color: const Color(0xFF141714),
                     borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFFEEFF08).withValues(alpha: 0.35),
+                    ),
                   ),
-                  child: const Icon(Icons.folder_shared_outlined, color: Color(0xFFC6F135), size: 20),
+                  child: const Icon(Icons.folder_shared_outlined, color: Color(0xFFEEFF08), size: 18),
                 ),
                 const SizedBox(width: 12),
                 const Column(
@@ -90,15 +93,20 @@ class _AttachProjectDialogState extends State<AttachProjectDialog> {
                     Text(
                       'ATTACH EXISTING PROJECT',
                       style: TextStyle(
-                        color: Colors.white,
+                        fontFamily: 'Space Grotesk',
+                        color: Color(0xFFF3F1E8),
                         fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
                       ),
                     ),
                     Text(
                       'Select an existing project to align with this Goal',
-                      style: TextStyle(color: Colors.white38, fontSize: 11),
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        color: Color(0xFF979C92),
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
@@ -110,16 +118,31 @@ class _AttachProjectDialogState extends State<AttachProjectDialog> {
             TextField(
               controller: _searchController,
               onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                color: Color(0xFFF3F1E8),
+                fontSize: 13,
+              ),
               decoration: InputDecoration(
                 hintText: 'Search projects by title...',
-                hintStyle: const TextStyle(color: Colors.white24),
-                prefixIcon: const Icon(Icons.search, color: Colors.white38, size: 18),
+                hintStyle: const TextStyle(
+                  fontFamily: 'Inter',
+                  color: Color(0xFF686D65),
+                ),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF686D65), size: 18),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.04),
+                fillColor: const Color(0xFF141714),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.white12),
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFFEEFF08)),
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               ),
@@ -132,7 +155,7 @@ class _AttachProjectDialogState extends State<AttachProjectDialog> {
                 stream: widget.database.projectsDao.allProjects(widget.ownerId).asStream(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator(color: Color(0xFFC6F135)));
+                    return const Center(child: CircularProgressIndicator(color: Color(0xFFEEFF08)));
                   }
 
                   final all = snapshot.data!;
@@ -148,12 +171,26 @@ class _AttachProjectDialogState extends State<AttachProjectDialog> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.folder_open, size: 40, color: Colors.white24),
+                          const Icon(Icons.folder_open, size: 40, color: Color(0xFF686D65)),
                           const SizedBox(height: 10),
-                          const Text('No Matching Projects Found', style: TextStyle(color: Colors.white54, fontSize: 13)),
+                          const Text(
+                            'No Matching Projects Found',
+                            style: TextStyle(
+                              fontFamily: 'Space Grotesk',
+                              color: Color(0xFFF3F1E8),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                           const SizedBox(height: 4),
-                          const Text('New projects can be created from the Projects section.',
-                              style: TextStyle(color: Colors.white24, fontSize: 11)),
+                          const Text(
+                            'New projects can be created from the Projects section.',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              color: Color(0xFF979C92),
+                              fontSize: 11,
+                            ),
+                          ),
                         ],
                       ),
                     );
@@ -173,13 +210,15 @@ class _AttachProjectDialogState extends State<AttachProjectDialog> {
                           margin: const EdgeInsets.only(bottom: 8),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? const Color(0xFFC6F135).withValues(alpha: 0.12)
-                                : Colors.white.withValues(alpha: 0.03),
-                            borderRadius: BorderRadius.circular(12),
+                                ? const Color(0xFFEEFF08).withValues(alpha: 0.1)
+                                : const Color(0xFF141714),
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: isSelected
-                                  ? const Color(0xFFC6F135)
-                                  : (isAlreadyAttached ? const Color(0xFFC6F135).withValues(alpha: 0.3) : Colors.white10),
+                                  ? const Color(0xFFEEFF08).withValues(alpha: 0.6)
+                                  : (isAlreadyAttached
+                                      ? const Color(0xFFEEFF08).withValues(alpha: 0.3)
+                                      : Colors.white.withValues(alpha: 0.06)),
                             ),
                           ),
                           child: ListTile(
@@ -187,22 +226,27 @@ class _AttachProjectDialogState extends State<AttachProjectDialog> {
                                 ? null
                                 : () => setState(() => _selectedProjectId = project.id),
                             leading: Icon(
-                              Icons.folder,
-                              color: isAlreadyAttached ? const Color(0xFFC6F135) : Colors.white60,
-                              size: 22,
+                              Icons.folder_outlined,
+                              color: isAlreadyAttached ? const Color(0xFFEEFF08) : const Color(0xFF979C92),
+                              size: 20,
                             ),
                             title: Text(
                               project.title,
                               style: TextStyle(
-                                color: isAlreadyAttached ? Colors.white54 : Colors.white,
-                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Inter',
+                                color: isAlreadyAttached ? const Color(0xFF686D65) : const Color(0xFFF3F1E8),
+                                fontWeight: FontWeight.w600,
                                 fontSize: 13,
                               ),
                             ),
                             subtitle: project.description != null
                                 ? Text(
                                     project.description!,
-                                    style: const TextStyle(color: Colors.white30, fontSize: 11),
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      color: Color(0xFF686D65),
+                                      fontSize: 11,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   )
@@ -211,15 +255,22 @@ class _AttachProjectDialogState extends State<AttachProjectDialog> {
                                 ? Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFC6F135).withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(6),
+                                      color: const Color(0xFFEEFF08).withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
-                                    child: const Text('ALREADY LINKED',
-                                        style: TextStyle(color: Color(0xFFC6F135), fontSize: 9, fontWeight: FontWeight.bold)),
+                                    child: const Text(
+                                      'ALREADY LINKED',
+                                      style: TextStyle(
+                                        fontFamily: 'IBM Plex Mono',
+                                        color: Color(0xFFEEFF08),
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                                   )
                                 : Radio<String>(
                                     value: project.id,
-                                    activeColor: const Color(0xFFC6F135),
+                                    activeColor: const Color(0xFFEEFF08),
                                   ),
                           ),
                         );
@@ -242,11 +293,20 @@ class _AttachProjectDialogState extends State<AttachProjectDialog> {
                   child: OutlinedButton(
                     onPressed: () => Navigator.of(context).pop(),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
+                      foregroundColor: const Color(0xFF979C92),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                     ),
-                    child: const Text('Cancel'),
+                    child: const Text(
+                      'CANCEL',
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Mono',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -255,18 +315,28 @@ class _AttachProjectDialogState extends State<AttachProjectDialog> {
                   child: ElevatedButton(
                     onPressed: _selectedProjectId == null || _isAttaching ? null : _attachProject,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFC6F135),
+                      backgroundColor: const Color(0xFFEEFF08),
                       foregroundColor: const Color(0xFF020302),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                     ),
                     child: _isAttaching
                         ? const SizedBox(
-                            width: 20,
-                            height: 20,
+                            width: 18,
+                            height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF020302)),
                           )
-                        : const Text('ATTACH PROJECT', style: TextStyle(fontWeight: FontWeight.w900)),
+                        : const Text(
+                            'ATTACH PROJECT',
+                            style: TextStyle(
+                              fontFamily: 'IBM Plex Mono',
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                              color: Color(0xFF020302),
+                            ),
+                          ),
                   ),
                 ),
               ],

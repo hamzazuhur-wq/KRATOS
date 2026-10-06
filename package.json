@@ -16,5 +16,8 @@
     "sqlite"
   ],
   "author": "KRATOS",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
 }

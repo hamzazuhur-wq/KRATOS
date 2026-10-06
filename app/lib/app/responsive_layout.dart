@@ -60,7 +60,7 @@ class ResponsiveScaffold extends StatelessWidget {
     if (screenType == DeviceScreenType.compact) {
       // Mobile: Bottom Navigation Bar
       return Scaffold(
-        backgroundColor: const Color(0xFF0D0D0D),
+        backgroundColor: Colors.transparent,
         body: body,
         bottomNavigationBar: NavigationBar(
           selectedIndex: selectedIndex,
@@ -73,7 +73,7 @@ class ResponsiveScaffold extends StatelessWidget {
     } else {
       // Tablet / Desktop: Navigation Rail
       return Scaffold(
-        backgroundColor: const Color(0xFF0D0D0D),
+        backgroundColor: Colors.transparent,
         body: Row(
           children: [
             NavigationRail(

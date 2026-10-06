@@ -79,7 +79,6 @@ class _LevelsDashboardScreenState extends State<LevelsDashboardScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const KratosEnvironment(),
           StreamBuilder<List<LevelsDashboardEntry>>(
             stream: _entriesStream,
             builder: (context, snapshot) {
@@ -704,3 +703,4 @@ class _ErrorState extends StatelessWidget {
     ),
   );
 }
+

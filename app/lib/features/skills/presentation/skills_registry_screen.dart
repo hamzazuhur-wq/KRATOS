@@ -234,7 +234,6 @@ class _SkillsRegistryScreenState extends State<SkillsRegistryScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const KratosEnvironment(),
           RefreshIndicator(
             onRefresh: _reload,
             child: ListView(
@@ -536,11 +535,19 @@ class _SkillSheetState extends State<_SkillSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final textColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+    final mutedColor = isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary;
+    final surfaceColor = isDark ? const Color(0xFF0D0F0D).withValues(alpha: 0.96) : KratosTheme.lightSurface;
+    final cardColor = isDark ? const Color(0xFF161816) : Colors.black.withValues(alpha: 0.04);
+    final borderColor = isDark ? Colors.white12 : Colors.black12;
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0D0F0D).withValues(alpha: 0.96),
+        color: surfaceColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: borderColor),
       ),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
@@ -558,7 +565,7 @@ class _SkillSheetState extends State<_SkillSheet> {
                 width: 44,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white24,
+                  color: isDark ? Colors.white24 : Colors.black26,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -569,18 +576,18 @@ class _SkillSheetState extends State<_SkillSheet> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFC6F135).withValues(alpha: 0.15),
+                    color: lime.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.psychology_outlined, color: Color(0xFFC6F135), size: 20),
+                  child: Icon(Icons.psychology_outlined, color: lime, size: 20),
                 ),
                 const SizedBox(width: 12),
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('NEW SKILL', style: TextStyle(color: Color(0xFFC6F135), fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1.5)),
-                    SizedBox(height: 2),
-                    Text('Attribution capability in KRATOS', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                    Text('NEW SKILL', style: TextStyle(fontFamily: 'Space Grotesk', color: lime, fontWeight: FontWeight.w700, fontSize: 13, letterSpacing: 1.5)),
+                    const SizedBox(height: 2),
+                    Text('Attribution capability in KRATOS', style: TextStyle(fontFamily: 'Inter', color: mutedColor, fontSize: 11)),
                   ],
                 ),
               ],
@@ -589,30 +596,30 @@ class _SkillSheetState extends State<_SkillSheet> {
             TextField(
               controller: _name,
               autofocus: true,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(fontFamily: 'Inter', color: textColor, fontSize: 14),
               decoration: InputDecoration(
                 labelText: 'Skill Name *',
-                labelStyle: const TextStyle(color: Colors.white54),
+                labelStyle: TextStyle(fontFamily: 'IBM Plex Mono', color: mutedColor),
                 filled: true,
-                fillColor: const Color(0xFF161816),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white10)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white10)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFC6F135))),
+                fillColor: cardColor,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: lime)),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _description,
               maxLines: 2,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              style: TextStyle(fontFamily: 'Inter', color: textColor, fontSize: 13),
               decoration: InputDecoration(
                 labelText: 'Description (optional)',
-                labelStyle: const TextStyle(color: Colors.white54),
+                labelStyle: TextStyle(fontFamily: 'IBM Plex Mono', color: mutedColor),
                 filled: true,
-                fillColor: const Color(0xFF161816),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white10)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white10)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFC6F135))),
+                fillColor: cardColor,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: lime)),
               ),
             ),
             const SizedBox(height: 14),
@@ -642,7 +649,7 @@ class _SkillSheetState extends State<_SkillSheet> {
                 const SizedBox(width: 8),
                 IconButton(
                   tooltip: 'Create New Group',
-                  icon: const Icon(Icons.add_circle_outline, color: Color(0xFFC6F135)),
+                  icon: Icon(Icons.add_circle_outline, color: lime),
                   onPressed: () async {
                     final val = await KratosTextPrompt.show(
                       context,
@@ -662,18 +669,18 @@ class _SkillSheetState extends State<_SkillSheet> {
             ),
             if (_newGroup != null) ...[
               const SizedBox(height: 6),
-              Text('Creating with new group: "$_newGroup"', style: const TextStyle(color: Color(0xFFC6F135), fontSize: 11)),
+              Text('Creating with new group: "$_newGroup"', style: TextStyle(fontFamily: 'IBM Plex Mono', color: lime, fontSize: 11)),
             ],
             const SizedBox(height: 14),
-            const Text('MASTERY LEVEL', style: TextStyle(color: Colors.white54, fontSize: 10, letterSpacing: 1.3, fontWeight: FontWeight.bold)),
+            Text('MASTERY LEVEL', style: TextStyle(fontFamily: 'IBM Plex Mono', color: mutedColor, fontSize: 10, letterSpacing: 1.3, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             SegmentedButton<int>(
               style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.resolveWith<Color>(
-                  (states) => states.contains(WidgetState.selected) ? const Color(0xFFC6F135) : const Color(0xFF161816),
+                  (states) => states.contains(WidgetState.selected) ? lime : cardColor,
                 ),
                 foregroundColor: WidgetStateProperty.resolveWith<Color>(
-                  (states) => states.contains(WidgetState.selected) ? Colors.black : Colors.white70,
+                  (states) => states.contains(WidgetState.selected) ? (isDark ? Colors.black : Colors.white) : textColor,
                 ),
               ),
               segments: [
@@ -686,7 +693,7 @@ class _SkillSheetState extends State<_SkillSheet> {
             ),
             if (widget.lifeAreas.isNotEmpty) ...[
               const SizedBox(height: 14),
-              const Text('CONNECT TO LIFE AREAS', style: TextStyle(color: Colors.white54, fontSize: 10, letterSpacing: 1.3, fontWeight: FontWeight.bold)),
+              Text('CONNECT TO LIFE AREAS', style: TextStyle(fontFamily: 'IBM Plex Mono', color: mutedColor, fontSize: 10, letterSpacing: 1.3, fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
               Wrap(
                 spacing: 6,
@@ -694,12 +701,12 @@ class _SkillSheetState extends State<_SkillSheet> {
                 children: widget.lifeAreas.map((area) {
                   final isSelected = _lifeAreaIds.contains(area.id);
                   return FilterChip(
-                    label: Text(area.name, style: TextStyle(color: isSelected ? Colors.black : Colors.white70, fontSize: 11.5, fontWeight: FontWeight.w600)),
+                    label: Text(area.name, style: TextStyle(fontFamily: 'Inter', color: isSelected ? (isDark ? Colors.black : Colors.white) : textColor, fontSize: 11.5, fontWeight: FontWeight.w600)),
                     selected: isSelected,
-                    selectedColor: const Color(0xFFC6F135),
-                    backgroundColor: const Color(0xFF161816),
-                    checkmarkColor: Colors.black,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: isSelected ? const Color(0xFFC6F135) : Colors.white10)),
+                    selectedColor: lime,
+                    backgroundColor: cardColor,
+                    checkmarkColor: isDark ? Colors.black : Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: isSelected ? lime : borderColor)),
                     onSelected: (sel) {
                       setState(() {
                         if (sel) {
@@ -734,12 +741,12 @@ class _SkillSheetState extends State<_SkillSheet> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFC6F135),
-                  foregroundColor: const Color(0xFF020302),
+                  backgroundColor: lime,
+                  foregroundColor: isDark ? const Color(0xFF020302) : Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 0,
                 ),
-                child: const Text('CREATE SKILL', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1.2)),
+                child: const Text('CREATE SKILL', style: TextStyle(fontFamily: 'IBM Plex Mono', fontWeight: FontWeight.w700, fontSize: 13, letterSpacing: 1.2)),
               ),
             ),
           ],
@@ -915,4 +922,5 @@ class _ErrorState extends StatelessWidget {
     ),
   );
 }
+
 

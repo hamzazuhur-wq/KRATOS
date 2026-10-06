@@ -97,50 +97,57 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'PROJECTS',
-              style: TextStyle(
-                color: Color(0xFFC6F135),
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2.0,
-                fontSize: 16,
+        titleSpacing: 20,
+        title: KratosSectionHeader(
+          eyebrow: 'WORKSPACES // TIMELINES',
+          title: 'Projects Command',
+          action: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: KratosTheme.electricLime.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: KratosTheme.electricLime.withValues(alpha: 0.3),
               ),
             ),
-            Text(
-              'Strategic workspaces, roadmap timelines & execution',
-              style: TextStyle(
-                color: isDark ? Colors.white38 : KratosTheme.lightTextSecondary,
-                fontSize: 11,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: KratosTheme.electricLime,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Text(
+                  'ACTIVE EXECUTION',
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: KratosTheme.electricLime,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.add_circle,
-              color: Color(0xFFC6F135),
-              size: 26,
-            ),
-            tooltip: 'New Project',
-            onPressed: _navigateToNewProject,
           ),
-          const SizedBox(width: 8),
+        ),
+        actions: const [
+          SizedBox(width: 12),
         ],
       ),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const KratosEnvironment(),
           StreamBuilder<List<ProjectWithDetails>>(
             stream: _repository.watchProjects(
               widget.ownerId,
@@ -212,45 +219,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                     SliverFillRemaining(
                       hasScrollBody: false,
                       child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.folder_special_outlined,
-                              size: 48,
-                              color: Colors.white.withValues(alpha: 0.15),
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'No projects found',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'Create a project workspace to orchestrate tasks & roadmaps.',
-                              style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(height: 18),
-                            FilledButton.icon(
-                              onPressed: _navigateToNewProject,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: const Color(0xFFC6F135),
-                                foregroundColor: const Color(0xFF0D0D0D),
-                              ),
-                              icon: const Icon(Icons.add, size: 18),
-                              label: const Text(
-                                'Create New Project',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
+                        child: KratosEmptyState(
+                          icon: Icons.folder_special_outlined,
+                          title: 'NO PROJECTS FOUND',
+                          subtitle: 'Create a project workspace to orchestrate tasks & roadmaps.',
+                          actionLabel: 'Create Project',
+                          onAction: _navigateToNewProject,
                         ),
                       ),
                     )
@@ -516,7 +490,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         variant: KratosSurfaceVariant.interactive,
         borderRadius: BorderRadius.circular(14),
         interactive: true,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -525,17 +499,22 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFC6F135).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(5),
+                    color: KratosTheme.electricLime.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: KratosTheme.electricLime.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Text(
-                    romanDiff,
+                    'DIFF $romanDiff',
                     style: const TextStyle(
-                      color: Color(0xFFC6F135),
-                      fontWeight: FontWeight.w900,
-                      fontSize: 10,
+                      fontFamily: 'IBM Plex Mono',
+                      color: KratosTheme.electricLime,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      fontSize: 9,
                     ),
                   ),
                 ),
@@ -543,16 +522,17 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   const SizedBox(width: 6),
                   Flexible(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                       decoration: BoxDecoration(
-                        color: Colors.blueAccent.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(5),
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                       ),
                       child: Text(
                         item.lifeArea!.name,
                         style: const TextStyle(
-                          color: Colors.blueAccent,
-                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF979C92),
+                          fontWeight: FontWeight.w600,
                           fontSize: 9,
                         ),
                         maxLines: 1,
@@ -565,7 +545,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 _buildCardStatusBadge(p.status),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 10),
 
             // Row 2: Title
             Text(
@@ -573,13 +553,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.2,
+                fontFamily: 'Space Grotesk',
+                color: isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 10),
 
             // Row 3: Progress bar + stats
             Column(
@@ -590,36 +571,24 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   children: [
                     Text(
                       '${item.completedTaskCount}/${item.taskCount} tasks · ${item.activityCount} acts',
-                      style: TextStyle(
-                        color: isDark ? Colors.white38 : KratosTheme.lightTextSecondary,
-                        fontSize: 10,
-                      ),
-                    ),
-                    KratosAnimatedMetric(
-                      value: item.progress.round(),
-                      formatter: (v) => '${v.round()}%',
                       style: const TextStyle(
-                        color: Color(0xFFC6F135),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
+                        fontFamily: 'IBM Plex Mono',
+                        color: Color(0xFF686D65),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: KratosProgressAnimation(
-                    value: (item.progress / 100.0).clamp(0.0, 1.0),
-                    builder: (context, animatedVal) => LinearProgressIndicator(
-                      value: animatedVal,
-                      minHeight: 3,
-                      backgroundColor: isDark ? Colors.white10 : Colors.black12,
-                      valueColor: const AlwaysStoppedAnimation(
-                        Color(0xFFC6F135),
-                      ),
-                    ),
-                  ),
+                const SizedBox(height: 6),
+                KratosProgressBar(
+                  value: (item.progress / 100.0).clamp(0.0, 1.0),
+                  label: 'PROGRESS',
+                  showPercentage: true,
+                  height: 4,
+                  fillColor: p.status.toLowerCase() == 'completed'
+                      ? KratosTheme.electricLime
+                      : const Color(0xFF00E5FF),
                 ),
               ],
             ),
@@ -633,28 +602,30 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     Color c;
     switch (status.toLowerCase()) {
       case 'completed':
-        c = const Color(0xFFC6F135);
+        c = KratosTheme.electricLime;
         break;
       case 'paused':
-        c = Colors.amber;
+        c = const Color(0xFFE5C07B);
         break;
       default:
-        c = Colors.cyanAccent;
+        c = const Color(0xFF00E5FF);
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
       decoration: BoxDecoration(
         color: c.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: c.withValues(alpha: 0.35)),
       ),
       child: Text(
         status.toUpperCase(),
         style: TextStyle(
+          fontFamily: 'IBM Plex Mono',
           color: c,
           fontSize: 9,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
         ),
       ),
     );

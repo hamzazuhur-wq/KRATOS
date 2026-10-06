@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../app/kratos_motion.dart';
 
-import '../../../app/kratos_visuals.dart';
 import '../../../data/drift/app_database.dart';
 import '../data/ideas_repository.dart';
 import '../domain/idea_models.dart';
@@ -122,11 +121,10 @@ class _IdeasDashboardScreenState extends State<IdeasDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Colors.transparent,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const KratosEnvironment(),
           CustomScrollView(
             slivers: [
               // Header

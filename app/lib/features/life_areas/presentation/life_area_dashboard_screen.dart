@@ -502,7 +502,7 @@ class _LifeAreaDashboardScreenState extends State<LifeAreaDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -530,7 +530,6 @@ class _LifeAreaDashboardScreenState extends State<LifeAreaDashboardScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const KratosEnvironment(),
           FutureBuilder<_DashboardSnapshot>(
             future: _snapshotFuture,
             builder: (context, snapshot) {

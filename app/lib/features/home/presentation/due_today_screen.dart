@@ -55,7 +55,7 @@ class _DueTodayScreenState extends State<DueTodayScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('"${item.title}" completed.'),
-            backgroundColor: const Color(0xFF141714),
+            
           ),
         );
       }
@@ -82,7 +82,7 @@ class _DueTodayScreenState extends State<DueTodayScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Focus timer started.'),
-        backgroundColor: Color(0xFF141714),
+        
       ),
     );
   }
@@ -283,8 +283,8 @@ class _Metric extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white54,
+          style: TextStyle(
+            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7) ?? Colors.white54,
             fontSize: 10,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.2,
@@ -395,8 +395,8 @@ class _DueCard extends StatelessWidget {
                           item.title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white,
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
@@ -404,8 +404,8 @@ class _DueCard extends StatelessWidget {
                         const SizedBox(height: 3),
                         Text(
                           subtitleParts.join(' • '),
-                          style: const TextStyle(
-                            color: Colors.white54,
+                          style: TextStyle(
+                            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7) ?? Colors.white54,
                             fontSize: 11,
                           ),
                         ),
@@ -468,8 +468,8 @@ class _MessageState extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -478,7 +478,7 @@ class _MessageState extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white54, fontSize: 12),
+            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7) ?? Colors.white54, fontSize: 12),
           ),
         ],
       ),

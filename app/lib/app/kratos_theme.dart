@@ -49,13 +49,14 @@ class KratosTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: deepBlack,
+      scaffoldBackgroundColor: Colors.transparent,
       primaryColor: electricLime,
       colorScheme: const ColorScheme.dark(
         primary: electricLime,
         secondary: classicAcidLime,
         surface: Color(0xFF0D100E),
       ),
+      canvasColor: Colors.transparent,
       fontFamily: 'Roboto',
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -127,6 +128,37 @@ class KratosTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           side: BorderSide(color: Color(0x26FFFFFF), width: 1.0),
+        ),
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: volcanic,
+        headerBackgroundColor: volcanicGreen,
+        headerForegroundColor: Colors.white,
+        dayForegroundColor: const WidgetStatePropertyAll(Colors.white),
+        todayForegroundColor: const WidgetStatePropertyAll(acidLime),
+        todayBackgroundColor: WidgetStatePropertyAll(acidLime.withValues(alpha: 0.1)),
+        yearForegroundColor: const WidgetStatePropertyAll(Colors.white70),
+        cancelButtonStyle: TextButton.styleFrom(foregroundColor: Colors.white70),
+        confirmButtonStyle: TextButton.styleFrom(foregroundColor: acidLime),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0x26FFFFFF), width: 1.0),
+        ),
+      ),
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: volcanic,
+        hourMinuteTextColor: Colors.white,
+        hourMinuteColor: volcanicGreen,
+        dayPeriodTextColor: Colors.white,
+        dayPeriodColor: volcanicGreen,
+        dialHandColor: acidLime,
+        dialBackgroundColor: volcanicGreen,
+        dialTextColor: Colors.white,
+        cancelButtonStyle: TextButton.styleFrom(foregroundColor: Colors.white70),
+        confirmButtonStyle: TextButton.styleFrom(foregroundColor: acidLime),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0x26FFFFFF), width: 1.0),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -269,9 +301,9 @@ class KratosTheme {
   }
 
   // Light Mode Tokens (Sophisticated Architectural Ceramic)
-  static const Color lightBackground = Color(0xFFF7F8FA);
-  static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightSurfaceGlass = Color(0xF7FFFFFF);
+  static const Color lightBackground = Color(0xFFF7F6F2);
+  static const Color lightSurface = Color(0xFFFAFAF7);
+  static const Color lightSurfaceGlass = Color(0xF4F4F3EF);
   static const Color lightBorderGlass = Color(0x1F0F172A);
   static const Color lightTextPrimary = Color(0xFF0F1115);
   static const Color lightTextSecondary = Color(0xFF5A606A);
@@ -283,13 +315,14 @@ class KratosTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      scaffoldBackgroundColor: lightBackground,
+      scaffoldBackgroundColor: Colors.transparent,
       primaryColor: lightAcidLime,
       colorScheme: const ColorScheme.light(
         primary: lightAcidLime,
         secondary: Color(0xFF4D7C0F),
         surface: lightSurface,
       ),
+      canvasColor: Colors.transparent,
       fontFamily: 'Roboto',
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -361,6 +394,37 @@ class KratosTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           side: BorderSide(color: lightBorderGlass, width: 1.0),
+        ),
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: Colors.white,
+        headerBackgroundColor: const Color(0xFFF7F6F2),
+        headerForegroundColor: lightTextPrimary,
+        dayForegroundColor: const WidgetStatePropertyAll(lightTextPrimary),
+        todayForegroundColor: const WidgetStatePropertyAll(lightAcidLime),
+        todayBackgroundColor: WidgetStatePropertyAll(lightAcidLime.withValues(alpha: 0.1)),
+        yearForegroundColor: const WidgetStatePropertyAll(lightTextSecondary),
+        cancelButtonStyle: TextButton.styleFrom(foregroundColor: lightTextSecondary),
+        confirmButtonStyle: TextButton.styleFrom(foregroundColor: lightAcidLime),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: lightBorderGlass, width: 1.0),
+        ),
+      ),
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: Colors.white,
+        hourMinuteTextColor: lightTextPrimary,
+        hourMinuteColor: const Color(0xFFF7F6F2),
+        dayPeriodTextColor: lightTextPrimary,
+        dayPeriodColor: const Color(0xFFF7F6F2),
+        dialHandColor: lightAcidLime,
+        dialBackgroundColor: const Color(0xFFF7F6F2),
+        dialTextColor: lightTextPrimary,
+        cancelButtonStyle: TextButton.styleFrom(foregroundColor: lightTextSecondary),
+        confirmButtonStyle: TextButton.styleFrom(foregroundColor: lightAcidLime),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: lightBorderGlass, width: 1.0),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(

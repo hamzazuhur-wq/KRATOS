@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 
 import '../../../app/kratos_skeleton.dart';
 import '../../../app/number_pop_in.dart';
-import '../../../app/kratos_visuals.dart';
 import '../../../app/kratos_motion.dart';
 import '../data/xp_analytics_dao.dart';
 
@@ -92,7 +91,6 @@ class _XpDashboardScreenState extends State<XpDashboardScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const KratosEnvironment(),
           SkeletonReveal(
             loading: _isLoading,
             skeleton: const XpDashboardSkeleton(),
@@ -418,3 +416,4 @@ class _XpSourceBreakdown extends StatelessWidget {
     );
   }
 }
+

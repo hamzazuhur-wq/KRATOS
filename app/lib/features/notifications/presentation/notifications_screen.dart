@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../../app/kratos_motion.dart';
+import '../../../app/kratos_theme.dart';
+import '../../../app/kratos_visuals.dart';
 import '../../../data/drift/app_database.dart';
 import '../../activities/data/activity_timeline_repository.dart';
 import '../../goals/presentation/goal_detail_screen.dart';
@@ -61,13 +63,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         'Device notifications are now active for deadlines, achievements, and level-ups.',
       );
       if (mounted) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Color(0xFF141714),
+          SnackBar(
+            backgroundColor: isDark ? const Color(0xFF141714) : const Color(0xFFE7ECE4),
             content: Text(
               '✅ Device system notifications enabled!',
               style: TextStyle(
-                color: Color(0xFFC6F135),
+                color: isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -119,47 +122,69 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final acidLime = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final primaryText = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+    final mutedText = isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary;
+
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0F0D),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new,
-            color: Colors.white70,
+            color: mutedText,
             size: 18,
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'NOTIFICATIONS & TIMELINE',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.2,
-            fontSize: 15,
-          ),
+        title: Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: acidLime,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'NOTIFICATIONS & TIMELINE',
+              style: TextStyle(
+                fontFamily: 'Space Grotesk',
+                color: primaryText,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+                fontSize: 15,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
             icon: _loading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Color(0xFFC6F135),
+                      color: acidLime,
                     ),
                   )
-                : const Icon(Icons.refresh, color: Colors.white70, size: 20),
+                : Icon(Icons.refresh, color: mutedText, size: 20),
             tooltip: 'Refresh Notifications & Timeline',
             onPressed: _loading ? null : _refreshAlerts,
           ),
           if (_selectedTab == 0)
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.done_all,
-                color: Color(0xFFC6F135),
+                color: acidLime,
                 size: 20,
               ),
               tooltip: 'Mark All as Read',
@@ -180,11 +205,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
           return Column(
             children: [
-              _buildTabSwitcher(unreadCount),
+              _buildTabSwitcher(unreadCount, isDark, acidLime, primaryText, mutedText),
               Expanded(
                 child: _selectedTab == 0
-                    ? _buildNotificationsTab(alerts)
-                    : _buildActivityTimelineTab(),
+                    ? _buildNotificationsTab(alerts, isDark, acidLime, primaryText, mutedText)
+                    : _buildActivityTimelineTab(isDark, acidLime, primaryText, mutedText),
               ),
             ],
           );
@@ -193,27 +218,47 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildTabSwitcher(int unreadCount) {
+  Widget _buildTabSwitcher(
+    int unreadCount,
+    bool isDark,
+    Color acidLime,
+    Color primaryText,
+    Color mutedText,
+  ) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D0F0D),
+        color: isDark ? const Color(0x99050505) : const Color(0xF0E7ECE4),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.10) : KratosTheme.lightBorderGlass,
+        ),
       ),
       child: Row(
         children: [
           Expanded(
             child: GestureDetector(
               onTap: () => setState(() => _selectedTab = 0),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
-                  color: _selectedTab == 0 ? const Color(0xFF1E241E) : Colors.transparent,
+                  color: _selectedTab == 0
+                      ? (isDark ? const Color(0xFF161F16) : Colors.white)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                   border: _selectedTab == 0
-                      ? Border.all(color: const Color(0xFFC6F135).withValues(alpha: 0.3))
+                      ? Border.all(color: acidLime.withValues(alpha: isDark ? 0.35 : 0.45))
+                      : null,
+                  boxShadow: _selectedTab == 0
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          )
+                        ]
                       : null,
                 ),
                 child: Row(
@@ -222,10 +267,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     Text(
                       'NOTIFICATIONS',
                       style: TextStyle(
+                        fontFamily: 'IBM Plex Mono',
                         fontSize: 11,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                         letterSpacing: 0.8,
-                        color: _selectedTab == 0 ? const Color(0xFFC6F135) : Colors.white60,
+                        color: _selectedTab == 0 ? acidLime : mutedText,
                       ),
                     ),
                     if (unreadCount > 0) ...[
@@ -239,6 +285,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         child: Text(
                           '$unreadCount',
                           style: const TextStyle(
+                            fontFamily: 'IBM Plex Mono',
                             color: Colors.white,
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
@@ -255,23 +302,36 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           Expanded(
             child: GestureDetector(
               onTap: () => setState(() => _selectedTab = 1),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
-                  color: _selectedTab == 1 ? const Color(0xFF1E241E) : Colors.transparent,
+                  color: _selectedTab == 1
+                      ? (isDark ? const Color(0xFF161F16) : Colors.white)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                   border: _selectedTab == 1
-                      ? Border.all(color: const Color(0xFFC6F135).withValues(alpha: 0.3))
+                      ? Border.all(color: acidLime.withValues(alpha: isDark ? 0.35 : 0.45))
+                      : null,
+                  boxShadow: _selectedTab == 1
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          )
+                        ]
                       : null,
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   'ACTIVITY TIMELINE',
                   style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
                     fontSize: 11,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
-                    color: _selectedTab == 1 ? const Color(0xFFC6F135) : Colors.white60,
+                    color: _selectedTab == 1 ? acidLime : mutedText,
                   ),
                 ),
               ),
@@ -282,7 +342,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildNotificationsTab(List<KratosNotification> alerts) {
+  Widget _buildNotificationsTab(
+    List<KratosNotification> alerts,
+    bool isDark,
+    Color acidLime,
+    Color primaryText,
+    Color mutedText,
+  ) {
     final overdueCount = alerts.where((a) => a.kind == NotificationKind.overdue).length;
     final todayCount = alerts.where((a) => a.kind == NotificationKind.endingToday).length;
     final pausedCount = alerts.where((a) => a.kind == NotificationKind.stalePaused).length;
@@ -307,127 +373,148 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     return Column(
       children: [
-        _buildSystemPermissionBanner(),
-        _buildMetricsSummary(overdueCount, todayCount, pausedCount, eventsCount),
-        _buildFilterChips(alerts.length, overdueCount, todayCount, pausedCount, eventsCount),
+        _buildSystemPermissionBanner(isDark, acidLime, primaryText, mutedText),
+        _buildMetricsSummary(overdueCount, todayCount, pausedCount, eventsCount, isDark, primaryText, mutedText),
+        _buildFilterChips(alerts.length, overdueCount, todayCount, pausedCount, eventsCount, isDark, acidLime, mutedText),
         Expanded(
           child: filtered.isEmpty
-              ? _buildEmptyState()
+              ? _buildEmptyState(isDark, acidLime, primaryText, mutedText)
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                   itemCount: filtered.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (ctx, idx) => _buildAlertCard(filtered[idx]),
+                  itemBuilder: (ctx, idx) => _buildAlertCard(filtered[idx], isDark, acidLime, primaryText, mutedText),
                 ),
         ),
       ],
     );
   }
 
-  Widget _buildSystemPermissionBanner() {
+  Widget _buildSystemPermissionBanner(
+    bool isDark,
+    Color acidLime,
+    Color primaryText,
+    Color mutedText,
+  ) {
     final isGranted = _systemPermission == 'granted';
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 6, 16, 6),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0D0F0D),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isGranted ? const Color(0xFFC6F135).withValues(alpha: 0.3) : Colors.white12,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isGranted ? Icons.check_circle_outline : Icons.notifications_active_outlined,
-            color: isGranted ? const Color(0xFFC6F135) : const Color(0xFFFF9500),
-            size: 20,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isGranted ? 'Device Notifications Active' : 'Enable Device System Alerts',
-                  style: TextStyle(
-                    color: isGranted ? const Color(0xFFC6F135) : Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+      child: KratosGlassCard(
+        variant: isGranted ? KratosSurfaceVariant.normal : KratosSurfaceVariant.elevated,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          children: [
+            Icon(
+              isGranted ? Icons.check_circle_outline : Icons.notifications_active_outlined,
+              color: isGranted ? acidLime : const Color(0xFFFF9500),
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isGranted ? 'Device Notifications Active' : 'Enable Device System Alerts',
+                    style: TextStyle(
+                      fontFamily: 'Space Grotesk',
+                      color: isGranted ? acidLime : primaryText,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-                Text(
-                  isGranted
-                      ? 'System popups will alert you on Windows / Android.'
-                      : 'Get native alerts when deadlines approach or milestones occur.',
-                  style: const TextStyle(color: Colors.white54, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-          if (!isGranted)
-            ElevatedButton(
-              onPressed: _requestSystemPermission,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC6F135),
-                foregroundColor: const Color(0xFF020302),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text(
-                'Enable',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+                  const SizedBox(height: 2),
+                  Text(
+                    isGranted
+                        ? 'System popups will alert you on Windows / Android.'
+                        : 'Get native alerts when deadlines approach or milestones occur.',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      color: mutedText,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
               ),
             ),
-        ],
+            if (!isGranted)
+              ElevatedButton(
+                onPressed: _requestSystemPermission,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: acidLime,
+                  foregroundColor: isDark ? const Color(0xFF020302) : Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text(
+                  'Enable',
+                  style: TextStyle(fontFamily: 'IBM Plex Mono', fontSize: 11, fontWeight: FontWeight.w700),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildMetricsSummary(int overdue, int today, int paused, int events) {
+  Widget _buildMetricsSummary(
+    int overdue,
+    int today,
+    int paused,
+    int events,
+    bool isDark,
+    Color primaryText,
+    Color mutedText,
+  ) {
+    final dueTodayColor = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
       child: Row(
         children: [
-          _buildMetricBadge('OVERDUE', overdue, const Color(0xFFFF3B30)),
+          _buildMetricBadge('OVERDUE', overdue, const Color(0xFFFF3B30), isDark, primaryText, mutedText),
           const SizedBox(width: 8),
-          _buildMetricBadge('DUE TODAY', today, const Color(0xFFC6F135)),
+          _buildMetricBadge('DUE TODAY', today, dueTodayColor, isDark, primaryText, mutedText),
           const SizedBox(width: 8),
-          _buildMetricBadge('PAUSED', paused, const Color(0xFFFF9500)),
+          _buildMetricBadge('PAUSED', paused, const Color(0xFFFF9500), isDark, primaryText, mutedText),
           const SizedBox(width: 8),
-          _buildMetricBadge('EVENTS', events, const Color(0xFF00F0FF)),
+          _buildMetricBadge('EVENTS', events, const Color(0xFF00BCD4), isDark, primaryText, mutedText),
         ],
       ),
     );
   }
 
-  Widget _buildMetricBadge(String label, int count, Color color) {
+  Widget _buildMetricBadge(
+    String label,
+    int count,
+    Color color,
+    bool isDark,
+    Color primaryText,
+    Color mutedText,
+  ) {
     return Expanded(
-      child: Container(
+      child: KratosGlassCard(
+        variant: count > 0 ? KratosSurfaceVariant.elevated : KratosSurfaceVariant.normal,
         padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFF0D0F0D),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: count > 0 ? color.withValues(alpha: 0.3) : Colors.white10,
-          ),
-        ),
+        borderRadius: BorderRadius.circular(10),
         child: Column(
           children: [
             Text(
               '$count',
               style: TextStyle(
-                color: count > 0 ? color : Colors.white54,
+                fontFamily: 'IBM Plex Mono',
+                color: count > 0 ? color : mutedText,
                 fontSize: 16,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
-                color: count > 0 ? color.withValues(alpha: 0.8) : Colors.white38,
+                fontFamily: 'IBM Plex Mono',
+                color: count > 0 ? color.withValues(alpha: 0.85) : mutedText.withValues(alpha: 0.7),
                 fontSize: 8,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.4,
@@ -439,54 +526,83 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildFilterChips(int total, int overdue, int today, int paused, int events) {
+  Widget _buildFilterChips(
+    int total,
+    int overdue,
+    int today,
+    int paused,
+    int events,
+    bool isDark,
+    Color acidLime,
+    Color mutedText,
+  ) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
-          _buildChip('all', 'All ($total)'),
+          _buildChip('all', 'All ($total)', isDark: isDark, defaultActiveColor: acidLime, mutedText: mutedText),
           const SizedBox(width: 8),
-          _buildChip('overdue', 'Overdue ($overdue)', activeColor: const Color(0xFFFF3B30)),
+          _buildChip('overdue', 'Overdue ($overdue)', activeColor: const Color(0xFFFF3B30), isDark: isDark, defaultActiveColor: acidLime, mutedText: mutedText),
           const SizedBox(width: 8),
-          _buildChip('ending_today', 'Due Today ($today)', activeColor: const Color(0xFFC6F135)),
+          _buildChip('ending_today', 'Due Today ($today)', activeColor: acidLime, isDark: isDark, defaultActiveColor: acidLime, mutedText: mutedText),
           const SizedBox(width: 8),
-          _buildChip('paused', 'Paused ($paused)', activeColor: const Color(0xFFFF9500)),
+          _buildChip('paused', 'Paused ($paused)', activeColor: const Color(0xFFFF9500), isDark: isDark, defaultActiveColor: acidLime, mutedText: mutedText),
           const SizedBox(width: 8),
-          _buildChip('event', 'Events ($events)', activeColor: const Color(0xFF00F0FF)),
+          _buildChip('event', 'Events ($events)', activeColor: const Color(0xFF00BCD4), isDark: isDark, defaultActiveColor: acidLime, mutedText: mutedText),
         ],
       ),
     );
   }
 
-  Widget _buildChip(String filterId, String label, {Color activeColor = const Color(0xFFC6F135)}) {
+  Widget _buildChip(
+    String filterId,
+    String label, {
+    Color? activeColor,
+    required bool isDark,
+    required Color defaultActiveColor,
+    required Color mutedText,
+  }) {
+    final effectiveActiveColor = activeColor ?? defaultActiveColor;
     final isSelected = _selectedFilter == filterId;
     return InkWell(
       onTap: () => setState(() => _selectedFilter = filterId),
       borderRadius: BorderRadius.circular(8),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: isSelected ? activeColor.withValues(alpha: 0.15) : const Color(0xFF0D0F0D),
+          color: isSelected
+              ? effectiveActiveColor.withValues(alpha: isDark ? 0.15 : 0.12)
+              : (isDark ? const Color(0x66050505) : const Color(0x66E7ECE4)),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? activeColor : Colors.white12,
-            width: isSelected ? 1.5 : 1.0,
+            color: isSelected
+                ? effectiveActiveColor
+                : (isDark ? Colors.white.withValues(alpha: 0.10) : KratosTheme.lightBorderGlass),
+            width: isSelected ? 1.4 : 1.0,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? activeColor : Colors.white70,
+            fontFamily: 'IBM Plex Mono',
+            color: isSelected ? effectiveActiveColor : mutedText,
             fontSize: 11,
-            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildAlertCard(KratosNotification alert) {
+  Widget _buildAlertCard(
+    KratosNotification alert,
+    bool isDark,
+    Color acidLime,
+    Color primaryText,
+    Color mutedText,
+  ) {
     Color accentColor;
     IconData iconData;
     String typeLabel;
@@ -498,7 +614,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         typeLabel = 'OVERDUE';
         break;
       case NotificationKind.endingToday:
-        accentColor = const Color(0xFFC6F135);
+        accentColor = acidLime;
         iconData = Icons.hourglass_bottom_rounded;
         typeLabel = 'DUE TODAY';
         break;
@@ -508,7 +624,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         typeLabel = 'PAUSED > 7 DAYS';
         break;
       case NotificationKind.levelPromoted:
-        accentColor = const Color(0xFF00F0FF);
+        accentColor = const Color(0xFF00BCD4);
         iconData = Icons.arrow_circle_up_rounded;
         typeLabel = 'LEVEL UP';
         break;
@@ -523,20 +639,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         typeLabel = 'STREAK';
         break;
       default:
-        accentColor = const Color(0xFFC6F135);
+        accentColor = acidLime;
         iconData = Icons.notifications_rounded;
         typeLabel = 'ALERT';
         break;
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0D0F0D),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: alert.isRead ? Colors.white10 : accentColor.withValues(alpha: 0.4),
-        ),
-      ),
+    return KratosGlassCard(
+      variant: alert.isRead ? KratosSurfaceVariant.normal : KratosSurfaceVariant.active,
+      accentColor: alert.isRead ? null : accentColor,
+      borderRadius: BorderRadius.circular(16),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Stack(
@@ -570,9 +682,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             Text(
                               typeLabel,
                               style: TextStyle(
+                                fontFamily: 'IBM Plex Mono',
                                 color: accentColor,
                                 fontSize: 9,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w700,
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -582,12 +695,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       const SizedBox(width: 8),
                       Text(
                         _formatRelativeTime(alert.timestamp),
-                        style: const TextStyle(color: Colors.white38, fontSize: 10),
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: mutedText,
+                          fontSize: 10,
+                        ),
                       ),
                       const Spacer(),
                       if (!alert.isRead)
                         IconButton(
-                          icon: const Icon(Icons.check_circle_outline, size: 16, color: Color(0xFFC6F135)),
+                          icon: Icon(Icons.check_circle_outline, size: 16, color: acidLime),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                           tooltip: 'Mark as Read',
@@ -595,7 +712,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ),
                       const SizedBox(width: 10),
                       IconButton(
-                        icon: const Icon(Icons.close, size: 16, color: Colors.white38),
+                        icon: Icon(Icons.close, size: 16, color: mutedText),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         tooltip: 'Dismiss Alert',
@@ -607,15 +724,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   Text(
                     alert.title,
                     style: TextStyle(
-                      color: Colors.white,
+                      fontFamily: 'Space Grotesk',
+                      color: primaryText,
                       fontSize: 13,
-                      fontWeight: alert.isRead ? FontWeight.w600 : FontWeight.w900,
+                      fontWeight: alert.isRead ? FontWeight.w500 : FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     alert.body,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.3),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      color: mutedText,
+                      fontSize: 12,
+                      height: 1.35,
+                    ),
                   ),
                   if (alert.targetType != null && alert.targetType!.isNotEmpty) ...[
                     const SizedBox(height: 10),
@@ -637,6 +760,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               Text(
                                 'Open ${alert.targetType!.toUpperCase()}',
                                 style: TextStyle(
+                                  fontFamily: 'IBM Plex Mono',
                                   color: accentColor,
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
@@ -663,10 +787,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   // ACTIVITY TIMELINE TAB (Phase 7)
   // ─────────────────────────────────────────────────────────────
 
-  Widget _buildActivityTimelineTab() {
+  Widget _buildActivityTimelineTab(
+    bool isDark,
+    Color acidLime,
+    Color primaryText,
+    Color mutedText,
+  ) {
     return Column(
       children: [
-        _buildTimelineFilterChips(),
+        _buildTimelineFilterChips(isDark, acidLime, mutedText),
         Expanded(
           child: StreamBuilder<List<ActivityEvent>>(
             stream: _timelineRepo.watchTimeline(
@@ -676,20 +805,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-                return const Center(
-                  child: CircularProgressIndicator(color: Color(0xFFC6F135), strokeWidth: 2),
+                return Center(
+                  child: CircularProgressIndicator(color: acidLime, strokeWidth: 2),
                 );
               }
 
               final events = snapshot.data ?? [];
               if (events.isEmpty) {
-                return _buildTimelineEmptyState();
+                return _buildTimelineEmptyState(isDark, acidLime, primaryText, mutedText);
               }
 
               return ListView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 itemCount: events.length,
-                itemBuilder: (ctx, idx) => _buildTimelineCard(events[idx], isLast: idx == events.length - 1),
+                itemBuilder: (ctx, idx) => _buildTimelineCard(
+                  events[idx],
+                  isLast: idx == events.length - 1,
+                  isDark: isDark,
+                  acidLime: acidLime,
+                  primaryText: primaryText,
+                  mutedText: mutedText,
+                ),
               );
             },
           ),
@@ -698,56 +834,81 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildTimelineFilterChips() {
+  Widget _buildTimelineFilterChips(
+    bool isDark,
+    Color acidLime,
+    Color mutedText,
+  ) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
-          _buildTimelineChip('all', 'All Events'),
+          _buildTimelineChip('all', 'All Events', isDark: isDark, defaultActiveColor: acidLime, mutedText: mutedText),
           const SizedBox(width: 8),
-          _buildTimelineChip('level_up', '⚡ Level Ups', activeColor: const Color(0xFF00F0FF)),
+          _buildTimelineChip('level_up', '⚡ Level Ups', activeColor: const Color(0xFF00BCD4), isDark: isDark, defaultActiveColor: acidLime, mutedText: mutedText),
           const SizedBox(width: 8),
-          _buildTimelineChip('goal_completed', '🎯 Goals', activeColor: const Color(0xFFBD00FF)),
+          _buildTimelineChip('goal_completed', '🎯 Goals', activeColor: const Color(0xFFBD00FF), isDark: isDark, defaultActiveColor: acidLime, mutedText: mutedText),
           const SizedBox(width: 8),
-          _buildTimelineChip('project_completed', '📦 Projects', activeColor: const Color(0xFF388BFD)),
+          _buildTimelineChip('project_completed', '📦 Projects', activeColor: const Color(0xFF388BFD), isDark: isDark, defaultActiveColor: acidLime, mutedText: mutedText),
           const SizedBox(width: 8),
-          _buildTimelineChip('streak_extended', '🔥 Streaks', activeColor: const Color(0xFFFF5E00)),
+          _buildTimelineChip('streak_extended', '🔥 Streaks', activeColor: const Color(0xFFFF5E00), isDark: isDark, defaultActiveColor: acidLime, mutedText: mutedText),
           const SizedBox(width: 8),
-          _buildTimelineChip('xp_earned', '✦ XP', activeColor: const Color(0xFFC6F135)),
+          _buildTimelineChip('xp_earned', '✦ XP', activeColor: acidLime, isDark: isDark, defaultActiveColor: acidLime, mutedText: mutedText),
         ],
       ),
     );
   }
 
-  Widget _buildTimelineChip(String filterId, String label, {Color activeColor = const Color(0xFFC6F135)}) {
+  Widget _buildTimelineChip(
+    String filterId,
+    String label, {
+    Color? activeColor,
+    required bool isDark,
+    required Color defaultActiveColor,
+    required Color mutedText,
+  }) {
+    final effectiveActiveColor = activeColor ?? defaultActiveColor;
     final isSelected = _timelineFilter == filterId;
     return InkWell(
       onTap: () => setState(() => _timelineFilter = filterId),
       borderRadius: BorderRadius.circular(8),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: isSelected ? activeColor.withValues(alpha: 0.15) : const Color(0xFF0D0F0D),
+          color: isSelected
+              ? effectiveActiveColor.withValues(alpha: isDark ? 0.15 : 0.12)
+              : (isDark ? const Color(0x66050505) : const Color(0x66E7ECE4)),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? activeColor : Colors.white12,
-            width: isSelected ? 1.5 : 1.0,
+            color: isSelected
+                ? effectiveActiveColor
+                : (isDark ? Colors.white.withValues(alpha: 0.10) : KratosTheme.lightBorderGlass),
+            width: isSelected ? 1.4 : 1.0,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? activeColor : Colors.white70,
+            fontFamily: 'IBM Plex Mono',
+            color: isSelected ? effectiveActiveColor : mutedText,
             fontSize: 11,
-            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTimelineCard(ActivityEvent event, {required bool isLast}) {
+  Widget _buildTimelineCard(
+    ActivityEvent event, {
+    required bool isLast,
+    required bool isDark,
+    required Color acidLime,
+    required Color primaryText,
+    required Color mutedText,
+  }) {
     Color accentColor;
     IconData iconData;
     String title;
@@ -760,7 +921,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     switch (event.eventType) {
       case 'level_up':
-        accentColor = const Color(0xFF00F0FF);
+        accentColor = const Color(0xFF00BCD4);
         iconData = Icons.arrow_circle_up_rounded;
         title = 'Level Up: Reached Level ${meta['to_level'] ?? 2}';
         subtitle = 'Progression threshold achieved via consistent action.';
@@ -791,7 +952,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         subtitle = 'Maintained uninterrupted daily focus.';
         break;
       case 'xp_earned':
-        accentColor = const Color(0xFFC6F135);
+        accentColor = acidLime;
         iconData = Icons.bolt_rounded;
         final pts = meta['points'] ?? 0;
         final action = meta['action'] ?? 'action';
@@ -805,7 +966,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         subtitle = 'Compensating ledger adjustment applied.';
         break;
       default:
-        accentColor = Colors.white70;
+        accentColor = mutedText;
         iconData = Icons.history_rounded;
         title = 'Activity: ${event.eventType}';
         subtitle = 'Entity: ${event.entityType}';
@@ -822,29 +983,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             child: Column(
               children: [
                 Container(
-                  width: 18,
-                  height: 18,
+                  width: 20,
+                  height: 20,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0D0F0D),
+                    color: isDark ? const Color(0xFF0D100E) : Colors.white,
                     shape: BoxShape.circle,
                     border: Border.all(color: accentColor, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: accentColor.withValues(alpha: 0.3),
+                        color: accentColor.withValues(alpha: isDark ? 0.35 : 0.20),
                         blurRadius: 6,
                         spreadRadius: 1,
                       ),
                     ],
                   ),
                   child: Center(
-                    child: Icon(iconData, size: 9, color: accentColor),
+                    child: Icon(iconData, size: 10, color: accentColor),
                   ),
                 ),
                 if (!isLast)
                   Expanded(
                     child: Container(
                       width: 2,
-                      color: Colors.white10,
+                      color: isDark ? Colors.white12 : const Color(0x1F0F172A),
                     ),
                   ),
               ],
@@ -853,58 +1014,67 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           const SizedBox(width: 8),
           // Content card
           Expanded(
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0D0F0D),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: KratosGlassCard(
+                variant: KratosSurfaceVariant.normal,
+                padding: const EdgeInsets.all(12),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white10),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: accentColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: accentColor.withValues(alpha: 0.3)),
-                        ),
-                        child: Text(
-                          event.eventType.toUpperCase().replaceAll('_', ' '),
-                          style: TextStyle(
-                            color: accentColor,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: accentColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            event.eventType.toUpperCase().replaceAll('_', ' '),
+                            style: TextStyle(
+                              fontFamily: 'IBM Plex Mono',
+                              color: accentColor,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
                           ),
                         ),
-                      ),
-                      Text(
-                        _formatRelativeTime(event.occurredAt),
-                        style: const TextStyle(color: Colors.white38, fontSize: 10),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
+                        Text(
+                          _formatRelativeTime(event.occurredAt),
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Mono',
+                            color: mutedText,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(color: Colors.white60, fontSize: 11),
-                  ),
-                ],
+                    const SizedBox(height: 6),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontFamily: 'Space Grotesk',
+                        color: primaryText,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        color: mutedText,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -913,81 +1083,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(
+    bool isDark,
+    Color acidLime,
+    Color primaryText,
+    Color mutedText,
+  ) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFFC6F135).withValues(alpha: 0.08),
-              border: Border.all(
-                color: const Color(0xFFC6F135).withValues(alpha: 0.2),
-              ),
-            ),
-            child: const Icon(
-              Icons.done_all_rounded,
-              color: Color(0xFFC6F135),
-              size: 44,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'All Clear',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.0,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'No pending alerts, overdue tasks, or stale items.',
-            style: TextStyle(color: Colors.white38, fontSize: 12),
-          ),
-        ],
+      child: KratosEmptyState(
+        icon: Icons.done_all_rounded,
+        eyebrow: 'NOTIFICATIONS / CLEAR',
+        title: 'All Clear',
+        message: 'No pending alerts, overdue tasks, or stale items.',
       ),
     );
   }
 
-  Widget _buildTimelineEmptyState() {
+  Widget _buildTimelineEmptyState(
+    bool isDark,
+    Color acidLime,
+    Color primaryText,
+    Color mutedText,
+  ) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.04),
-              border: Border.all(color: Colors.white12),
-            ),
-            child: const Icon(
-              Icons.timeline_rounded,
-              color: Colors.white38,
-              size: 44,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'No Activity Recorded Yet',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.0,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Complete tasks, log focus sessions, and earn XP to build your timeline.',
-            style: TextStyle(color: Colors.white38, fontSize: 12),
-            textAlign: TextAlign.center,
-          ),
-        ],
+      child: KratosEmptyState(
+        icon: Icons.timeline_rounded,
+        eyebrow: 'TIMELINE / IDLE',
+        title: 'No Activity Recorded Yet',
+        message: 'Complete tasks, log focus sessions, and earn XP to build your timeline.',
       ),
     );
   }

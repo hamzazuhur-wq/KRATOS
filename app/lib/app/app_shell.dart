@@ -11,6 +11,7 @@ import 'kratos_theme.dart';
 import 'number_pop_in.dart';
 import 'kratos_visuals.dart';
 import '../features/activities/presentation/activities_screen.dart';
+import '../features/calendar/presentation/calendar_screen.dart';
 import '../features/activities/presentation/activity_detail_screen.dart';
 import '../features/goals/presentation/goals_screen.dart';
 import '../features/home/data/due_today_repository.dart';
@@ -67,7 +68,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   SyncEngine? _syncEngine;
   StreamSubscription<SyncConnectionState>? _syncSubscription;
   SyncConnectionState _syncState = SyncConnectionState.offline;
-  final List<Widget?> _tabScreens = List<Widget?>.filled(6, null);
+  final List<Widget?> _tabScreens = List<Widget?>.filled(7, null);
   StreakInfo _streakInfo = StreakInfo.create(
     userId: Id(''),
     lifeAreaId: Id('overall'),
@@ -215,7 +216,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     2 => 'GOALS',
     3 => 'ACTIVITIES',
     4 => 'IDEAS',
-    5 => 'STATS',
+    5 => 'CALENDAR',
+      6 => 'STATS',
     _ => 'KRATOS',
   };
 
@@ -319,7 +321,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                                     database: widget.database,
                                     ownerId: widget.userId,
                                     activityId: id,
-                                  ),
+                                  ), settings: RouteSettings(name: '/activity/$id'),
                                 ),
                               );
                             }
@@ -337,9 +339,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     }
 
     return Stack(
-      fit: StackFit.expand,
-      children: [
-        const KratosEnvironment(),
+        fit: StackFit.expand,
+        children: [
+          const KratosEnvironment(),
         Scaffold(
           key: _mobileScaffoldKey,
           backgroundColor: Colors.transparent,
@@ -423,7 +425,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                           database: widget.database,
                           ownerId: widget.userId,
                           activityId: id,
-                        ),
+                        ), settings: RouteSettings(name: '/activity/$id'),
                       ),
                     );
                   }
@@ -501,7 +503,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                 database: widget.database,
                 userId: widget.userId,
                 streakInfo: _streakInfo,
-              ),
+              ), settings: const RouteSettings(name: '/streaks'),
             ),
           ),
         );
@@ -526,7 +528,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         page: NotificationsScreen(
           database: widget.database,
           ownerId: widget.userId,
-        ),
+        ), settings: const RouteSettings(name: '/notifications'),
       ),
     );
   }
@@ -546,7 +548,11 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         database: widget.database,
         ownerId: widget.userId,
       ),
-      _ => AnalyticsScreen(
+      5 => CalendarScreen(
+          database: widget.database,
+          ownerId: widget.userId,
+        ),
+        _ => AnalyticsScreen(
         ownerId: widget.userId,
         database: widget.database,
       ),
@@ -585,7 +591,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                       database: widget.database,
                       userId: widget.userId,
                       onSignOut: widget.onSignOut,
-                    ),
+                    ), settings: const RouteSettings(name: '/profile'),
                   ),
                 );
               },
@@ -740,7 +746,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                       page: DueTodayScreen(
                         database: widget.database,
                         ownerId: widget.userId,
-                      ),
+                      ), settings: const RouteSettings(name: '/due_today'),
                     ),
                   );
                 },
@@ -782,11 +788,19 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                 },
               ),
               _buildSidebarTile(
-                icon: Icons.analytics_outlined,
-                title: 'Stats',
-                isSelected: _currentIndex == 5,
-                onTap: () {
-                  setState(() => _currentIndex = 5);
+                icon: Icons.calendar_month_outlined,
+                  title: 'Calendar',
+                  isSelected: _currentIndex == 5,
+                  onTap: () {
+                    setState(() => _currentIndex = 5);
+                  },
+                ),
+                _buildSidebarTile(
+                  icon: Icons.analytics_outlined,
+                  title: 'Stats',
+                  isSelected: _currentIndex == 6,
+                  onTap: () {
+                    setState(() => _currentIndex = 6);
                   if (isDrawer) Navigator.of(context).pop();
                 },
               ),
@@ -801,7 +815,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                       page: LevelsDashboardScreen(
                         database: widget.database,
                         ownerId: widget.userId,
-                      ),
+                      ), settings: const RouteSettings(name: '/levels'),
                     ),
                   );
                 },
@@ -817,7 +831,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                       page: LifeAreasScreen(
                         database: widget.database,
                         ownerId: widget.userId,
-                      ),
+                      ), settings: const RouteSettings(name: '/life_areas'),
                     ),
                   );
                 },
@@ -833,7 +847,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                       page: SkillsRegistryScreen(
                         database: widget.database,
                         ownerId: widget.userId,
-                      ),
+                      ), settings: const RouteSettings(name: '/skills'),
                     ),
                   );
                 },
@@ -849,7 +863,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                       page: ProjectsScreen(
                         database: widget.database,
                         ownerId: widget.userId,
-                      ),
+                      ), settings: const RouteSettings(name: '/projects'),
                     ),
                   );
                 },
@@ -865,7 +879,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                       page: SettingsScreen(
                         database: widget.database,
                         ownerId: widget.userId,
-                      ),
+                      ), settings: const RouteSettings(name: '/settings'),
                     ),
                   );
                 },
@@ -1101,3 +1115,8 @@ class _SidebarNavTileState extends State<_SidebarNavTile> {
     );
   }
 }
+
+
+
+
+

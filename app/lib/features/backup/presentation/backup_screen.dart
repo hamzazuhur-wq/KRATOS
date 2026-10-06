@@ -1,7 +1,6 @@
 // ignore_for_file: public_member_api_docs
-// Wave 23: BackupScreen — Liquid Glass settings-style screen for Export / Import.
-//
-// Design: Dark Volcanic (#0D0D0D) + Acid Lime (#C6F135) + Liquid Glass panels.
+// Wave 23: BackupScreen — settings-style screen for Export / Import.
+// Wave 12: presentation restyled with the Settings kit (Dark master + Light).
 
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
@@ -9,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../domain/backup_service.dart';
 import '../../../data/drift/app_database.dart';
+import '../../settings/presentation/settings_kit.dart';
 
 class BackupScreen extends StatefulWidget {
   final String userId;
@@ -172,335 +172,185 @@ class _BackupScreenState extends State<BackupScreen> {
     final controller = TextEditingController();
     return showDialog<String>(
       context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: const Color(0xFF131313),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Paste Backup JSON',
-                style: TextStyle(
-                  color: Color(0xFFC6F135),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                maxLines: 8,
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
-                decoration: InputDecoration(
-                  hintText: '{ "schema_version": 1, ... }',
-                  hintStyle: const TextStyle(color: Colors.white24),
-                  filled: true,
-                  fillColor: Colors.white.withAlpha(8),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.white.withAlpha(20)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.white.withAlpha(20)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(null),
-                    child: const Text('Cancel',
-                        style: TextStyle(color: Colors.white38)),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFC6F135),
-                      foregroundColor: const Color(0xFF0D0D0D),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                    onPressed: () =>
-                        Navigator.of(ctx).pop(controller.text),
-                    child: const Text('Import',
-                        style: TextStyle(fontWeight: FontWeight.w800)),
-                  ),
-                ],
-              ),
-            ],
+      builder: (ctx) => SettingsDialog(
+        eyebrow: 'Import',
+        title: 'Paste backup JSON',
+        actions: [
+          SettingsButton(
+            label: 'Cancel',
+            expand: false,
+            compact: true,
+            variant: SettingsButtonVariant.secondary,
+            onPressed: () => Navigator.of(ctx).pop(null),
+          ),
+          SettingsButton(
+            label: 'Import',
+            expand: false,
+            compact: true,
+            onPressed: () => Navigator.of(ctx).pop(controller.text),
+          ),
+        ],
+        child: TextField(
+          controller: controller,
+          maxLines: 8,
+          style: TextStyle(
+            fontFamily: 'IBM Plex Mono',
+            color: SettingsTokens.of(ctx).text,
+            fontSize: 12,
+          ),
+          decoration: const InputDecoration(
+            hintText: '{ "schema_version": 1, ... }',
           ),
         ),
       ),
     );
   }
 
+  /// Status copy arrives prefixed with a status emoji; the banner renders a
+  /// proper icon instead, so strip the glyph for display only.
+  String _displayMessage(String raw) =>
+      raw.replaceFirst(RegExp(r'^[\u2705\u274C\u26A0\uFE0F\s]+'), '');
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Data Backup',
-          style: TextStyle(
-            color: Color(0xFFC6F135),
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        iconTheme: const IconThemeData(color: Color(0xFFC6F135)),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return SettingsPage(
+      title: 'Data Backup',
+      children: [
+        SettingsSection(
+          title: 'Export Data',
           children: [
-            _GlassCard(
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const _SectionHeader(
+                  const _CopyBlock(
                     icon: Icons.upload_rounded,
-                    label: 'Export Data',
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Download a complete JSON backup of all your life areas, goals, tasks, notes, skills, and achievements.',
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                    title: 'Export Data',
+                    body:
+                        'Download a complete JSON backup of all your life areas, goals, tasks, notes, skills, and achievements.',
                   ),
                   const SizedBox(height: 16),
-                  Row(
+                  SettingsButtonRow(
                     children: [
-                      Expanded(
-                        child: _ActionButton(
-                          label: 'Save File (.json)',
-                          icon: Icons.download_rounded,
-                          loading: _exporting,
-                          onTap: _export,
-                        ),
+                      SettingsButton(
+                        label: 'Save File (.json)',
+                        icon: Icons.download_rounded,
+                        loading: _exporting,
+                        onPressed: _export,
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _ActionButton(
-                          label: 'Copy JSON',
-                          icon: Icons.copy_rounded,
-                          loading: _exporting,
-                          onTap: _copyExportJson,
-                          outline: true,
-                        ),
+                      SettingsButton(
+                        label: 'Copy JSON',
+                        icon: Icons.copy_rounded,
+                        loading: _exporting,
+                        variant: SettingsButtonVariant.secondary,
+                        onPressed: _copyExportJson,
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            _GlassCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _SectionHeader(
-                    icon: Icons.download_rounded,
-                    label: 'Import Data',
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Restore from a KRATOS backup file. Existing data is preserved — '
-                    'only missing or older entries are updated.',
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    '⚠️ XP ledger entries are not re-imported to preserve the append-only invariant.',
-                    style: TextStyle(color: Colors.orange, fontSize: 11),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ActionButton(
-                          label: 'Select File (.json)',
-                          icon: Icons.file_open_rounded,
-                          loading: _importing,
-                          onTap: _importFromFile,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _ActionButton(
-                          label: 'Paste JSON',
-                          icon: Icons.paste_rounded,
-                          loading: _importing,
-                          onTap: _importFromText,
-                          outline: true,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            if (_statusMessage != null) ...[
-              const SizedBox(height: 16),
-              _StatusBanner(
-                message: _statusMessage!,
-                isError: _statusIsError,
-              ),
-            ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Sub-widgets
-// ---------------------------------------------------------------------------
-
-class _SectionHeader extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _SectionHeader({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: const Color(0xFFC6F135), size: 18),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFFC6F135),
-            fontWeight: FontWeight.w700,
-            fontSize: 15,
-            letterSpacing: 0.3,
-          ),
+        const SizedBox(height: 26),
+        SettingsSection(
+          title: 'Import Data',
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const _CopyBlock(
+                    icon: Icons.download_rounded,
+                    title: 'Import Data',
+                    body:
+                        'Restore from a KRATOS backup file. Existing data is preserved — '
+                        'only missing or older entries are updated.',
+                  ),
+                  const SizedBox(height: 12),
+                  const SettingsBanner(
+                    tone: SettingsTone.warning,
+                    message:
+                        'XP ledger entries are not re-imported to preserve the append-only invariant.',
+                  ),
+                  const SizedBox(height: 16),
+                  SettingsButtonRow(
+                    children: [
+                      SettingsButton(
+                        label: 'Select File (.json)',
+                        icon: Icons.file_open_rounded,
+                        loading: _importing,
+                        onPressed: _importFromFile,
+                      ),
+                      SettingsButton(
+                        label: 'Paste JSON',
+                        icon: Icons.paste_rounded,
+                        loading: _importing,
+                        variant: SettingsButtonVariant.secondary,
+                        onPressed: _importFromText,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
+        if (_statusMessage != null) ...[
+          const SizedBox(height: 20),
+          SettingsBanner(
+            message: _displayMessage(_statusMessage!),
+            tone: _statusIsError ? SettingsTone.danger : SettingsTone.success,
+          ),
+        ],
       ],
     );
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  final String label;
+class _CopyBlock extends StatelessWidget {
   final IconData icon;
-  final bool loading;
-  final VoidCallback onTap;
-  final bool outline;
-
-  const _ActionButton({
-    required this.label,
-    required this.icon,
-    required this.loading,
-    required this.onTap,
-    this.outline = false,
-  });
+  final String title;
+  final String body;
+  const _CopyBlock({required this.icon, required this.title, required this.body});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: loading ? null : onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
-        decoration: BoxDecoration(
-          color: outline
-              ? Colors.transparent
-              : (loading ? const Color(0xFFC6F135).withAlpha(80) : const Color(0xFFC6F135)),
-          borderRadius: BorderRadius.circular(14),
-          border: outline
-              ? Border.all(color: const Color(0xFFC6F135).withAlpha(120), width: 1.5)
-              : null,
-          boxShadow: (!outline && !loading)
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFC6F135).withAlpha(50),
-                    blurRadius: 16,
-                    spreadRadius: 1,
-                  )
-                ]
-              : [],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (loading)
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Color(0xFF0D0D0D)),
-              )
-            else
-              Icon(icon,
-                  size: 18,
-                  color: outline ? const Color(0xFFC6F135) : const Color(0xFF0D0D0D)),
-            const SizedBox(width: 8),
-            Text(
-              loading ? 'Working...' : label,
-              style: TextStyle(
-                color: outline ? const Color(0xFFC6F135) : const Color(0xFF0D0D0D),
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
+    final t = SettingsTokens.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SettingsIconTile(icon: icon),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontFamily: 'Space Grotesk',
+                  color: t.text,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                body,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  color: t.secondary,
+                  fontSize: 12.5,
+                  height: 1.45,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
-  }
-}
-
-class _StatusBanner extends StatelessWidget {
-  final String message;
-  final bool isError;
-  const _StatusBanner({required this.message, required this.isError});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: (isError ? Colors.red : const Color(0xFFC6F135)).withAlpha(15),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: (isError ? Colors.red : const Color(0xFFC6F135)).withAlpha(60),
-        ),
-      ),
-      child: Text(
-        message,
-        style: TextStyle(
-          color: isError ? Colors.red[300] : const Color(0xFFC6F135),
-          fontSize: 13,
-        ),
-      ),
-    );
-  }
-}
-
-class _GlassCard extends StatelessWidget {
-  final Widget child;
-  const _GlassCard({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(10),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withAlpha(20)),
-      ),
-      child: child,
+      ],
     );
   }
 }

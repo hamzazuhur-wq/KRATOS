@@ -48,22 +48,24 @@ class _LifeAreasScreenState extends State<LifeAreasScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'VISION & LONG-TERM',
+            Text(
+              'LIFE AREAS',
               style: TextStyle(
-                color: Color(0xFFC6F135),
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2,
-                fontSize: 15,
+                fontFamily: 'Space Grotesk',
+                color: isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.3,
+                fontSize: 16,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 1),
             Text(
-              'Define the direction your life is moving toward',
+              'Persistent domains of life & long-term alignment',
               style: TextStyle(
-                color: isDark ? Colors.white38 : KratosTheme.lightTextSecondary,
-                fontSize: 11,
-                fontWeight: FontWeight.normal,
+                fontFamily: 'IBM Plex Mono',
+                color: isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary,
+                fontSize: 10,
+                letterSpacing: 0.4,
               ),
             ),
           ],
@@ -71,7 +73,7 @@ class _LifeAreasScreenState extends State<LifeAreasScreen> {
         actions: [
           IconButton(
             tooltip: 'New Task',
-            icon: const Icon(Icons.add_task, color: Color(0xFFC6F135)),
+            icon: const Icon(Icons.add_task, color: KratosTheme.electricLime, size: 20),
             onPressed: () => showDialog<void>(
               context: context,
               builder: (_) => CreateTaskDialog(
@@ -82,7 +84,11 @@ class _LifeAreasScreenState extends State<LifeAreasScreen> {
           ),
           IconButton(
             tooltip: 'Domain Categories',
-            icon: const Icon(Icons.category_outlined, color: Colors.white70),
+            icon: Icon(
+              Icons.category_outlined,
+              color: isDark ? Colors.white70 : KratosTheme.lightTextSecondary,
+              size: 20,
+            ),
             onPressed: () => Navigator.of(context).push(
               KratosMaterialPageRoute<void>(
                 builder: (_) => CategoriesScreen(
@@ -98,7 +104,6 @@ class _LifeAreasScreenState extends State<LifeAreasScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const KratosEnvironment(),
           StreamBuilder<List<LifeArea>>(
             stream:
                 (widget.database.select(widget.database.lifeAreas)
@@ -134,97 +139,17 @@ class _LifeAreasScreenState extends State<LifeAreasScreen> {
               } else {
                 content = KratosPageEntrance(
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                     children: [
-                      // Hero Direction Statement
-                      KratosGlassCard(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFC6F135)
-                                      .withValues(alpha: 0.12),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.auto_awesome,
-                                  color: Color(0xFFC6F135),
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'PERSISTENT DOMAINS',
-                                      style: TextStyle(
-                                        color: Color(0xFFC6F135),
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 1.5,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'Shape your long-term focus across core life domains.',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                      KratosSectionHeader(
+                        eyebrow: 'System Domains / 01',
+                        title: 'Life Areas',
+                        description: 'Shape your long-term focus across core life domains.',
+                        trailing: KratosChip(
+                          label: '${areas.length} ACTIVE',
                         ),
                       ),
-                      const SizedBox(height: 18),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'DOMAINS OF LIFE',
-                            style: TextStyle(
-                              color: Colors.white38,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              KratosAnimatedMetric(
-                                value: areas.length,
-                                formatter: (val) => '${val.toInt()}',
-                                style: const TextStyle(
-                                  color: Color(0xFFC6F135),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              const Text(
-                                ' ACTIVE',
-                                style: TextStyle(
-                                  color: Color(0xFFC6F135),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 6),
                       KratosStaggerList(
                         children: [
                           for (final area in areas)
@@ -412,17 +337,15 @@ class _DomainCard extends StatelessWidget {
       child: KratosGlassCard(
         variant: KratosSurfaceVariant.interactive,
         interactive: true,
-        dashboardGlass: true,
-        accentColor: const Color(0xFFC6F135),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         padding: EdgeInsets.zero,
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: onOpen,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -430,18 +353,24 @@ class _DomainCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFC6F135).withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
+                          color: KratosTheme.electricLime.withValues(alpha: isDark ? 0.08 : 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: KratosTheme.electricLime.withValues(alpha: isDark ? 0.25 : 0.35),
+                            width: 1,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.visibility,
-                          color: Color(0xFFC6F135),
-                          size: 20,
+                        child: Center(
+                          child: Text(
+                            area.icon ?? '◈',
+                            style: const TextStyle(fontSize: 16),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,9 +378,11 @@ class _DomainCard extends StatelessWidget {
                             Text(
                               area.name,
                               style: TextStyle(
-                                color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
+                                fontFamily: 'Space Grotesk',
+                                color: isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary,
                                 fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.3,
                               ),
                             ),
                             if (area.description != null &&
@@ -462,9 +393,10 @@ class _DomainCard extends StatelessWidget {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: isDark ? Colors.white60 : KratosTheme.lightTextSecondary,
+                                  fontFamily: 'Inter',
+                                  color: isDark ? const Color(0xFF979C92) : KratosTheme.lightTextSecondary,
                                   fontSize: 12,
-                                  height: 1.3,
+                                  height: 1.35,
                                 ),
                               ),
                             ],
@@ -473,8 +405,9 @@ class _DomainCard extends StatelessWidget {
                       ),
                       KratosPopupMenuButton<String>(
                         icon: Icon(
-                          Icons.more_vert,
-                          color: isDark ? Colors.white38 : KratosTheme.lightTextSecondary,
+                          Icons.more_horiz,
+                          color: isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary,
+                          size: 18,
                         ),
                         onSelected: (value) {
                           if (value == 'edit') onEdit();
@@ -513,49 +446,60 @@ class _DomainCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  // Stats badges row
+                  // Manus progress & stats representation
                   FutureBuilder<(int xp, int activeGoals, int tasksCount)>(
                     future: _loadDomainStats(),
                     builder: (context, snapshot) {
                       final xp = snapshot.data?.$1 ?? 0;
                       final goals = snapshot.data?.$2 ?? 0;
                       final tasks = snapshot.data?.$3 ?? 0;
+                      final estimatedProgress = (tasks > 0 ? (goals / tasks) : (xp > 0 ? 0.65 : 0.20)).clamp(0.0, 1.0);
 
-                      return Row(
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
                                 children: [
-                                  _StatChip(
-                                    icon: Icons.bolt,
-                                    label: '$xp XP',
-                                    color: const Color(0xFFC6F135),
+                                  Text(
+                                    'ALIGNMENT',
+                                    style: TextStyle(
+                                      fontFamily: 'IBM Plex Mono',
+                                      fontSize: 10,
+                                      letterSpacing: 1.2,
+                                      color: isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
-                                  _StatChip(
-                                    icon: Icons.track_changes,
-                                    label: '$goals Goals',
-                                    color: Colors.white70,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  _StatChip(
-                                    icon: Icons.task_alt,
-                                    label: '$tasks Tasks',
-                                    color: Colors.white70,
+                                  Text(
+                                    '$xp XP',
+                                    style: const TextStyle(
+                                      fontFamily: 'IBM Plex Mono',
+                                      fontSize: 11,
+                                      color: KratosTheme.electricLime,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
+                              Text(
+                                '$goals Goals · $tasks Tasks',
+                                style: TextStyle(
+                                  fontFamily: 'IBM Plex Mono',
+                                  fontSize: 10,
+                                  color: isDark ? const Color(0xFF979C92) : KratosTheme.lightTextSecondary,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          const Icon(
-                            Icons.chevron_right,
-                            color: Color(0xFFC6F135),
-                            size: 20,
+                          const SizedBox(height: 7),
+                          KratosProgressBar(
+                            progress: estimatedProgress,
+                            height: 5,
+                            activeColor: KratosTheme.electricLime,
                           ),
                         ],
                       );
@@ -591,45 +535,6 @@ class _DomainCard extends StatelessWidget {
             ))
             .get();
     return (xp, goals.length, tasks.length);
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  const _StatChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

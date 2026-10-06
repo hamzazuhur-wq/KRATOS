@@ -8,8 +8,6 @@ import 'package:drift/drift.dart' as drift;
 import '../../../app/kratos_dropdown.dart';
 import '../../../app/kratos_motion.dart';
 import '../../../app/kratos_skeleton.dart';
-import '../../../app/kratos_theme.dart';
-import '../../../app/kratos_visuals.dart';
 import '../../../data/drift/app_database.dart';
 import 'dialogs/create_goal_dialog.dart';
 import 'goal_detail_screen.dart';
@@ -44,7 +42,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const KratosEnvironment(),
           SafeArea(
             child: Column(
               children: [
@@ -62,15 +59,21 @@ class _GoalsScreenState extends State<GoalsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'goals_new_goal_fab',
         onPressed: _openNewGoalDialog,
-        backgroundColor: const Color(0xFFC6F135),
+        backgroundColor: const Color(0xFFEEFF08),
         foregroundColor: const Color(0xFF020302),
-        elevation: 6,
-        icon: const Icon(Icons.add, weight: 700),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(999),
+        ),
+        icon: const Icon(Icons.add, size: 18, color: Color(0xFF020302)),
         label: const Text(
-          'New Goal',
+          'NEW GOAL',
           style: TextStyle(
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.5,
+            fontFamily: 'IBM Plex Mono',
+            fontWeight: FontWeight.w700,
+            fontSize: 12,
+            letterSpacing: 0.8,
+            color: Color(0xFF020302),
           ),
         ),
       ),
@@ -78,45 +81,82 @@ class _GoalsScreenState extends State<GoalsScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFC6F135).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: const Color(0xFFC6F135).withValues(alpha: 0.4),
-              ),
-            ),
-            child: const Icon(
-              Icons.track_changes,
-              color: Color(0xFFC6F135),
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'GOALS COMMAND',
+                Row(
+                  children: [
+                    Container(
+                      width: 5,
+                      height: 5,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEEFF08),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 7),
+                    const Text(
+                      'STRATEGIC INTENT // DIRECTION',
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Mono',
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.4,
+                        color: Color(0xFF686D65),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  'Goals Command',
                   style: TextStyle(
-                    color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 18,
-                    letterSpacing: 1.5,
+                    fontFamily: 'Space Grotesk',
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.4,
+                    color: Color(0xFFF3F1E8),
                   ),
                 ),
-                Text(
-                  'Hierarchical progression & life alignment',
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEEFF08).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: const Color(0xFFEEFF08).withValues(alpha: 0.28),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEEFF08),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Text(
+                  'LIVE TRACKING',
                   style: TextStyle(
-                    color: isDark ? Colors.white38 : KratosTheme.lightTextSecondary,
-                    fontSize: 11,
+                    fontFamily: 'IBM Plex Mono',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFEEFF08),
+                    letterSpacing: 0.9,
                   ),
                 ),
               ],
@@ -128,21 +168,18 @@ class _GoalsScreenState extends State<GoalsScreen> {
   }
 
   Widget _buildFiltersSection(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.02)
-            : Colors.black.withValues(alpha: 0.02),
+        color: const Color(0xFF050505).withValues(alpha: 0.65),
         border: Border(
           top: BorderSide(
-            color: isDark ? Colors.white10 : Colors.black12,
-            width: 0.5,
+            color: Colors.white.withValues(alpha: 0.07),
+            width: 0.8,
           ),
           bottom: BorderSide(
-            color: isDark ? Colors.white10 : Colors.black12,
-            width: 0.5,
+            color: Colors.white.withValues(alpha: 0.07),
+            width: 0.8,
           ),
         ),
       ),
@@ -341,28 +378,25 @@ class _GoalsScreenState extends State<GoalsScreen> {
     required VoidCallback onSelected,
     Color? badgeColor,
   }) {
-    final activeColor = badgeColor ?? const Color(0xFFC6F135);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeColor = badgeColor ?? const Color(0xFFEEFF08);
 
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: GestureDetector(
         onTap: onSelected,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
             color: isSelected
-                ? activeColor.withValues(alpha: 0.18)
-                : (isDark
-                    ? Colors.white.withValues(alpha: 0.04)
-                    : Colors.black.withValues(alpha: 0.03)),
-            borderRadius: BorderRadius.circular(20),
+                ? activeColor.withValues(alpha: 0.14)
+                : const Color(0xFF101210).withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(999),
             border: Border.all(
               color: isSelected
-                  ? activeColor
-                  : (isDark ? Colors.white12 : Colors.black12),
-              width: isSelected ? 1.2 : 0.8,
+                  ? activeColor.withValues(alpha: 0.65)
+                  : Colors.white.withValues(alpha: 0.08),
+              width: 1,
             ),
           ),
           child: Row(
@@ -370,8 +404,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
             children: [
               if (badgeColor != null) ...[
                 Container(
-                  width: 6,
-                  height: 6,
+                  width: 5,
+                  height: 5,
                   decoration: BoxDecoration(
                     color: badgeColor,
                     shape: BoxShape.circle,
@@ -382,11 +416,13 @@ class _GoalsScreenState extends State<GoalsScreen> {
               Text(
                 label,
                 style: TextStyle(
+                  fontFamily: 'IBM Plex Mono',
                   color: isSelected
-                      ? (isDark ? Colors.white : KratosTheme.lightTextPrimary)
-                      : (isDark ? Colors.white60 : KratosTheme.lightTextSecondary),
-                  fontSize: 11,
+                      ? const Color(0xFFF3F1E8)
+                      : const Color(0xFF979C92),
+                  fontSize: 10.5,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  letterSpacing: 0.5,
                 ),
               ),
             ],
@@ -511,41 +547,98 @@ class _GoalsScreenState extends State<GoalsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.04),
-              border: Border.all(color: Colors.white10),
-            ),
-            child: const Icon(
-              Icons.flag_outlined,
-              size: 40,
-              color: Colors.white24,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 20),
+      child: Center(
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 480),
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D0F0D).withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.08),
+              width: 1,
             ),
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'No Goals Match Your Filter',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF141714),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: const Color(0xFFEEFF08).withValues(alpha: 0.25),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.flag_outlined,
+                  color: Color(0xFFEEFF08),
+                  size: 26,
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'ZERO INTENT DETECTED',
+                style: TextStyle(
+                  fontFamily: 'IBM Plex Mono',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                  color: Color(0xFF686D65),
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'No Matching Goals Found',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Space Grotesk',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                  color: Color(0xFFF3F1E8),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Adjust filters or create a new goal node to begin tracking your strategic progression.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  color: Color(0xFF979C92),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: _openNewGoalDialog,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEFF08),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text(
+                    '+ CREATE FIRST GOAL',
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Mono',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: Color(0xFF020302),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          const Text(
-            'Adjust filters or create a new Goal to begin tracking.',
-            style: TextStyle(
-              color: Colors.white38,
-              fontSize: 12,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

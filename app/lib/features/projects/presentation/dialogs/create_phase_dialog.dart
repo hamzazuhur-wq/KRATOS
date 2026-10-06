@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../../../app/kratos_motion.dart';
-import '../../../../app/kratos_visuals.dart';
+import '../../../../app/kratos_theme.dart';
 import '../../data/projects_repository.dart';
 
 /// Modal dialog for adding a new Roadmap Phase to a Project.
@@ -109,22 +109,29 @@ class _CreatePhaseDialogState extends State<CreatePhaseDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final textColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+    final mutedColor = isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary;
+    final surfaceColor = isDark ? const Color(0xFF0D0F0D).withValues(alpha: 0.94) : KratosTheme.lightSurface;
+    final cardColor = isDark ? const Color(0xFF141714) : Colors.black.withValues(alpha: 0.04);
+    final borderColor = isDark ? Colors.white12 : Colors.black12;
+
     final phaseNumStr = (widget.nextSortOrder + 1).toString().padLeft(2, '0');
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        const KratosEnvironment(),
         BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: KratosModalEntrance(
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF0D0F0D).withValues(alpha: 0.94),
+                color: surfaceColor,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(28),
                 ),
-                border: Border.all(color: Colors.white12, width: 1),
+                border: Border.all(color: borderColor, width: 1),
               ),
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom + 20,
@@ -145,7 +152,7 @@ class _CreatePhaseDialogState extends State<CreatePhaseDialog> {
                         width: 44,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: Colors.white24,
+                          color: isDark ? Colors.white24 : Colors.black26,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -158,17 +165,15 @@ class _CreatePhaseDialogState extends State<CreatePhaseDialog> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFC6F135)
-                                .withValues(alpha: 0.15),
+                            color: lime.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: const Color(0xFFC6F135)
-                                  .withValues(alpha: 0.5),
+                              color: lime.withValues(alpha: 0.5),
                             ),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.alt_route,
-                            color: Color(0xFFC6F135),
+                            color: lime,
                             size: 20,
                           ),
                         ),
@@ -177,13 +182,14 @@ class _CreatePhaseDialogState extends State<CreatePhaseDialog> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'ADD ROADMAP PHASE',
                                 style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.5,
+                                  fontFamily: 'Space Grotesk',
+                                  color: textColor,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.2,
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -195,16 +201,16 @@ class _CreatePhaseDialogState extends State<CreatePhaseDialog> {
                                       vertical: 1.5,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFC6F135)
-                                          .withValues(alpha: 0.12),
+                                      color: lime.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
                                       'PHASE $phaseNumStr',
-                                      style: const TextStyle(
-                                        color: Color(0xFFC6F135),
+                                      style: TextStyle(
+                                        fontFamily: 'IBM Plex Mono',
+                                        color: lime,
                                         fontSize: 9.5,
-                                        fontWeight: FontWeight.w900,
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
                                   ),
@@ -212,8 +218,9 @@ class _CreatePhaseDialogState extends State<CreatePhaseDialog> {
                                   Expanded(
                                     child: Text(
                                       widget.projectTitle,
-                                      style: const TextStyle(
-                                        color: Colors.white54,
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        color: mutedColor,
                                         fontSize: 11,
                                       ),
                                       overflow: TextOverflow.ellipsis,
@@ -263,12 +270,13 @@ class _CreatePhaseDialogState extends State<CreatePhaseDialog> {
                     ],
 
                     // 1. Phase Name
-                    const Text(
+                    Text(
                       'PHASE NAME *',
                       style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                        fontFamily: 'IBM Plex Mono',
+                        color: mutedColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
                         letterSpacing: 1.0,
                       ),
                     ),
@@ -276,24 +284,24 @@ class _CreatePhaseDialogState extends State<CreatePhaseDialog> {
                     TextFormField(
                       controller: _nameController,
                       autofocus: true,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      style: TextStyle(fontFamily: 'Inter', color: textColor, fontSize: 14),
                       decoration: InputDecoration(
                         hintText: 'e.g. Phase $phaseNumStr: Core Architecture',
-                        hintStyle: const TextStyle(color: Colors.white24),
+                        hintStyle: TextStyle(color: mutedColor),
                         filled: true,
-                        fillColor: Colors.white.withValues(alpha: 0.04),
+                        fillColor: cardColor,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.white12),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.white12),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: Color(0xFFC6F135),
+                          borderSide: BorderSide(
+                            color: lime,
                           ),
                         ),
                       ),
@@ -319,14 +327,15 @@ class _CreatePhaseDialogState extends State<CreatePhaseDialog> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.04),
+                              color: cardColor,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.white10),
+                              border: Border.all(color: borderColor),
                             ),
                             child: Text(
                               preset,
-                              style: const TextStyle(
-                                color: Colors.white70,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                color: textColor,
                                 fontSize: 11,
                               ),
                             ),
@@ -337,12 +346,13 @@ class _CreatePhaseDialogState extends State<CreatePhaseDialog> {
                     const SizedBox(height: 18),
 
                     // 2. Phase Objectives / Deliverables
-                    const Text(
+                    Text(
                       'OBJECTIVES & DELIVERABLES (OPTIONAL)',
                       style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                        fontFamily: 'IBM Plex Mono',
+                        color: mutedColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
                         letterSpacing: 1.0,
                       ),
                     ),
@@ -350,24 +360,24 @@ class _CreatePhaseDialogState extends State<CreatePhaseDialog> {
                     TextFormField(
                       controller: _descriptionController,
                       maxLines: 3,
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      style: TextStyle(fontFamily: 'Inter', color: textColor, fontSize: 13),
                       decoration: InputDecoration(
                         hintText: 'Key milestones, deliverables, or checklist definition...',
-                        hintStyle: const TextStyle(color: Colors.white24),
+                        hintStyle: TextStyle(color: mutedColor),
                         filled: true,
-                        fillColor: Colors.white.withValues(alpha: 0.04),
+                        fillColor: cardColor,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.white12),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.white12),
+                          borderSide: BorderSide(color: borderColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: Color(0xFFC6F135),
+                          borderSide: BorderSide(
+                            color: lime,
                           ),
                         ),
                       ),
@@ -384,43 +394,45 @@ class _CreatePhaseDialogState extends State<CreatePhaseDialog> {
                                 : () => Navigator.pop(context, false),
                             style: TextButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              foregroundColor: Colors.white54,
+                              foregroundColor: mutedColor,
                             ),
                             child: const Text(
                               'CANCEL',
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                              style: TextStyle(fontFamily: 'IBM Plex Mono', fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           flex: 2,
-                          child: FilledButton(
-                            onPressed: _isSaving ? null : _submit,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFFC6F135),
-                              foregroundColor: const Color(0xFF0D0D0D),
+                          child: KratosPressable(
+                            onTap: _isSaving ? null : _submit,
+                            child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
+                              decoration: BoxDecoration(
+                                color: lime,
                                 borderRadius: BorderRadius.circular(12),
                               ),
+                              alignment: Alignment.center,
+                              child: _isSaving
+                                  ? SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: isDark ? const Color(0xFF0D0D0D) : Colors.white,
+                                      ),
+                                    )
+                                  : Text(
+                                      'ADD PHASE',
+                                      style: TextStyle(
+                                        fontFamily: 'IBM Plex Mono',
+                                        color: isDark ? const Color(0xFF0D0D0D) : Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
                             ),
-                            child: _isSaving
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Color(0xFF0D0D0D),
-                                    ),
-                                  )
-                                : const Text(
-                                    'ADD PHASE',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 1.0,
-                                    ),
-                                  ),
                           ),
                         ),
                       ],

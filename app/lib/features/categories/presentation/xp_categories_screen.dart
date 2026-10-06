@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../app/active_glass_card.dart';
 import '../../../app/kratos_dropdown.dart';
-import '../../../app/kratos_visuals.dart';
 import '../../activities/domain/activity_xp_calculator.dart';
+import '../../settings/presentation/settings_kit.dart';
 import '../../xp/domain/base_xp_config.dart';
 
 /// Settings → Categories: previews the existing XP rules without changing
@@ -44,52 +43,17 @@ class _XpCategoriesScreenState extends State<XpCategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white70),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'CATEGORIES',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2,
-            fontSize: 16,
-          ),
-        ),
-      ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const KratosEnvironment(),
-          ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-            children: [
-              const Padding(
-                padding: EdgeInsets.only(left: 4, bottom: 12),
-                child: Text(
-                  'XP RULES',
-                  style: TextStyle(
-                    color: Color(0xFFC6F135),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.4,
-                  ),
-                ),
-              ),
-              for (final source in _sources) _ruleCard(source),
-            ],
-          ),
-        ],
-      ),
+    return SettingsPage(
+      title: 'Categories',
+      children: [
+        const SettingsSectionHeader(title: 'XP Rules'),
+        for (final source in _sources) _ruleCard(source),
+      ],
     );
   }
 
   Widget _ruleCard(BaseXpSource source) {
+    final t = SettingsTokens.of(context);
     final difficulty = _difficulty[source]!;
     final isActivity = source == BaseXpSource.activity;
     final ceiling = _baseXp(source, difficulty);
@@ -103,146 +67,148 @@ class _XpCategoriesScreenState extends State<XpCategoriesScreen> {
           )
         : ceiling;
 
+    final labelStyle = TextStyle(
+      fontFamily: 'IBM Plex Mono',
+      color: t.secondary,
+      fontSize: 10.5,
+      letterSpacing: 0.8,
+      fontWeight: FontWeight.w600,
+    );
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: ActiveGlassCard(
-        borderRadius: BorderRadius.circular(18),
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _name(source),
-                    style: const TextStyle(
-                      color: Color(0xFFC6F135),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ),
-                Text(
-                  'MAX ${BaseXpConfig.maxPointsFor(source)} XP',
-                  style: const TextStyle(
-                    color: Colors.white54,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              isActivity
-                  ? 'CEILING: ROUND(30 × DIFFICULTY / 10)'
-                  : 'XP: ROUND(${BaseXpConfig.maxPointsFor(source)} × DIFFICULTY / 10)',
-              style: const TextStyle(color: Colors.white54, fontSize: 10),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Text(
-                  'DIFFICULTY',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: KratosDropdown<int>(
-                    value: difficulty,
-                    hint: 'Select difficulty',
-                    isExpanded: true,
-                    items: [
-                      for (var value = 1; value <= 10; value++)
-                        KratosDropdownItem(value: value, label: '$value / 10'),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _difficulty[source] = value);
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  child: Text(
-                    '$finalXp XP',
-                    key: ValueKey('$finalXp-$durationFactor'),
-                    style: const TextStyle(
-                      color: Color(0xFFC6F135),
-                      fontSize: 17,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (isActivity) ...[
-              const SizedBox(height: 12),
+      padding: const EdgeInsets.only(bottom: 14),
+      child: SettingsGroup(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'SESSION DURATION · MAX 720 MIN',
+                      _name(source),
                       style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Space Grotesk',
+                        color: t.accentText,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.0,
                       ),
                     ),
                   ),
-                  SizedBox(
-                    width: 138,
-                    child: KratosDropdown<int>(
-                      value: _durationMinutes,
-                      hint: 'Duration',
-                      isExpanded: true,
-                      items: [
-                        for (final minutes in _durationAnchors)
-                          KratosDropdownItem(
-                            value: minutes,
-                            label: '$minutes min',
-                          ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => _durationMinutes = value);
-                        }
-                      },
-                    ),
+                  SettingsStatusPill(
+                    label: 'Max ${BaseXpConfig.maxPointsFor(source)} XP',
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               Text(
-                'FINAL XP: ROUND($ceiling × ${(durationFactor * 100).round()}%)',
-                style: const TextStyle(color: Colors.white54, fontSize: 10),
+                isActivity
+                    ? 'CEILING: ROUND(30 × DIFFICULTY / 10)'
+                    : 'XP: ROUND(${BaseXpConfig.maxPointsFor(source)} × DIFFICULTY / 10)',
+                style: labelStyle.copyWith(color: t.muted, fontWeight: FontWeight.w500),
               ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 10,
-                runSpacing: 4,
+              const SizedBox(height: 16),
+              Row(
                 children: [
-                  for (final minutes in _durationAnchors)
-                    Text(
-                      '$minutes min · ${(ActivityXpCalculator.durationFactor(minutes) * 100).round()}%',
-                      style: const TextStyle(
-                        color: Colors.white38,
-                        fontSize: 9,
+                  Text('DIFFICULTY', style: labelStyle),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: KratosDropdown<int>(
+                      value: difficulty,
+                      hint: 'Select difficulty',
+                      isExpanded: true,
+                      items: [
+                        for (var value = 1; value <= 10; value++)
+                          KratosDropdownItem(value: value, label: '$value / 10'),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => _difficulty[source] = value);
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: Text(
+                      '$finalXp XP',
+                      key: ValueKey('$finalXp-$durationFactor'),
+                      style: TextStyle(
+                        fontFamily: 'Space Grotesk',
+                        color: t.accentText,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
+                  ),
                 ],
               ),
+              if (isActivity) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'SESSION DURATION · MAX 720 MIN',
+                        style: labelStyle,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: 138,
+                      child: KratosDropdown<int>(
+                        value: _durationMinutes,
+                        hint: 'Duration',
+                        isExpanded: true,
+                        items: [
+                          for (final minutes in _durationAnchors)
+                            KratosDropdownItem(
+                              value: minutes,
+                              label: '$minutes min',
+                            ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => _durationMinutes = value);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'FINAL XP: ROUND($ceiling × ${(durationFactor * 100).round()}%)',
+                  style: labelStyle.copyWith(color: t.text),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 4,
+                  children: [
+                    for (final minutes in _durationAnchors)
+                      Text(
+                        '$minutes min · ${(ActivityXpCalculator.durationFactor(minutes) * 100).round()}%',
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          color: minutes == _durationMinutes
+                              ? t.accentText
+                              : t.muted,
+                          fontWeight: minutes == _durationMinutes
+                              ? FontWeight.w700
+                              : FontWeight.w400,
+                          fontSize: 10,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
             ],
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

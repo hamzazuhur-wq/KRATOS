@@ -607,141 +607,683 @@ class _KratosAtmospherePainter extends CustomPainter {
 
   const _KratosAtmospherePainter({required this.isDark});
 
+  static const List<Offset> _arrow = [
+    Offset(-120, 900),
+    Offset(150, 900),
+    Offset(585, 505),
+    Offset(980, 95),
+    Offset(1260, 95),
+    Offset(585, 700),
+  ];
+
+  static Color _c(int rgb, double alpha, [double mul = 1.0]) =>
+      Color(0xFF000000 | rgb).withValues(alpha: alpha * mul);
+
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
     final rect = Offset.zero & size;
 
-    if (isDark) {
-      // 1. Deep Black Base (#020302 / #050505) with dark volcanic undertone (#260B06)
-      final baseGradient = ui.Gradient.radial(
-        Offset(size.width * 0.5, size.height * 0.15),
-        size.longestSide * 0.85,
-        [
-          const Color(0xFF070908),
-          const Color(0xFF040504),
-          KratosTheme.deepBlack,
-        ],
-        const [0.0, 0.55, 1.0],
-      );
-      canvas.drawRect(rect, Paint()..shader = baseGradient);
+    _paintBase(canvas, size, rect);
+    _paintAtmosphere(canvas, size, rect);
+    _paintArrow(canvas, size);
+    _paintVignette(canvas, size, rect);
+  }
 
-      // Subtle lower volcanic warmth (#260B06 undertone)
-      final volcanicAmbient = Paint()
+  void _ellipseGlow(
+    Canvas canvas,
+    Rect clip,
+    Offset center,
+    double rx,
+    double ry,
+    List<Color> colors,
+    List<double> stops,
+  ) {
+    canvas.save();
+    canvas.clipRect(clip);
+    canvas.translate(center.dx, center.dy);
+    canvas.scale(rx, ry);
+    canvas.drawCircle(
+      Offset.zero,
+      1.0,
+      Paint()..shader = ui.Gradient.radial(Offset.zero, 1.0, colors, stops),
+    );
+    canvas.restore();
+  }
+
+  void _paintBase(Canvas canvas, Size size, Rect rect) {
+    // linear-gradient(145deg,#030503,#080b08 52%,#050705)
+    const sinA = 0.5736; // sin(145deg)
+    const cosA = -0.8192; // cos(145deg)
+    final len = size.width * sinA + size.height * 0.8192;
+    final c = rect.center;
+    final dir = const Offset(sinA, -cosA);
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          c - dir * (len / 2),
+          c + dir * (len / 2),
+          isDark ? const [Color(0xFF030503), Color(0xFF080B08), Color(0xFF050705)] : const [Color(0xFFFFFFFF), Color(0xFFF9FAF7), Color(0xFFF1F3ED)],
+          const [0.0, 0.52, 1.0],
+        ),
+    );
+
+    // radial-gradient(ellipse 70% 55% at 78% 12%, rgba(238,255,8,.12), transparent 64%)
+    _ellipseGlow(
+      canvas,
+      rect,
+      Offset(size.width * 0.78, size.height * 0.12),
+      size.width * 0.70,
+      size.height * 0.55,
+      [isDark ? _c(0xEEFF08, .12) : _c(0xA8B800, .13), isDark ? const Color(0x00EEFF08) : const Color(0x00A8B800)],
+      const [0.0, 0.64],
+    );
+    // radial-gradient(ellipse 55% 55% at 8% 88%, rgba(98,124,27,.07), transparent 68%)
+    _ellipseGlow(
+      canvas,
+      rect,
+      Offset(size.width * 0.08, size.height * 0.88),
+      size.width * 0.55,
+      size.height * 0.55,
+      [_c(0x627C1B, isDark ? .07 : .09), const Color(0x00627C1B)],
+      const [0.0, 0.68],
+    );
+  }
+
+  void _paintAtmosphere(Canvas canvas, Size size, Rect rect) {
+    canvas.save();
+    canvas.clipRect(rect);
+    // .atmosphere: 900px circle, right:-310 top:-330
+    final topCenter = Offset(size.width - 140, 120);
+    const topR = 450.0 * 1.4142;
+    canvas.drawCircle(
+      topCenter,
+      450,
+      Paint()
         ..shader = ui.Gradient.radial(
-          Offset(size.width * 0.85, size.height * 0.88),
-          size.longestSide * 0.55,
+          topCenter,
+          topR,
           [
-            KratosTheme.volcanicRed.withValues(alpha: 0.18),
-            Colors.transparent,
+            _c(isDark ? 0xEEFF08 : 0xA8B800, isDark ? .22 : .16),
+            _c(isDark ? 0xADC419 : 0x98AA10, isDark ? .10 : .08),
+            _c(0x485E14, .035),
+            const Color(0x00485E14),
           ],
-          const [0.0, 1.0],
-        );
-      canvas.drawRect(rect, volcanicAmbient);
-
-      // 2. Subtle Technical Lattice Grid (64px interval, strokeWidth 0.5)
-      final gridPaint = Paint()
-        ..color = KratosTheme.electricLime.withValues(alpha: 0.02)
-        ..strokeWidth = 0.5;
-
-      const step = 64.0;
-      for (double x = 0; x < size.width; x += step) {
-        canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
-      }
-      for (double y = 0; y < size.height; y += step) {
-        canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
-      }
-
-      // 3. KRATOS Crystal / Star Geometric Signature (geometric, minimal, subtle)
-      final starPaint = Paint()
-        ..color = KratosTheme.electricLime.withValues(alpha: 0.14)
-        ..strokeWidth = 0.9;
-      final dotPaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.32)
-        ..style = PaintingStyle.fill;
-
-      // Coordinate anchors at 256px intervals (every 4th grid intersection)
-      for (double x = step * 2; x < size.width; x += step * 4) {
-        for (double y = step * 2; y < size.height; y += step * 4) {
-          canvas.drawLine(Offset(x - 3.0, y), Offset(x + 3.0, y), starPaint);
-          canvas.drawLine(Offset(x, y - 3.0), Offset(x, y + 3.0), starPaint);
-          canvas.drawCircle(Offset(x, y), 0.7, dotPaint);
-        }
-      }
-
-      // 4. Subtle Vignette to keep viewport center calm, focused, and high-contrast
-      final vignetteRadius = size.longestSide * 0.80;
-      final vignettePaint = Paint()
+          const [0.0, 0.23, 0.48, 0.72],
+        ),
+    );
+    // .atmosphere-bottom: 680px circle, left:-330 bottom:-350
+    final botCenter = Offset(10, size.height + 10);
+    const botR = 340.0 * 1.4142;
+    canvas.drawCircle(
+      botCenter,
+      340,
+      Paint()
         ..shader = ui.Gradient.radial(
-          Offset(size.width * 0.5, size.height * 0.45),
-          vignetteRadius,
+          botCenter,
+          botR,
           [
-            Colors.transparent,
-            Colors.black.withValues(alpha: 0.22),
-            Colors.black.withValues(alpha: 0.55),
+            _c(0x97B11D, isDark ? .12 : .10),
+            _c(0x475F14, .045),
+            const Color(0x00475F14),
           ],
-          const [0.45, 0.78, 1.0],
-        );
-      canvas.drawRect(rect, vignettePaint);
-    } else {
-      // Light Mode: Sophisticated Architectural Ceramic Canvas
-      final lightGradient = ui.Gradient.linear(
-        const Offset(0, 0),
-        Offset(0, size.height),
-        [
-          const Color(0xFFF9FAFB),
-          const Color(0xFFF3F4F6),
-          const Color(0xFFE5E7EB),
-        ],
-        const [0.0, 0.45, 1.0],
-      );
-      canvas.drawRect(rect, Paint()..shader = lightGradient);
+          const [0.0, 0.40, 0.72],
+        ),
+    );
+    canvas.restore();
+  }
 
-      // Subtle top-center ambient accent glow
-      final ambientGlow = Paint()
-        ..shader = ui.Gradient.radial(
-          Offset(size.width * 0.5, 0),
-          size.width * 0.65,
-          [
-            KratosTheme.lightAcidLime.withValues(alpha: 0.05),
-            Colors.transparent,
-          ],
-          const [0.0, 1.0],
-        );
-      canvas.drawRect(rect, ambientGlow);
+  ui.Gradient _bb(
+    Rect bb,
+    Offset from,
+    Offset to,
+    List<Color> colors,
+    List<double> stops,
+  ) {
+    return ui.Gradient.linear(
+      Offset(bb.left + bb.width * from.dx, bb.top + bb.height * from.dy),
+      Offset(bb.left + bb.width * to.dx, bb.top + bb.height * to.dy),
+      colors,
+      stops,
+    );
+  }
 
-      // Crisp Technical Lattice Grid
-      final lightGridPaint = Paint()
-        ..color = const Color(0xFF0F172A).withValues(alpha: 0.025)
-        ..strokeWidth = 0.5;
-
-      const step = 64.0;
-      for (double x = 0; x < size.width; x += step) {
-        canvas.drawLine(Offset(x, 0), Offset(x, size.height), lightGridPaint);
-      }
-      for (double y = 0; y < size.height; y += step) {
-        canvas.drawLine(Offset(0, y), Offset(size.width, y), lightGridPaint);
-      }
-
-      // Technical Crystal Anchor Points
-      final crossPaint = Paint()
-        ..color = const Color(0xFF0F172A).withValues(alpha: 0.08)
-        ..strokeWidth = 0.8;
-      final centerDotPaint = Paint()
-        ..color = const Color(0xFF4B5563).withValues(alpha: 0.16)
-        ..style = PaintingStyle.fill;
-
-      for (double x = step * 2; x < size.width; x += step * 4) {
-        for (double y = step * 2; y < size.height; y += step * 4) {
-          canvas.drawLine(Offset(x - 2.5, y), Offset(x + 2.5, y), crossPaint);
-          canvas.drawLine(Offset(x, y - 2.5), Offset(x, y + 2.5), crossPaint);
-          canvas.drawCircle(Offset(x, y), 0.6, centerDotPaint);
-        }
-      }
+  Path _poly(List<Offset> pts, {required bool close}) {
+    final p = Path()..moveTo(pts.first.dx, pts.first.dy);
+    for (final o in pts.skip(1)) {
+      p.lineTo(o.dx, o.dy);
     }
+    if (close) p.close();
+    return p;
+  }
+
+  void _paintArrow(Canvas canvas, Size size) {
+    final compact = size.width <= 760;
+    final double w;
+    final double h;
+    final double left;
+    final double top;
+    final double opacity;
+    final double wideW;
+    final double tightW;
+    if (compact) {
+      w = 820;
+      h = 620;
+      left = -310;
+      top = -120;
+      opacity = .66;
+      wideW = 64;
+      tightW = 20;
+    } else {
+      final w105 = size.width * 1.05;
+      final w80 = size.width * 0.8;
+      w = w105 < 1180 ? w105 : 1180;
+      h = w80 < 900 ? w80 : 900;
+      left = -150;
+      top = -250;
+      opacity = .88;
+      wideW = 82;
+      tightW = 25;
+    }
+
+    final arrowRect = Rect.fromLTWH(left, top, w, h);
+    canvas.save();
+    canvas.clipRect(arrowRect); // svg overflow: hidden
+    canvas.saveLayer(
+      arrowRect,
+      Paint()..color = Color.fromRGBO(255, 255, 255, opacity),
+    );
+    canvas.translate(left, top);
+    canvas.scale(w / 1200, h / 900);
+
+    final body = _poly(_arrow, close: true);
+    final bodyBox = Rect.fromLTRB(-120, 95, 1260, 900);
+
+    // arrow-glow-wide
+    canvas.drawPath(
+      body,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = wideW
+        ..color = isDark ? _c(0xEEFF08, .23, .8) : _c(0xA8B800, .20, .8)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 42),
+    );
+    // arrow-glow-tight
+    canvas.drawPath(
+      body,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = tightW
+        ..color = isDark ? _c(0xEEFF08, .34, .9) : _c(0xA8B800, .26, .9)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 13),
+    );
+    // arrow-body fill
+    canvas.drawPath(
+      body,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..shader = _bb(
+          bodyBox,
+          const Offset(0, 1),
+          const Offset(1, 0),
+          [
+            isDark ? _c(0x101704, .72) : _c(0xFFFFFF, .78),
+            isDark ? _c(0x34400A, .58) : _c(0xE2E9C6, .62),
+            _c(0xB8CA24, isDark ? .26 : .30),
+            isDark ? _c(0xEEFF08, .40) : _c(0xA8B800, .42),
+          ],
+          const [0.0, 0.34, 0.62, 1.0],
+        ),
+    );
+    // arrow-body stroke
+    canvas.drawPath(
+      body,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2
+        ..strokeJoin = StrokeJoin.round
+        ..color = isDark ? _c(0xEEFF08, .42) : _c(0xA8B800, .55),
+    );
+
+    // arrow-face-a
+    final faceA = [const Offset(150, 900), const Offset(585, 505), const Offset(585, 700)];
+    canvas.drawPath(
+      _poly(faceA, close: true),
+      Paint()
+        ..shader = _bb(
+          const Rect.fromLTRB(150, 505, 585, 900),
+          const Offset(0, 1),
+          const Offset(1, 0),
+          [
+            isDark ? _c(0x050804, .86, .72) : _c(0xDDE5C0, .80, .72),
+            _c(0x9CAC1D, .28, .72),
+            _c(0xFFFFFF, isDark ? .32 : .70, .72),
+          ],
+          const [0.0, 0.55, 1.0],
+        ),
+    );
+    // arrow-face-b
+    final faceB = [
+      const Offset(585, 505),
+      const Offset(980, 95),
+      const Offset(1260, 95),
+      const Offset(585, 700),
+    ];
+    canvas.drawPath(
+      _poly(faceB, close: true),
+      Paint()
+        ..shader = _bb(
+          const Rect.fromLTRB(585, 95, 1260, 700),
+          const Offset(0, 0),
+          const Offset(1, 1),
+          [
+            _c(0xFFFFFF, isDark ? .30 : .75, .56),
+            isDark ? _c(0xEEFF08, .22, .56) : _c(0xA8B800, .22, .56),
+            isDark ? _c(0x080B03, .82, .56) : _c(0xD3DDB0, .80, .56),
+          ],
+          const [0.0, 0.38, 1.0],
+        ),
+    );
+
+    // arrow-facet (2 polylines)
+    final facetPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4
+      ..strokeCap = StrokeCap.round
+      ..color = isDark ? _c(0xFFFFF2, .22) : _c(0x6B7A10, .22);
+    canvas.drawPath(
+      _poly(const [Offset(150, 900), Offset(585, 505), Offset(980, 95)], close: false),
+      facetPaint,
+    );
+    canvas.drawPath(
+      _poly(const [Offset(585, 700), Offset(585, 505), Offset(1260, 95)], close: false),
+      facetPaint,
+    );
+
+    // arrow-edge
+    canvas.drawPath(
+      _poly(
+        const [Offset(150, 900), Offset(585, 505), Offset(980, 95), Offset(1260, 95)],
+        close: false,
+      ),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round
+        ..shader = _bb(
+          const Rect.fromLTRB(150, 95, 1260, 900),
+          const Offset(0, 1),
+          const Offset(1, 0),
+          [
+            _c(0xFFFFFF, isDark ? .12 : .6, .75),
+            isDark ? _c(0xEEFF08, .85, .75) : _c(0xA8B800, .9, .75),
+            _c(0xFFFFFF, isDark ? .45 : .9, .75),
+            isDark ? _c(0xEEFF08, .65, .75) : _c(0xA8B800, .75, .75),
+          ],
+          const [0.0, 0.38, 0.72, 1.0],
+        ),
+    );
+
+    // arrow-reflect
+    canvas.drawPath(
+      _poly(const [Offset(170, 875), Offset(585, 505), Offset(960, 120)], close: false),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 8
+        ..strokeCap = StrokeCap.round
+        ..color = _c(0xFFFFFF, isDark ? .16 : .9, .45)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
+    );
+
+    canvas.restore(); // layer
+    canvas.restore(); // clip
+  }
+
+  void _paintVignette(Canvas canvas, Size size, Rect rect) {
+    // radial-gradient(ellipse at center, transparent 42%, rgba(0,0,0,.32) 100%)
+    _ellipseGlow(
+      canvas,
+      rect,
+      rect.center,
+      size.width / 2 * 1.4142,
+      size.height / 2 * 1.4142,
+      [const Color(0x00000000), const Color(0x00000000), isDark ? const Color(0x52000000) : const Color(0x14101810)],
+      const [0.0, 0.42, 1.0],
+    );
   }
 
   @override
   bool shouldRepaint(covariant _KratosAtmospherePainter oldDelegate) =>
       oldDelegate.isDark != isDark;
+}
+
+/// Shared Manus design reference: Section Header with eyebrow, Space Grotesk title,
+/// optional trailing description/action, and optional rule divider.
+class KratosSectionHeader extends StatelessWidget {
+  final String? eyebrow;
+  final String title;
+  final String? description;
+  final Widget? trailing;
+  final bool showRule;
+  final EdgeInsetsGeometry padding;
+
+  const KratosSectionHeader({
+    super.key,
+    this.eyebrow,
+    required this.title,
+    this.description,
+    Widget? trailing,
+    Widget? action,
+    this.showRule = true,
+    this.padding = const EdgeInsets.only(bottom: 14),
+  }) : trailing = trailing ?? action;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+    final mutedTextColor = isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary;
+
+    return Padding(
+      padding: padding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (eyebrow != null && eyebrow!.isNotEmpty) ...[
+                      Text(
+                        eyebrow!.toUpperCase(),
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          fontSize: 10,
+                          letterSpacing: 1.8,
+                          color: mutedTextColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                    ],
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontFamily: 'Space Grotesk',
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.4,
+                        color: primaryTextColor,
+                        height: 1.15,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (trailing != null)
+                trailing!
+              else if (description != null && description!.isNotEmpty)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 320),
+                  child: Text(
+                    description!,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      color: mutedTextColor,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (showRule) ...[
+            const SizedBox(height: 12),
+            Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    KratosTheme.electricLime.withValues(alpha: isDark ? 0.24 : 0.16),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 1.0],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Shared Manus design reference: Precision chip tag (`.chip`).
+class KratosChip extends StatelessWidget {
+  final String label;
+  final Widget? leading;
+  final Color? color;
+  final VoidCallback? onTap;
+
+  const KratosChip({
+    super.key,
+    required this.label,
+    this.leading,
+    this.color,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = color ?? (isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime);
+
+    Widget chip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: isDark ? 0.10 : 0.09),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: accent.withValues(alpha: isDark ? 0.26 : 0.22),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (leading != null) ...[
+            leading!,
+            const SizedBox(width: 5),
+          ],
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              fontFamily: 'IBM Plex Mono',
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+              color: accent,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (onTap != null) {
+      chip = InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: chip,
+      );
+    }
+
+    return chip;
+  }
+}
+
+/// Shared Manus design reference: Track progress indicator (`.progress`).
+class KratosProgressBar extends StatelessWidget {
+  final double progress; // 0.0 to 1.0
+  final double height;
+  final Color? activeColor;
+
+  const KratosProgressBar({
+    super.key,
+    double? progress,
+    double? value,
+    this.height = 5.0,
+    Color? activeColor,
+    Color? fillColor,
+    String? label,
+    bool? showPercentage,
+  }) : progress = progress ?? value ?? 0.0,
+       activeColor = activeColor ?? fillColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = activeColor ?? (isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime);
+    final clamped = progress.clamp(0.0, 1.0);
+
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: FractionallySizedBox(
+        alignment: Alignment.centerLeft,
+        widthFactor: clamped,
+        child: Container(
+          decoration: BoxDecoration(
+            color: accent,
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Shared Manus design reference: Precision empty state (`.empty-card`).
+class KratosEmptyState extends StatelessWidget {
+  final IconData icon;
+  final String eyebrow;
+  final String title;
+  final String message;
+  final Widget? action;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  const KratosEmptyState({
+    super.key,
+    required this.icon,
+    String? eyebrow,
+    required this.title,
+    String? message,
+    String? subtitle,
+    this.action,
+    this.actionLabel,
+    this.onAction,
+  }) : eyebrow = eyebrow ?? 'SYSTEM NOTICE',
+       message = message ?? subtitle ?? '';
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+    final mutedTextColor = isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: KratosTheme.electricLime.withValues(alpha: isDark ? 0.05 : 0.08),
+                border: Border.all(
+                  color: KratosTheme.electricLime.withValues(alpha: isDark ? 0.34 : 0.30),
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                icon,
+                color: KratosTheme.electricLime.withValues(alpha: 0.75),
+                size: 26,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              eyebrow.toUpperCase(),
+              style: TextStyle(
+                fontFamily: 'IBM Plex Mono',
+                fontSize: 9,
+                letterSpacing: 1.4,
+                color: mutedTextColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Space Grotesk',
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: primaryTextColor,
+              ),
+            ),
+            const SizedBox(height: 6),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: Text(
+                message,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  color: mutedTextColor,
+                  height: 1.4,
+                ),
+              ),
+            ),
+            if (action != null) ...[
+              const SizedBox(height: 18),
+              action!,
+            ] else if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 18),
+              ElevatedButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.add, size: 16),
+                label: Text(actionLabel!),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: KratosTheme.electricLime,
+                  foregroundColor: const Color(0xFF020302),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }

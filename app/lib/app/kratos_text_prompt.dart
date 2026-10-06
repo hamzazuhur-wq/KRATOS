@@ -13,6 +13,10 @@
 
 import 'package:flutter/material.dart';
 
+import 'kratos_motion.dart';
+import 'kratos_theme.dart';
+import 'kratos_visuals.dart';
+
 class KratosTextPrompt extends StatefulWidget {
   final String title;
   final String label;
@@ -41,7 +45,7 @@ class KratosTextPrompt extends StatefulWidget {
     TextInputType? keyboardType,
     int maxLines = 1,
   }) {
-    return showDialog<String>(
+    return showKratosDialog<String>(
       context: context,
       builder: (_) => KratosTextPrompt(
         title: title,
@@ -88,63 +92,160 @@ class _KratosTextPromptState extends State<KratosTextPrompt> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: const Color(0xFF141714),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: Colors.white12),
-      ),
-      title: Text(
-        widget.title,
-        style: const TextStyle(
-          color: Color(0xFFC6F135),
-          fontWeight: FontWeight.w900,
-          fontSize: 14,
-          letterSpacing: 1.1,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final textColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+    final mutedColor = isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: KratosModalEntrance(
+          child: KratosGlassCard(
+            variant: KratosSurfaceVariant.elevated,
+            borderRadius: BorderRadius.circular(22),
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: lime,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        widget.title.toUpperCase(),
+                        style: TextStyle(
+                          fontFamily: 'Space Grotesk',
+                          color: textColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  widget.label.toUpperCase(),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    color: mutedColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _controller,
+                  autofocus: true,
+                  maxLines: widget.maxLines,
+                  keyboardType: widget.keyboardType,
+                  textInputAction: widget.maxLines > 1
+                      ? TextInputAction.newline
+                      : TextInputAction.done,
+                  onSubmitted: (_) => _submit(),
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    color: textColor,
+                    fontSize: 14,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: widget.label,
+                    hintStyle: TextStyle(
+                      fontFamily: 'Inter',
+                      color: mutedColor.withValues(alpha: 0.6),
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? const Color(0xFF141714)
+                        : Colors.white.withValues(alpha: 0.7),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: isDark ? Colors.white.withValues(alpha: 0.08) : KratosTheme.lightBorderGlass,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: isDark ? Colors.white.withValues(alpha: 0.08) : KratosTheme.lightBorderGlass,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: lime, width: 1.2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(
+                        foregroundColor: mutedColor,
+                      ),
+                      child: const Text(
+                        'CANCEL',
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    KratosPressable(
+                      onTap: _submit,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                        decoration: BoxDecoration(
+                          color: lime,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            if (isDark)
+                              BoxShadow(
+                                color: lime.withValues(alpha: 0.2),
+                                blurRadius: 14,
+                                offset: const Offset(0, 4),
+                              ),
+                          ],
+                        ),
+                        child: Text(
+                          widget.confirmLabel.toUpperCase(),
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Mono',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                            color: isDark ? const Color(0xFF020302) : Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        maxLines: widget.maxLines,
-        keyboardType: widget.keyboardType,
-        textInputAction: widget.maxLines > 1
-            ? TextInputAction.newline
-            : TextInputAction.done,
-        onSubmitted: (_) => _submit(),
-        style: const TextStyle(color: Colors.white, fontSize: 14),
-        decoration: InputDecoration(
-          labelText: widget.label,
-          labelStyle: const TextStyle(color: Colors.white60),
-          filled: true,
-          fillColor: const Color(0xFF1A1D1A),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFC6F135)),
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('CANCEL', style: TextStyle(color: Colors.white60)),
-        ),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFFC6F135),
-            foregroundColor: Colors.black,
-          ),
-          onPressed: _submit,
-          child: Text(
-            widget.confirmLabel,
-            style: const TextStyle(fontWeight: FontWeight.w900),
-          ),
-        ),
-      ],
     );
   }
 }

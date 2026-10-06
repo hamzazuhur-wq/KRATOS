@@ -90,129 +90,157 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         }
 
         return Scaffold(
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            title: Text(
-              goal.parentId == null
-                  ? 'MAIN GOAL'
-                  : 'SUB-GOAL (DEPTH ${goal.depth})',
-              style: const TextStyle(
-                color: Color(0xFFC6F135),
-                fontWeight: FontWeight.w900,
-                fontSize: 13,
-                letterSpacing: 2.0,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Color(0xFFF3F1E8)),
+                onPressed: () => Navigator.of(context).pop(),
               ),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined, color: Colors.white70),
-                tooltip: 'Edit Goal',
-                onPressed: () => _openEditDialog(goal),
-              ),
-              KratosPopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: Colors.white70),
-                onSelected: (action) async {
-                  if (action == 'pause') {
-                    await _toggleGoalStatus(goal, 'paused');
-                  } else if (action == 'resume') {
-                    await _toggleGoalStatus(goal, 'active');
-                  } else if (action == 'delete') {
-                    await _confirmDeleteGoal(goal);
-                  }
-                },
-                itemBuilder: (ctx) => [
-                  if (goal.status == 'active')
-                    const KratosPopupMenuItem(
-                      value: 'pause',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.pause_circle_outline,
-                            color: Colors.amber,
-                            size: 18,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Pause Goal',
-                            style: TextStyle(color: Colors.white, fontSize: 13),
-                          ),
-                        ],
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEEFF08).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: const Color(0xFFEEFF08).withValues(alpha: 0.35),
                       ),
                     ),
-                  if (goal.status == 'paused')
-                    const KratosPopupMenuItem(
-                      value: 'resume',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.play_circle_outline,
-                            color: Color(0xFFC6F135),
-                            size: 18,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Resume Goal',
-                            style: TextStyle(color: Colors.white, fontSize: 13),
-                          ),
-                        ],
+                    child: Text(
+                      goal.parentId == null ? 'ROOT' : 'D${goal.depth}',
+                      style: const TextStyle(
+                        fontFamily: 'IBM Plex Mono',
+                        color: Color(0xFFEEFF08),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 10,
+                        letterSpacing: 0.6,
                       ),
                     ),
-                  const KratosPopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.delete_outline,
-                          color: Colors.redAccent,
-                          size: 18,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Delete Goal',
-                          style: TextStyle(
-                            color: Colors.redAccent,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      goal.parentId == null
+                          ? 'MAIN GOAL'
+                          : 'SUB-GOAL (DEPTH ${goal.depth})',
+                      style: const TextStyle(
+                        fontFamily: 'IBM Plex Mono',
+                        color: Color(0xFFF3F1E8),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                        letterSpacing: 1.2,
+                      ),
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
-          body: Stack(
-            fit: StackFit.expand,
-            children: [
-              const KratosEnvironment(),
-              Column(
-                children: [
-                  // Header Card
-                  _buildGoalHeaderCard(goal),
-                  const SizedBox(height: 10),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, color: Color(0xFF979C92)),
+                  tooltip: 'Edit Goal',
+                  onPressed: () => _openEditDialog(goal),
+                ),
+                KratosPopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: Color(0xFF979C92)),
+                  onSelected: (action) async {
+                    if (action == 'pause') {
+                      await _toggleGoalStatus(goal, 'paused');
+                    } else if (action == 'resume') {
+                      await _toggleGoalStatus(goal, 'active');
+                    } else if (action == 'delete') {
+                      await _confirmDeleteGoal(goal);
+                    }
+                  },
+                  itemBuilder: (ctx) => [
+                    if (goal.status == 'active')
+                      const KratosPopupMenuItem(
+                        value: 'pause',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.pause_circle_outline,
+                              color: Colors.amber,
+                              size: 18,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Pause Goal',
+                              style: TextStyle(color: Colors.white, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (goal.status == 'paused')
+                      const KratosPopupMenuItem(
+                        value: 'resume',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.play_circle_outline,
+                              color: Color(0xFFEEFF08),
+                              size: 18,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Resume Goal',
+                              style: TextStyle(color: Colors.white, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const KratosPopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.delete_outline,
+                            color: Colors.redAccent,
+                            size: 18,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Delete Goal',
+                            style: TextStyle(
+                              color: Colors.redAccent,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            body: Stack(
+              fit: StackFit.expand,
+              children: [
+                Column(
+                  children: [
+                    // Header Card
+                    _buildGoalHeaderCard(goal),
+                    const SizedBox(height: 10),
 
-                  // Quick Actions Bar
-                  _buildQuickActionsBar(goal),
-                  const SizedBox(height: 4),
+                    // Quick Actions Bar
+                    _buildQuickActionsBar(goal),
+                    const SizedBox(height: 4),
 
-                  // Section Dropdown Selector (Liquid Glass Dropdown)
-                  _buildSectionFilterDropdown(),
+                    // Section Dropdown Selector (Liquid Glass Dropdown)
+                    _buildSectionFilterDropdown(),
 
-                  // Selected Section Content
-                  Expanded(child: _buildCurrentSectionContent(goal)),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+                    // Selected Section Content
+                    Expanded(child: _buildCurrentSectionContent(goal)),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
 
   Widget _buildSectionFilterDropdown() {
     final Map<String, ({String label, IconData icon})> sections = {
@@ -254,7 +282,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
             leading: Icon(
               e.value.icon,
               size: 16,
-              color: isSelected ? const Color(0xFFC6F135) : Colors.white70,
+              color: isSelected ? const Color(0xFFEEFF08) : Colors.white70,
             ),
           );
         }).toList(),
@@ -289,36 +317,74 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: KratosGlassCard(
+        variant: KratosSurfaceVariant.normal,
+        borderRadius: BorderRadius.circular(18),
+        padding: const EdgeInsets.all(18),
         accentColor: isCompleted
-            ? const Color(0xFF30D158)
-            : const Color(0xFFC6F135),
-        borderRadius: BorderRadius.circular(20),
-        padding: const EdgeInsets.all(16),
+            ? const Color(0xFF30D158).withValues(alpha: 0.4)
+            : const Color(0xFFEEFF08).withValues(alpha: 0.4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Row 1: Breadcrumb Path if sub-goal
+            if (goal.parentId != null) ...[
+              Row(
+                children: [
+                  const Icon(
+                    Icons.account_tree_outlined,
+                    size: 13,
+                    color: Color(0xFF686D65),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'PATH: ${goal.path.replaceAll('/', '  ›  ')}',
+                      style: const TextStyle(
+                        fontFamily: 'IBM Plex Mono',
+                        fontSize: 9.5,
+                        color: Color(0xFF686D65),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
+
+            // Row 2: Status Tag + Life Area + Category + XP Target
             Row(
               children: [
                 // Status Tag
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
-                    vertical: 3,
+                    vertical: 3.5,
                   ),
                   decoration: BoxDecoration(
                     color: isCompleted
                         ? const Color(0xFF30D158).withValues(alpha: 0.15)
-                        : const Color(0xFFC6F135).withValues(alpha: 0.15),
+                        : const Color(0xFFEEFF08).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: isCompleted
+                          ? const Color(0xFF30D158).withValues(alpha: 0.3)
+                          : const Color(0xFFEEFF08).withValues(alpha: 0.3),
+                      width: 0.8,
+                    ),
                   ),
                   child: Text(
                     goal.status.toUpperCase(),
                     style: TextStyle(
+                      fontFamily: 'IBM Plex Mono',
                       color: isCompleted
                           ? const Color(0xFF30D158)
-                          : const Color(0xFFC6F135),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
+                          : const Color(0xFFEEFF08),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
                     ),
                   ),
                 ),
@@ -327,28 +393,33 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                 // Life Area
                 if (goal.lifeAreaId != null)
                   StreamBuilder<LifeArea?>(
-                    stream:
-                        (widget.database.select(widget.database.lifeAreas)
-                              ..where((l) => l.id.equals(goal.lifeAreaId!)))
-                            .watchSingleOrNull(),
+                    stream: (widget.database.select(widget.database.lifeAreas)
+                          ..where((l) => l.id.equals(goal.lifeAreaId!)))
+                        .watchSingleOrNull(),
                     builder: (context, snapshot) {
                       final area = snapshot.data;
                       if (area == null) return const SizedBox.shrink();
                       return Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
-                          vertical: 3,
+                          vertical: 3.5,
                         ),
                         margin: const EdgeInsets.only(right: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.05),
+                          color: const Color(0xFF141714),
                           borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.08),
+                            width: 0.8,
+                          ),
                         ),
                         child: Text(
-                          area.name,
+                          area.name.toUpperCase(),
                           style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 10,
+                            fontFamily: 'IBM Plex Mono',
+                            color: Color(0xFF979C92),
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       );
@@ -367,18 +438,23 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                       return Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
-                          vertical: 3,
+                          vertical: 3.5,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFC6F135)
-                              .withValues(alpha: 0.08),
+                          color: const Color(0xFFEEFF08).withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFFEEFF08).withValues(alpha: 0.2),
+                            width: 0.8,
+                          ),
                         ),
                         child: Text(
-                          cat.name,
+                          cat.name.toUpperCase(),
                           style: const TextStyle(
-                            color: Color(0xFFC6F135),
-                            fontSize: 10,
+                            fontFamily: 'IBM Plex Mono',
+                            color: Color(0xFFEEFF08),
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       );
@@ -387,83 +463,110 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
 
                 const Spacer(),
                 if (goal.xpTarget != null)
-                  Text(
-                    '${goal.xpTarget} XP Target',
-                    style: const TextStyle(
-                      color: Color(0xFFC6F135),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEEFF08).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: const Color(0xFFEEFF08).withValues(alpha: 0.3),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Text(
+                      '+${goal.xpTarget} XP',
+                      style: const TextStyle(
+                        fontFamily: 'IBM Plex Mono',
+                        color: Color(0xFFEEFF08),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 10,
+                      ),
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
 
             // Title
             Text(
               goal.title,
               style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontFamily: 'Space Grotesk',
+                color: Color(0xFFF3F1E8),
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
               ),
             ),
 
             if (goal.description != null && goal.description!.isNotEmpty) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 goal.description!,
-                style: const TextStyle(color: Colors.white60, fontSize: 12),
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  color: Color(0xFF979C92),
+                  fontSize: 13,
+                  height: 1.45,
+                ),
               ),
             ],
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             // Progress Bar
             Row(
               children: [
                 Expanded(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(999),
                     child: LinearProgressIndicator(
                       value: goal.progress.clamp(0.0, 1.0),
-                      backgroundColor: Colors.white12,
+                      backgroundColor: Colors.white.withValues(alpha: 0.06),
                       valueColor: AlwaysStoppedAnimation<Color>(
                         isCompleted
                             ? const Color(0xFF30D158)
-                            : const Color(0xFFC6F135),
+                            : const Color(0xFFEEFF08),
                       ),
                       minHeight: 6,
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Text(
                   '${(goal.progress * 100).toInt()}%',
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
+                    fontFamily: 'IBM Plex Mono',
+                    color: Color(0xFFF3F1E8),
+                    fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
 
-                // Complete Goal Button (awards +30% descendant bonus if Main Goal)
+                // Complete Goal Button
                 if (!isCompleted)
                   ElevatedButton.icon(
                     onPressed: () => _handleCompleteGoal(goal),
-                    icon: const Icon(Icons.check, size: 14),
+                    icon: const Icon(Icons.check, size: 14, color: Color(0xFF020302)),
                     label: const Text(
-                      'Complete',
+                      'COMPLETE',
                       style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                        fontFamily: 'IBM Plex Mono',
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                        color: Color(0xFF020302),
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFC6F135),
+                      backgroundColor: const Color(0xFFEEFF08),
                       foregroundColor: const Color(0xFF020302),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
+                        horizontal: 12,
                         vertical: 6,
                       ),
                       visualDensity: VisualDensity.compact,
@@ -519,25 +622,28 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: const Color(0xFFC6F135).withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
+          color: const Color(0xFFEEFF08).withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: const Color(0xFFC6F135).withValues(alpha: 0.35),
+            color: const Color(0xFFEEFF08).withValues(alpha: 0.35),
+            width: 1,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: const Color(0xFFC6F135)),
+            Icon(icon, size: 13, color: const Color(0xFFEEFF08)),
             const SizedBox(width: 6),
             Text(
               label,
               style: const TextStyle(
-                color: Color(0xFFC6F135),
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
+                fontFamily: 'IBM Plex Mono',
+                color: Color(0xFFEEFF08),
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
               ),
             ),
           ],
@@ -589,15 +695,19 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         decoration: BoxDecoration(
           color: const Color(0xFF0F110F),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white10),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         child: const Row(
           children: [
-            Icon(Icons.public_off, size: 20, color: Colors.white38),
+            Icon(Icons.public_off, size: 18, color: Color(0xFF686D65)),
             SizedBox(width: 10),
             Text(
               'No Life Area bound to this goal',
-              style: TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                color: Color(0xFF979C92),
+                fontSize: 12,
+              ),
             ),
           ],
         ),
@@ -616,10 +726,10 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: const Color(0xFFC6F135).withValues(alpha: 0.25),
-              width: 1.1,
+              color: Colors.white.withValues(alpha: 0.08),
+              width: 1,
             ),
           ),
           child: Column(
@@ -630,13 +740,16 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFC6F135).withValues(alpha: 0.12),
+                      color: const Color(0xFF141714),
                       borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: const Color(0xFFEEFF08).withValues(alpha: 0.25),
+                      ),
                     ),
                     child: const Icon(
                       Icons.explore_outlined,
-                      color: Color(0xFFC6F135),
-                      size: 18,
+                      color: Color(0xFFEEFF08),
+                      size: 16,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -647,19 +760,21 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                         const Text(
                           'LIFE AREA DOMAIN',
                           style: TextStyle(
-                            color: Color(0xFFC6F135),
-                            fontSize: 10,
-                            letterSpacing: 1.3,
-                            fontWeight: FontWeight.w900,
+                            fontFamily: 'IBM Plex Mono',
+                            color: Color(0xFF686D65),
+                            fontSize: 9.5,
+                            letterSpacing: 1.2,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           area.name,
                           style: const TextStyle(
-                            color: Colors.white,
+                            fontFamily: 'Space Grotesk',
+                            color: Color(0xFFF3F1E8),
                             fontSize: 15,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
@@ -668,27 +783,31 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
-                      vertical: 5,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFC6F135).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
+                      color: const Color(0xFFEEFF08).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: const Color(0xFFEEFF08).withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(
                           Icons.bolt,
-                          size: 14,
-                          color: Color(0xFFC6F135),
+                          size: 13,
+                          color: Color(0xFFEEFF08),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '${goal.xpTarget ?? 0} DEV PTS',
                           style: const TextStyle(
-                            color: Color(0xFFC6F135),
-                            fontWeight: FontWeight.w900,
-                            fontSize: 11,
+                            fontFamily: 'IBM Plex Mono',
+                            color: Color(0xFFEEFF08),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 10,
                           ),
                         ),
                       ],
@@ -702,7 +821,11 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                   area.description!,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white54, fontSize: 11.5),
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    color: Color(0xFF979C92),
+                    fontSize: 11.5,
+                  ),
                 ),
               ],
             ],
@@ -743,9 +866,12 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
             return Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF0D0F0D).withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white10),
+                color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  width: 1,
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -754,63 +880,71 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                     children: [
                       const Icon(
                         Icons.checklist_rtl_outlined,
-                        color: Color(0xFFC6F135),
-                        size: 18,
+                        color: Color(0xFFEEFF08),
+                        size: 16,
                       ),
                       const SizedBox(width: 8),
                       const Text(
                         'TASK EXECUTION PROGRESS',
                         style: TextStyle(
-                          color: Color(0xFFC6F135),
-                          fontWeight: FontWeight.w900,
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF686D65),
+                          fontWeight: FontWeight.w700,
                           letterSpacing: 1.2,
-                          fontSize: 11,
+                          fontSize: 9.5,
                         ),
                       ),
                       const Spacer(),
                       Text(
                         '$completedTasks / $totalTasks TASKS',
                         style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFFEEFF08),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(999),
                     child: LinearProgressIndicator(
                       value: progress,
-                      minHeight: 7,
-                      backgroundColor: Colors.white10,
+                      minHeight: 6,
+                      backgroundColor: Colors.white.withValues(alpha: 0.06),
                       valueColor: const AlwaysStoppedAnimation(
-                        Color(0xFFC6F135),
+                        Color(0xFFEEFF08),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   if (tasks.isEmpty)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
                           'No execution tasks yet',
-                          style: TextStyle(color: Colors.white38, fontSize: 12),
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            color: Color(0xFF979C92),
+                            fontSize: 12,
+                          ),
                         ),
                         TextButton.icon(
                           onPressed: () => _openAddTaskDialog(goal),
                           icon: const Icon(
                             Icons.add,
                             size: 14,
-                            color: Color(0xFFC6F135),
+                            color: Color(0xFFEEFF08),
                           ),
                           label: const Text(
                             'Add Task',
                             style: TextStyle(
-                              color: Color(0xFFC6F135),
-                              fontSize: 12,
+                              fontFamily: 'IBM Plex Mono',
+                              color: Color(0xFFEEFF08),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -826,7 +960,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.02),
+                          color: const Color(0xFF141714),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: Colors.white.withValues(alpha: 0.05),
@@ -836,7 +970,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                           children: [
                             Checkbox(
                               value: isDone,
-                              activeColor: const Color(0xFFC6F135),
+                              activeColor: const Color(0xFFEEFF08),
                               checkColor: const Color(0xFF020302),
                               onChanged: isDone
                                   ? null
@@ -867,12 +1001,13 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                               child: Text(
                                 task.title,
                                 style: TextStyle(
-                                  color: isDone ? Colors.white38 : Colors.white,
+                                  fontFamily: 'Inter',
+                                  color: isDone ? const Color(0xFF686D65) : const Color(0xFFF3F1E8),
                                   fontSize: 12.5,
                                   decoration: isDone
                                       ? TextDecoration.lineThrough
                                       : null,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
@@ -880,8 +1015,8 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                               IconButton(
                                 icon: const Icon(
                                   Icons.timer_outlined,
-                                  size: 18,
-                                  color: Color(0xFFC6F135),
+                                  size: 16,
+                                  color: Color(0xFFEEFF08),
                                 ),
                                 tooltip: 'Focus Timer',
                                 onPressed: () {
@@ -906,13 +1041,15 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                           icon: const Icon(
                             Icons.add,
                             size: 14,
-                            color: Color(0xFFC6F135),
+                            color: Color(0xFFEEFF08),
                           ),
                           label: const Text(
                             '+ New Task',
                             style: TextStyle(
-                              color: Color(0xFFC6F135),
-                              fontSize: 11.5,
+                              fontFamily: 'IBM Plex Mono',
+                              color: Color(0xFFEEFF08),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -923,8 +1060,9 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                             child: Text(
                               'View all ($totalTasks) →',
                               style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 11.5,
+                                fontFamily: 'IBM Plex Mono',
+                                color: Color(0xFF979C92),
+                                fontSize: 11,
                               ),
                             ),
                           ),
@@ -949,9 +1087,12 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF0D0F0D).withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white10),
+            color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.08),
+              width: 1,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -960,26 +1101,28 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                 children: [
                   const Icon(
                     Icons.account_tree_outlined,
-                    color: Color(0xFFC6F135),
-                    size: 18,
+                    color: Color(0xFFEEFF08),
+                    size: 16,
                   ),
                   const SizedBox(width: 8),
                   const Text(
                     'SUB-GOALS & MILESTONES',
                     style: TextStyle(
-                      color: Color(0xFFC6F135),
-                      fontWeight: FontWeight.w900,
+                      fontFamily: 'IBM Plex Mono',
+                      color: Color(0xFF686D65),
+                      fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
-                      fontSize: 11,
+                      fontSize: 9.5,
                     ),
                   ),
                   const Spacer(),
                   Text(
                     '${subGoals.length} MILESTONES',
                     style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
+                      fontFamily: 'IBM Plex Mono',
+                      color: Color(0xFFEEFF08),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -991,20 +1134,26 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                   children: [
                     const Text(
                       'No sub-goals added yet',
-                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        color: Color(0xFF979C92),
+                        fontSize: 12,
+                      ),
                     ),
                     TextButton.icon(
                       onPressed: () => _openAddSubGoalDialog(goal),
                       icon: const Icon(
                         Icons.add,
                         size: 14,
-                        color: Color(0xFFC6F135),
+                        color: Color(0xFFEEFF08),
                       ),
                       label: const Text(
                         'Add Sub-goal',
                         style: TextStyle(
-                          color: Color(0xFFC6F135),
-                          fontSize: 12,
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFFEEFF08),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -1067,9 +1216,12 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF0D0F0D).withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white10),
+            color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.08),
+              width: 1,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1078,26 +1230,28 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                 children: [
                   const Icon(
                     Icons.folder_shared_outlined,
-                    color: Color(0xFFC6F135),
-                    size: 18,
+                    color: Color(0xFFEEFF08),
+                    size: 16,
                   ),
                   const SizedBox(width: 8),
                   const Text(
                     'CONNECTED PROJECTS',
                     style: TextStyle(
-                      color: Color(0xFFC6F135),
-                      fontWeight: FontWeight.w900,
+                      fontFamily: 'IBM Plex Mono',
+                      color: Color(0xFF686D65),
+                      fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
-                      fontSize: 11,
+                      fontSize: 9.5,
                     ),
                   ),
                   const Spacer(),
                   Text(
                     '${projects.length} PROJECTS',
                     style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
+                      fontFamily: 'IBM Plex Mono',
+                      color: Color(0xFFEEFF08),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -1109,20 +1263,26 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                   children: [
                     const Text(
                       'No projects linked yet',
-                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        color: Color(0xFF979C92),
+                        fontSize: 12,
+                      ),
                     ),
                     TextButton.icon(
                       onPressed: () => _openAttachProjectDialog(goal),
                       icon: const Icon(
                         Icons.link,
                         size: 14,
-                        color: Color(0xFFC6F135),
+                        color: Color(0xFFEEFF08),
                       ),
                       label: const Text(
                         'Link Project',
                         style: TextStyle(
-                          color: Color(0xFFC6F135),
-                          fontSize: 12,
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFFEEFF08),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -1134,7 +1294,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.02),
+                      color: const Color(0xFF141714),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.06),
@@ -1143,17 +1303,18 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                     child: Row(
                       children: [
                         const Icon(
-                          Icons.folder,
-                          color: Color(0xFFC6F135),
-                          size: 18,
+                          Icons.folder_outlined,
+                          color: Color(0xFFEEFF08),
+                          size: 16,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             proj.title,
                             style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Inter',
+                              color: Color(0xFFF3F1E8),
+                              fontWeight: FontWeight.w600,
                               fontSize: 13,
                             ),
                           ),
@@ -1164,16 +1325,19 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFC6F135)
-                                .withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
+                            color: const Color(0xFFEEFF08).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: const Color(0xFFEEFF08).withValues(alpha: 0.3),
+                            ),
                           ),
                           child: Text(
                             proj.status.toUpperCase(),
                             style: const TextStyle(
-                              color: Color(0xFFC6F135),
+                              fontFamily: 'IBM Plex Mono',
+                              color: Color(0xFFEEFF08),
                               fontSize: 9.5,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -1188,13 +1352,15 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                     icon: const Icon(
                       Icons.link,
                       size: 14,
-                      color: Color(0xFFC6F135),
+                      color: Color(0xFFEEFF08),
                     ),
                     label: const Text(
                       '+ Link Another Project',
                       style: TextStyle(
-                        color: Color(0xFFC6F135),
-                        fontSize: 11.5,
+                        fontFamily: 'IBM Plex Mono',
+                        color: Color(0xFFEEFF08),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -1224,33 +1390,38 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF0D0F0D).withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white10),
+            color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.08),
+              width: 1,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.repeat, color: Color(0xFFC6F135), size: 18),
+                  const Icon(Icons.repeat, color: Color(0xFFEEFF08), size: 16),
                   const SizedBox(width: 8),
                   const Text(
                     'FOCUS & ROUTINE ACTIVITIES',
                     style: TextStyle(
-                      color: Color(0xFFC6F135),
-                      fontWeight: FontWeight.w900,
+                      fontFamily: 'IBM Plex Mono',
+                      color: Color(0xFF686D65),
+                      fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
-                      fontSize: 11,
+                      fontSize: 9.5,
                     ),
                   ),
                   const Spacer(),
                   Text(
                     '${activities.length} ACTIVITIES',
                     style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
+                      fontFamily: 'IBM Plex Mono',
+                      color: Color(0xFFEEFF08),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -1262,20 +1433,26 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                   children: [
                     const Text(
                       'No activities bound to routine',
-                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        color: Color(0xFF979C92),
+                        fontSize: 12,
+                      ),
                     ),
                     TextButton.icon(
                       onPressed: () => _openAddActivityDialog(goal),
                       icon: const Icon(
                         Icons.add,
                         size: 14,
-                        color: Color(0xFFC6F135),
+                        color: Color(0xFFEEFF08),
                       ),
                       label: const Text(
                         'Add Activity',
                         style: TextStyle(
-                          color: Color(0xFFC6F135),
-                          fontSize: 12,
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFFEEFF08),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -1290,7 +1467,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.02),
+                      color: const Color(0xFF141714),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.05),
@@ -1300,16 +1477,17 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                       children: [
                         const Icon(
                           Icons.repeat,
-                          color: Color(0xFFC6F135),
-                          size: 17,
+                          color: Color(0xFFEEFF08),
+                          size: 16,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             act.name,
                             style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Inter',
+                              color: Color(0xFFF3F1E8),
+                              fontWeight: FontWeight.w600,
                               fontSize: 12.5,
                             ),
                           ),
@@ -1325,20 +1503,27 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFC6F135)
-                                .withValues(alpha: 0.15),
-                            foregroundColor: const Color(0xFFC6F135),
+                            backgroundColor: const Color(0xFFEEFF08)
+                                .withValues(alpha: 0.12),
+                            foregroundColor: const Color(0xFFEEFF08),
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
+                              horizontal: 12,
+                              vertical: 5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                              side: BorderSide(
+                                color: const Color(0xFFEEFF08).withValues(alpha: 0.35),
+                              ),
                             ),
                           ),
                           child: const Text(
                             'Practice',
                             style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                              fontFamily: 'IBM Plex Mono',
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -1353,13 +1538,15 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                     icon: const Icon(
                       Icons.add,
                       size: 14,
-                      color: Color(0xFFC6F135),
+                      color: Color(0xFFEEFF08),
                     ),
                     label: const Text(
                       '+ Add Activity',
                       style: TextStyle(
-                        color: Color(0xFFC6F135),
-                        fontSize: 11.5,
+                        fontFamily: 'IBM Plex Mono',
+                        color: Color(0xFFEEFF08),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -1381,9 +1568,12 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF0D0F0D).withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white10),
+            color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.08),
+              width: 1,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1392,26 +1582,28 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                 children: [
                   const Icon(
                     Icons.psychology_outlined,
-                    color: Color(0xFFC6F135),
-                    size: 18,
+                    color: Color(0xFFEEFF08),
+                    size: 16,
                   ),
                   const SizedBox(width: 8),
                   const Text(
                     'SKILLS UTILIZED & TRAINED',
                     style: TextStyle(
-                      color: Color(0xFFC6F135),
-                      fontWeight: FontWeight.w900,
+                      fontFamily: 'IBM Plex Mono',
+                      color: Color(0xFF686D65),
+                      fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
-                      fontSize: 11,
+                      fontSize: 9.5,
                     ),
                   ),
                   const Spacer(),
                   Text(
                     '${allSkills.length} REGISTERED',
                     style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
+                      fontFamily: 'IBM Plex Mono',
+                      color: Color(0xFFEEFF08),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -1420,7 +1612,11 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
               if (allSkills.isEmpty)
                 const Text(
                   'No skills registered yet. Create skills in the Skills registry.',
-                  style: TextStyle(color: Colors.white38, fontSize: 12),
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    color: Color(0xFF979C92),
+                    fontSize: 12,
+                  ),
                 )
               else
                 Wrap(
@@ -1436,7 +1632,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                         color: const Color(0xFF141714),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: const Color(0xFFC6F135)
+                          color: const Color(0xFFEEFF08)
                               .withValues(alpha: 0.25),
                         ),
                       ),
@@ -1446,15 +1642,16 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                           const Icon(
                             Icons.auto_awesome,
                             size: 12,
-                            color: Color(0xFFC6F135),
+                            color: Color(0xFFEEFF08),
                           ),
                           const SizedBox(width: 6),
                           Text(
                             '${skill.name} (Lv.${skill.level})',
                             style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.bold,
+                              fontFamily: 'IBM Plex Mono',
+                              color: Color(0xFFF3F1E8),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -1473,9 +1670,12 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D0F0D).withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
+        color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.08),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1484,17 +1684,18 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
             children: [
               Icon(
                 Icons.history_edu_outlined,
-                color: Color(0xFFC6F135),
-                size: 18,
+                color: Color(0xFFEEFF08),
+                size: 16,
               ),
               SizedBox(width: 8),
               Text(
                 'WHAT HAPPENED & HIGHLIGHTS',
                 style: TextStyle(
-                  color: Color(0xFFC6F135),
-                  fontWeight: FontWeight.w900,
+                  fontFamily: 'IBM Plex Mono',
+                  color: Color(0xFF686D65),
+                  fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
-                  fontSize: 11,
+                  fontSize: 9.5,
                 ),
               ),
             ],
@@ -1506,7 +1707,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.02),
+                    color: const Color(0xFF141714),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.05),
@@ -1518,18 +1719,21 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                       const Text(
                         'TOTAL XP VALUE',
                         style: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF686D65),
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '+${goal.xpTarget ?? 0} XP',
                         style: const TextStyle(
-                          color: Color(0xFFC6F135),
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFFEEFF08),
                           fontSize: 16,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -1541,7 +1745,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.02),
+                    color: const Color(0xFF141714),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.05),
@@ -1553,18 +1757,21 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                       const Text(
                         'STATUS',
                         style: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFF686D65),
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         goal.status.toUpperCase(),
                         style: const TextStyle(
-                          color: Colors.white,
+                          fontFamily: 'IBM Plex Mono',
+                          color: Color(0xFFF3F1E8),
                           fontSize: 14,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -1577,7 +1784,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.02),
+              color: const Color(0xFF141714),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
             ),
@@ -1585,14 +1792,18 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
               children: [
                 const Icon(
                   Icons.flag_outlined,
-                  size: 16,
-                  color: Color(0xFFC6F135),
+                  size: 15,
+                  color: Color(0xFFEEFF08),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Created on ${goal.createdAt.toLocal().toString().split(' ').first}. Goal tracking active with complete offline-first ledger guarantee.',
-                    style: const TextStyle(color: Colors.white60, fontSize: 11),
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      color: Color(0xFF979C92),
+                      fontSize: 11,
+                    ),
                   ),
                 ),
               ],

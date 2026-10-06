@@ -82,7 +82,6 @@ class _LevelDetailScreenState extends State<LevelDetailScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const KratosEnvironment(),
           StreamBuilder<LevelDetailData>(
             stream: _dataStream,
             initialData: widget.initialData,
@@ -1450,3 +1449,4 @@ class _EditLevelSheetState extends State<_EditLevelSheet> {
     Navigator.of(context).pop();
   }
 }
+

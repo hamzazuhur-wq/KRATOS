@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/kratos_motion.dart';
+import '../../../../app/kratos_theme.dart';
+import '../../../../app/kratos_visuals.dart';
 import '../../domain/idea_models.dart';
 
 class CreateIdeaSpaceDialog extends StatefulWidget {
@@ -54,117 +57,138 @@ class _CreateIdeaSpaceDialogState extends State<CreateIdeaSpaceDialog> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.existingSpace != null;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lime = isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime;
+    final textColor = isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary;
+    final mutedColor = isDark ? const Color(0xFF686D65) : KratosTheme.lightTextSecondary;
 
     return Dialog(
-      backgroundColor: const Color(0xFF141814),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: const Color(0xFFC6F135).withValues(alpha: 0.2),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: KratosModalEntrance(
+          child: KratosGlassCard(
+            variant: KratosSurfaceVariant.elevated,
+            borderRadius: BorderRadius.circular(22),
+            padding: const EdgeInsets.all(22),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFC6F135).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.dashboard_customize_outlined,
-                      color: Color(0xFFC6F135),
-                      size: 20,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: lime.withValues(alpha: isDark ? 0.15 : 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: lime.withValues(alpha: 0.3)),
+                        ),
+                        child: Icon(
+                          Icons.dashboard_customize_outlined,
+                          color: lime,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          (isEditing ? 'EDIT IDEA SPACE' : 'NEW IDEA SPACE'),
+                          style: TextStyle(
+                            fontFamily: 'Space Grotesk',
+                            color: textColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Text(
-                    isEditing ? 'Edit Idea Space' : 'New Idea Space',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
               // Name Field
-              const Text(
-                'Space Name',
+              Text(
+                'SPACE NAME *',
                 style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+                  fontFamily: 'IBM Plex Mono',
+                  color: mutedColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
                 ),
               ),
               const SizedBox(height: 6),
               TextField(
                 controller: _nameController,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(fontFamily: 'Inter', color: textColor, fontSize: 14),
                 decoration: InputDecoration(
                   hintText: 'e.g. Professional, Mindset, Research',
-                  hintStyle: const TextStyle(color: Colors.white30),
+                  hintStyle: TextStyle(fontFamily: 'Inter', color: mutedColor.withValues(alpha: 0.6)),
                   filled: true,
-                  fillColor: const Color(0xFF1B221B),
+                  fillColor: isDark ? const Color(0xFF141714) : Colors.white.withValues(alpha: 0.7),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: isDark ? Colors.white.withValues(alpha: 0.08) : KratosTheme.lightBorderGlass,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Color(0xFFC6F135)),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: lime, width: 1.2),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
 
               // Description Field
-              const Text(
-                'Description (Optional)',
+              Text(
+                'DESCRIPTION (OPTIONAL)',
                 style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+                  fontFamily: 'IBM Plex Mono',
+                  color: mutedColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
                 ),
               ),
               const SizedBox(height: 6),
               TextField(
                 controller: _descriptionController,
                 maxLines: 2,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(fontFamily: 'Inter', color: textColor, fontSize: 13),
                 decoration: InputDecoration(
                   hintText: 'What kind of ideas belong in this space?',
-                  hintStyle: const TextStyle(color: Colors.white30),
+                  hintStyle: TextStyle(fontFamily: 'Inter', color: mutedColor.withValues(alpha: 0.6)),
                   filled: true,
-                  fillColor: const Color(0xFF1B221B),
+                  fillColor: isDark ? const Color(0xFF141714) : Colors.white.withValues(alpha: 0.7),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: isDark ? Colors.white.withValues(alpha: 0.08) : KratosTheme.lightBorderGlass,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Color(0xFFC6F135)),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: lime, width: 1.2),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
 
               // Icon Selector
-              const Text(
-                'Icon',
+              Text(
+                'ICON',
                 style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+                  fontFamily: 'IBM Plex Mono',
+                  color: mutedColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
                 ),
               ),
               const SizedBox(height: 8),
@@ -175,25 +199,26 @@ class _CreateIdeaSpaceDialogState extends State<CreateIdeaSpaceDialog> {
                   final isSelected = _selectedIcon == item['name'];
                   return InkWell(
                     onTap: () => setState(() => _selectedIcon = item['name']),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFFC6F135).withValues(alpha: 0.2)
-                            : const Color(0xFF1B221B),
-                        borderRadius: BorderRadius.circular(8),
+                            ? lime.withValues(alpha: isDark ? 0.2 : 0.15)
+                            : (isDark ? const Color(0xFF141714) : Colors.white.withValues(alpha: 0.6)),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isSelected
-                              ? const Color(0xFFC6F135)
-                              : Colors.white.withValues(alpha: 0.1),
+                              ? lime
+                              : (isDark ? Colors.white.withValues(alpha: 0.08) : KratosTheme.lightBorderGlass),
+                          width: isSelected ? 1.2 : 1.0,
                         ),
                       ),
                       child: Icon(
                         item['icon'] as IconData,
                         color: isSelected
-                            ? const Color(0xFFC6F135)
-                            : Colors.white70,
+                            ? lime
+                            : mutedColor,
                         size: 20,
                       ),
                     ),
@@ -208,25 +233,22 @@ class _CreateIdeaSpaceDialogState extends State<CreateIdeaSpaceDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
+                    style: TextButton.styleFrom(
+                      foregroundColor: mutedColor,
+                    ),
                     child: const Text(
-                      'Cancel',
-                      style: TextStyle(color: Colors.white60),
+                      'CANCEL',
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Mono',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFC6F135),
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    onPressed: () {
+                  const SizedBox(width: 10),
+                  KratosPressable(
+                    onTap: () {
                       final name = _nameController.text.trim();
                       if (name.isEmpty) return;
                       widget.onSave(
@@ -238,9 +260,30 @@ class _CreateIdeaSpaceDialogState extends State<CreateIdeaSpaceDialog> {
                       );
                       Navigator.of(context).pop();
                     },
-                    child: Text(
-                      isEditing ? 'Save Changes' : 'Create Space',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                      decoration: BoxDecoration(
+                        color: lime,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          if (isDark)
+                            BoxShadow(
+                              color: lime.withValues(alpha: 0.2),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                        ],
+                      ),
+                      child: Text(
+                        (isEditing ? 'SAVE CHANGES' : 'CREATE SPACE'),
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                          color: isDark ? const Color(0xFF020302) : Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -249,6 +292,8 @@ class _CreateIdeaSpaceDialogState extends State<CreateIdeaSpaceDialog> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }

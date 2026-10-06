@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../app/kratos_motion.dart';
 
-import '../../../app/kratos_visuals.dart';
 import '../../../data/drift/app_database.dart';
 import '../data/ideas_repository.dart';
 import '../domain/idea_models.dart';
@@ -144,7 +143,6 @@ class _IdeaSpaceScreenState extends State<IdeaSpaceScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const KratosEnvironment(),
           StreamBuilder<List<IdeaDetail>>(
             stream: isUncategorized
                 ? _repository.watchUncategorizedIdeas(widget.ownerId)
