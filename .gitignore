@@ -55,6 +55,7 @@ tools/*.bak
 Thumbs.db
 Desktop.ini
 *.exe
+*.apk
 .wrangler/
 
 # ── IDE ────────────────────────────────────────────────

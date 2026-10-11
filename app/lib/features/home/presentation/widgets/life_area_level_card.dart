@@ -81,13 +81,13 @@ class LifeAreaLevelCard extends StatelessWidget {
       interactive: true,
       dashboardGlass: true,
       accentColor: tierColor,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(23),
       padding: EdgeInsets.zero,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _openDetail(context),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(23),
           child: Padding(
             padding: const EdgeInsets.all(18),
             child: Column(

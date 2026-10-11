@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/kratos_motion.dart';
+import '../../../app/kratos_visuals.dart';
 
 import '../../../data/drift/app_database.dart';
 import '../data/ideas_repository.dart';
@@ -537,28 +538,14 @@ class _IdeasDashboardScreenState extends State<IdeasDashboardScreen> {
     bool isUncategorized = false,
     required VoidCallback onTap,
   }) {
-    return InkWell(
+    return KratosGlassCard(
+      variant: KratosSurfaceVariant.interactive,
+      interactive: true,
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF141814),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isUncategorized
-                ? Colors.white.withValues(alpha: 0.1)
-                : const Color(0xFFC6F135).withValues(alpha: 0.25),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
+      padding: const EdgeInsets.all(12),
+      accentColor: isUncategorized ? null : const Color(0xFFC6F135),
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -624,7 +611,6 @@ class _IdeasDashboardScreenState extends State<IdeasDashboardScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
+      );
+    }
 }

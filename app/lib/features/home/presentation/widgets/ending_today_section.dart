@@ -163,18 +163,9 @@ class _EndingTodaySectionState extends State<EndingTodaySection>
         const SizedBox(height: 12),
 
         if (widget.items.isEmpty)
-          Container(
-            width: double.infinity,
+          KratosGlassCard(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.02)
-                  : const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? Colors.white10 : const Color(0x14000000),
-              ),
-            ),
+            borderRadius: BorderRadius.circular(23),
             child: Row(
               children: [
                 Icon(
@@ -214,12 +205,12 @@ class _EndingTodaySectionState extends State<EndingTodaySection>
                     child: KratosGlassCard(
                       dashboardGlass: true,
                       accentColor: alertRed.withValues(alpha: alpha),
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(23),
                       child: Material(
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: () => _handleItemTap(context, item),
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(23),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 18,

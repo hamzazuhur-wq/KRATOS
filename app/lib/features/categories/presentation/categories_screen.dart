@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/active_glass_card.dart';
 import '../../../app/kratos_dropdown.dart';
+import '../../../app/kratos_visuals.dart';
 import '../../../data/drift/app_database.dart';
 import '../../../domain/hlc.dart';
 import '../../../domain/ids.dart';
@@ -453,19 +454,16 @@ class _AccordionGroupCard extends StatelessWidget {
         ? database.categoriesDao.watchAllCategoriesByType(ownerId, group.key)
         : database.categoriesDao.watchCategoriesByType(ownerId, group.key);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0D0F0D).withValues(alpha: 0.85),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: KratosGlassCard(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isExpanded
-              ? const Color(0xFFC6F135).withValues(alpha: 0.35)
-              : Colors.white12,
-          width: 1,
-        ),
-      ),
-      child: Column(
+        padding: EdgeInsets.zero,
+        variant: isExpanded
+            ? KratosSurfaceVariant.active
+            : KratosSurfaceVariant.normal,
+        accentColor: isExpanded ? const Color(0xFFC6F135) : null,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Header Row
@@ -672,8 +670,9 @@ class _AccordionGroupCard extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ---------------------------------------------------------------------------

@@ -9,6 +9,7 @@ import '../domain/achievement_gate_models.dart';
 import '../domain/achievement_gate_service.dart';
 import '../data/progression_dao.dart';
 import '../../../data/drift/app_database.dart';
+import '../../../app/kratos_visuals.dart';
 
 class PromotionGateScreen extends StatefulWidget {
   final String userId;
@@ -417,13 +418,8 @@ class _GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return KratosGlassCard(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(10),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withAlpha(20)),
-      ),
       child: child,
     );
   }

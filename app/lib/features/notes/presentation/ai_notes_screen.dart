@@ -3,6 +3,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../../../app/kratos_visuals.dart';
+
 /// AI Notes hub — unified view for notes and voice memos.
 ///
 /// Full implementation uses Riverpod [NotesNotifier] and [AudioNotifier]
@@ -72,7 +74,7 @@ class _AiNotesScreenState extends State<AiNotesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -177,18 +179,8 @@ class _NoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isPinned
-            ? const Color(0xFFC6F135).withValues(alpha: 0.05)
-            : Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isPinned
-              ? const Color(0xFFC6F135).withValues(alpha: 0.25)
-              : Colors.white.withValues(alpha: 0.07),
-        ),
-      ),
+    return KratosGlassCard(
+      variant: isPinned ? KratosSurfaceVariant.active : KratosSurfaceVariant.normal,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

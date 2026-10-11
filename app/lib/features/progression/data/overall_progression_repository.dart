@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../../../data/drift/app_database.dart';
 import '../../levels/data/levels_dashboard_repository.dart';
 import '../domain/global_progression.dart';
@@ -37,7 +39,9 @@ class OverallProgressionRepository {
   OverallProgressionRepository(this.database);
 
   Future<OverallProgressionSnapshot> getSnapshot(String ownerId) async {
+    debugPrint('[OverallProgressionRepo] getSnapshot starting for $ownerId');
     final entries = await _levelsRepository.getProgressions(ownerId);
+    debugPrint('[OverallProgressionRepo] getSnapshot entries: ${entries.length}');
     final totalXp = entries.fold<int>(
       0,
       (sum, entry) => sum + entry.progression.totalXp,
@@ -53,7 +57,12 @@ class OverallProgressionRepository {
   }
 
   Stream<OverallProgressionSnapshot> watch(String ownerId) async* {
-    final triggerStream = database
+    debugPrint('[OverallProgressionRepo] watch started for $ownerId');
+    final initial = await getSnapshot(ownerId);
+    debugPrint('[OverallProgressionRepo] yielding initial snapshot: totalXp=${initial.totalXp}');
+    yield initial;
+
+    yield* database
         .customSelect(
           'SELECT 1',
           readsFrom: {
@@ -64,9 +73,7 @@ class OverallProgressionRepository {
             database.tierDefinitions,
           },
         )
-        .watch();
-
-    yield await getSnapshot(ownerId);
-    yield* triggerStream.asyncMap((_) => getSnapshot(ownerId));
+        .watch()
+        .asyncMap((_) => getSnapshot(ownerId));
   }
 }

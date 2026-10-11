@@ -8,6 +8,7 @@ import 'package:kratos_app/app/app_shell.dart';
 import 'package:kratos_app/data/drift/app_database.dart';
 import 'package:kratos_app/features/auth/data/mock_auth_service.dart';
 import 'package:kratos_app/features/profile/data/profile_repository.dart';
+import 'package:kratos_app/features/profile/presentation/profile_components.dart';
 import 'package:kratos_app/features/profile/presentation/profile_screen.dart';
 
 void main() {
@@ -268,10 +269,10 @@ void main() {
       await pumpUntilFound(tester, find.text('Spartan Commander'));
 
       // Tap Edit camera button on Avatar
-      await tester.tap(find.byIcon(Icons.camera_alt));
+      await tester.tap(find.byIcon(Icons.photo_camera_outlined));
       await pumpUntilFound(tester, find.text('Edit Profile'));
 
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(ProfileDialogSurface), findsOneWidget);
 
       // Enter new name and caption
       final nameFields = find.byType(TextField);
@@ -282,7 +283,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       // Tap Save button
-      final saveBtn = find.widgetWithText(ElevatedButton, 'Save');
+      final saveBtn = find.widgetWithText(ProfileButton, 'Save');
       expect(saveBtn, findsOneWidget);
       await tester.tap(saveBtn);
 
@@ -290,7 +291,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       // Dialog dismissed and UI shows updated name
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(ProfileDialogSurface), findsNothing);
       expect(find.text('Warlord Kratos'), findsWidgets);
       expect(find.text('Strength and Wisdom'), findsOneWidget);
     });
@@ -312,9 +313,9 @@ void main() {
 
       // Tap Change Password tile
       await tester.tap(find.text('Change Password'));
-      await pumpUntilFound(tester, find.widgetWithText(ElevatedButton, 'Update'));
+      await pumpUntilFound(tester, find.widgetWithText(ProfileButton, 'Update'));
 
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(ProfileDialogSurface), findsOneWidget);
 
       final textFields = find.byType(TextField);
       expect(textFields, findsNWidgets(2));
@@ -324,7 +325,7 @@ void main() {
       await tester.enterText(textFields.at(1), 'Secret9999');
       await tester.pump(const Duration(milliseconds: 50));
 
-      final updateBtn = find.widgetWithText(ElevatedButton, 'Update');
+      final updateBtn = find.widgetWithText(ProfileButton, 'Update');
       await tester.tap(updateBtn);
       await pumpUntilFound(tester, find.text('Passwords do not match'));
 
@@ -339,7 +340,7 @@ void main() {
       await pumpUntilFound(tester, find.text('Password changed successfully'));
       await tester.pump(const Duration(milliseconds: 400));
 
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(ProfileDialogSurface), findsNothing);
     });
 
     testWidgets('Logout Confirmation Dialog triggers onSignOut callback', (tester) async {
@@ -372,7 +373,7 @@ void main() {
       );
 
       // Tap confirm Sign Out
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Sign Out'));
+      await tester.tap(find.widgetWithText(ProfileButton, 'Sign Out'));
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(signedOut, isTrue);

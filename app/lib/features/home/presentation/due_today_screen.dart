@@ -39,11 +39,14 @@ class _DueTodayScreenState extends State<DueTodayScreen> {
   late final TaskDashboardRepository _taskRepository;
   final Set<String> _completing = {};
 
+  late final Stream<DueOverview> _overviewStream;
+
   @override
   void initState() {
     super.initState();
     _repository = DueTodayRepository(widget.database);
     _taskRepository = TaskDashboardRepository(widget.database);
+    _overviewStream = _repository.watchDueOverview(widget.ownerId);
   }
 
   Future<void> _completeTask(DueItem item) async {
@@ -138,7 +141,7 @@ class _DueTodayScreenState extends State<DueTodayScreen> {
         ),
       ),
       body: StreamBuilder<DueOverview>(
-        stream: _repository.watchDueOverview(widget.ownerId),
+        stream: _overviewStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return _MessageState(

@@ -1,9 +1,12 @@
+import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
 import 'kratos_motion.dart';
 import 'kratos_theme.dart';
+import 'kratos_card_tokens.dart';
 
 /// Surface variant types for the unified KRATOS Liquid Glass card system.
 enum KratosSurfaceVariant {
@@ -26,12 +29,24 @@ enum KratosSurfaceVariant {
   selected,
 }
 
-/// KRATOS Premium Apple-inspired Liquid Glass Card.
-/// Multi-layered physical surface with depth shadow, dark translucent glass body,
-/// inner reflection sheen, thin specular rim, and interactive tactile response.
+/// Position of the directional edge glow line matching KRATOS HTML/CSS spec.
+enum KratosEdgeGlowPosition {
+  top,
+  bottom,
+  none,
+}
+
+/// KRATOS Premium Liquid Glass Card.
+/// Faithful implementation of the HTML/CSS reference specification:
+/// - Translucent frosted glass surface (blur 28px) with var(--glass) tint
+/// - 135deg linear gradient sheen
+/// - Radial top-left corner highlight
+/// - Inset 1px top rim highlight
+/// - Directional side-edge glow line (.edge) with 3-tier box shadows
+/// - Responsive dark/light theme support
 class KratosGlassCard extends StatefulWidget {
   final Widget child;
-  final BorderRadius borderRadius;
+  final BorderRadius? borderRadius;
   final Color? accentColor;
   final EdgeInsetsGeometry? padding;
   final bool interactive;
@@ -40,11 +55,13 @@ class KratosGlassCard extends StatefulWidget {
   final bool selected;
   final bool disabled;
   final VoidCallback? onTap;
+  final bool showEdgeGlow;
+  final KratosEdgeGlowPosition edgeGlowPosition;
 
   const KratosGlassCard({
     super.key,
     required this.child,
-    this.borderRadius = const BorderRadius.all(Radius.circular(16)),
+    this.borderRadius,
     this.accentColor,
     this.padding,
     this.interactive = false,
@@ -53,6 +70,8 @@ class KratosGlassCard extends StatefulWidget {
     this.selected = false,
     this.disabled = false,
     this.onTap,
+    this.showEdgeGlow = true,
+    this.edgeGlowPosition = KratosEdgeGlowPosition.top,
   });
 
   @override
@@ -67,8 +86,8 @@ class _KratosGlassCardState extends State<KratosGlassCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final accent = widget.accentColor ??
-        (isDark ? KratosTheme.electricLime : KratosTheme.lightAcidLime);
+    final tokens = theme.extension<KratosCardTokens>() ??
+        (isDark ? KratosCardTokens.dark() : KratosCardTokens.light());
 
     final isDisabled = widget.disabled || widget.variant == KratosSurfaceVariant.disabled;
     final isActive = !isDisabled &&
@@ -81,261 +100,252 @@ class _KratosGlassCardState extends State<KratosGlassCard> {
             widget.variant == KratosSurfaceVariant.interactive ||
             widget.onTap != null);
 
-    // Border styling
-    final Color baseBorderColor;
-    final double borderWidth;
+    final accent = widget.accentColor ?? tokens.accentColor;
+    final glowColor = isActive ? accent : (widget.accentColor ?? tokens.glowColor);
+
+    Color baseBorderColor;
     if (isDisabled) {
-      baseBorderColor = isDark
-          ? Colors.white.withValues(alpha: 0.05)
-          : const Color(0x0F0F172A);
-      borderWidth = 1.0;
+      baseBorderColor = tokens.borderDisabled;
     } else if (isActive) {
       baseBorderColor = accent.withValues(alpha: isDark ? 0.70 : 0.80);
-      borderWidth = 1.2;
     } else if (isElevated) {
-      baseBorderColor = isDark
-          ? (_hovered
-              ? accent.withValues(alpha: 0.40)
-              : Colors.white.withValues(alpha: 0.14))
-          : (_hovered
-              ? accent.withValues(alpha: 0.55)
-              : KratosTheme.lightBorderGlass);
-      borderWidth = 1.0;
+      baseBorderColor = _hovered
+          ? (widget.accentColor ?? tokens.borderElevatedHover)
+          : tokens.borderElevated;
     } else {
-      baseBorderColor = isDark
-          ? (_hovered
-              ? accent.withValues(alpha: 0.35)
-              : Colors.white.withValues(alpha: 0.10))
-          : (_hovered
-              ? accent.withValues(alpha: 0.50)
-              : KratosTheme.lightBorderGlass);
-      borderWidth = 1.0;
+      baseBorderColor = _hovered
+          ? (widget.accentColor ?? tokens.borderHover)
+          : tokens.borderNormal;
     }
+    final double borderWidth =
+        isActive ? tokens.borderWidthActive : tokens.borderWidthNormal;
 
-    // Shadow layering (Layer 1)
-    final List<BoxShadow> shadows;
+    List<BoxShadow> shadows;
     if (isDisabled) {
-      shadows = [
-        BoxShadow(
-          color: isDark ? Colors.black.withValues(alpha: 0.15) : const Color(0x050F172A),
-          blurRadius: 6,
-          offset: const Offset(0, 2),
-        ),
-      ];
+      shadows = tokens.shadowDisabled;
     } else if (isActive) {
-      shadows = [
-        // Subtle external equipment glow
-        BoxShadow(
-          color: accent.withValues(alpha: isDark ? (_hovered ? 0.20 : 0.14) : (_hovered ? 0.15 : 0.10)),
-          blurRadius: _hovered ? 24 : 18,
-          offset: const Offset(0, 4),
-        ),
-        // Ambient depth
-        BoxShadow(
-          color: isDark ? Colors.black.withValues(alpha: 0.48) : const Color(0x0E0F172A),
-          blurRadius: 22,
-          offset: const Offset(0, 6),
-        ),
-        if (isDark)
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.04),
-            blurRadius: 1,
-            offset: const Offset(0, 1),
-          )
-        else
-          const BoxShadow(
-            color: Color(0x05000000),
-            blurRadius: 4,
-            offset: Offset(0, 1),
-          ),
-      ];
+      shadows = _hovered ? tokens.shadowActiveHover : tokens.shadowActive;
     } else if (isElevated) {
-      shadows = [
-        BoxShadow(
-          color: isDark
-              ? Colors.black.withValues(alpha: _hovered ? 0.60 : 0.50)
-              : const Color(0x140F172A),
-          blurRadius: _hovered ? 32 : 24,
-          offset: const Offset(0, 8),
-        ),
-        if (isDark)
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.04),
-            blurRadius: 1,
-            offset: const Offset(0, 1),
-          )
-        else
-          const BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-      ];
+      shadows = _hovered ? tokens.shadowElevatedHover : tokens.shadowElevated;
     } else {
-      shadows = [
-        BoxShadow(
-          color: isDark
-              ? Colors.black.withValues(alpha: _hovered ? 0.50 : 0.38)
-              : const Color(0x0C0F172A),
-          blurRadius: _hovered ? 24 : 18,
-          offset: const Offset(0, 6),
-        ),
-        if (isDark)
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.03),
-            blurRadius: 1,
-            offset: const Offset(0, 1),
-          )
-        else
-          const BoxShadow(
-            color: Color(0x05000000),
-            blurRadius: 4,
-            offset: Offset(0, 1),
-          ),
-      ];
+      shadows = _hovered ? tokens.shadowHover : tokens.shadowNormal;
     }
 
-    // Body gradient (Layer 2)
-    final Gradient bodyGradient;
-    if (isDark) {
-      if (isActive) {
-        bodyGradient = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF171B18).withValues(alpha: 0.98),
-            const Color(0xFF111412).withValues(alpha: 0.98),
-            const Color(0xFF090B09),
-          ],
-          stops: const [0.0, 0.45, 1.0],
-        );
-      } else if (isElevated) {
-        bodyGradient = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF191D1A).withValues(alpha: 0.98),
-            const Color(0xFF121613).withValues(alpha: 0.98),
-            const Color(0xFF0B0D0B),
-          ],
-          stops: const [0.0, 0.45, 1.0],
-        );
-      } else {
-        bodyGradient = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF151816).withValues(alpha: 0.96),
-            const Color(0xFF0F1210).withValues(alpha: 0.98),
-            const Color(0xFF080A08),
-          ],
-          stops: const [0.0, 0.45, 1.0],
-        );
-      }
+    Gradient bodyGradient;
+    if (isActive) {
+      bodyGradient = tokens.backgroundActive;
+    } else if (isElevated) {
+      bodyGradient = tokens.backgroundElevated;
     } else {
-      bodyGradient = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: isActive
-            ? const [
-                Colors.white,
-                Color(0xFFF9FDF5),
-                Color(0xFFF1F6EC),
-              ]
-            : const [
-                Colors.white,
-                Color(0xFFFAFBFC),
-                Color(0xFFF2F4F8),
-              ],
-        stops: const [0.0, 0.50, 1.0],
-      );
+      bodyGradient = tokens.backgroundNormal;
     }
 
+    final Color baseGlassFill = isDisabled
+        ? tokens.glassFill.withValues(alpha: tokens.glassFill.a * 0.5)
+        : (isActive
+            ? Color.alphaBlend(accent.withValues(alpha: 0.06), tokens.glassFill)
+            : tokens.glassFill);
+
+    final resolvedRadius =
+        widget.borderRadius ?? BorderRadius.circular(tokens.radius);
     final content = Padding(
-      padding: widget.padding ?? const EdgeInsets.all(16),
+      padding: widget.padding ?? tokens.defaultPadding,
       child: widget.child,
     );
 
     final disableAnimations =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
-    Widget cardWidget = AnimatedContainer(
-      duration: disableAnimations
-          ? Duration.zero
-          : const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-      decoration: BoxDecoration(
-        borderRadius: widget.borderRadius,
-        gradient: bodyGradient,
-        border: Border.all(
-          color: baseBorderColor,
-          width: borderWidth,
+    Widget cardWidget = RepaintBoundary(
+      child: AnimatedContainer(
+        duration: disableAnimations
+            ? Duration.zero
+            : const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        decoration: BoxDecoration(
+          borderRadius: resolvedRadius,
+          border: Border.all(
+            color: baseBorderColor,
+            width: borderWidth,
+          ),
+          boxShadow: shadows,
         ),
-        boxShadow: shadows,
-      ),
-      child: ClipRRect(
-        borderRadius: widget.borderRadius,
-        child: Stack(
-          fit: StackFit.passthrough,
-          children: [
-            // Layer 3: Inner hairline sheen gradient
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        (isDark ? Colors.white : accent).withValues(
-                          alpha: isDark ? 0.025 : 0.04,
-                        ),
-                        Colors.transparent,
-                      ],
-                      stops: const [0.0, 0.25],
+        child: ClipRRect(
+          borderRadius: resolvedRadius,
+          child: Stack(
+            fit: StackFit.passthrough,
+            children: [
+              // Layer 1: Frosted Glass BackdropFilter + Base Tint (var(--glass) + blur(28px))
+              Positioned.fill(
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(
+                    sigmaX: tokens.blurSigma,
+                    sigmaY: tokens.blurSigma,
+                  ),
+                  child: Container(
+                    color: baseGlassFill,
+                  ),
+                ),
+              ),
+
+              // Layer 2: 135deg Linear Gradient Sheen (linear-gradient(135deg, #ffffff20, transparent 42%, #ffffff08))
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: bodyGradient,
                     ),
                   ),
                 ),
               ),
-            ),
-            // Layer 5: Top specular reflection line
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 1.2,
-              child: IgnorePointer(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        (isDark ? (isActive ? accent : Colors.white) : accent).withValues(
-                          alpha: isDark
-                              ? (isActive ? 0.35 : 0.18)
-                              : (isActive ? 0.40 : 0.25),
-                        ),
-                        Colors.transparent,
-                      ],
-                      stops: const [0.0, 0.5, 1.0],
+
+              // Layer 3: Top-Left Elliptical Radial Sheen (.card:before: radial-gradient(ellipse at 0 0, #ffffff25, transparent 45%))
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        center: Alignment.topLeft,
+                        radius: 0.9,
+                        colors: [
+                          tokens.sheenColor
+                              .withValues(alpha: tokens.sheenOpacity),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.45],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            DefaultTextStyle.merge(
-              style: TextStyle(
-                color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
-                fontFamily: 'Roboto',
-              ),
-              child: IconTheme.merge(
-                data: IconThemeData(
-                  color: isDark ? Colors.white70 : KratosTheme.lightTextSecondary,
+
+              // Layer 4: Inset Top Rim Highlight (inset 0 1px per reference spec)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 1.0,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          (isDark
+                              ? (isActive
+                                  ? const Color(0xFFEEFF08).withValues(alpha: 0.22)
+                                  : (isElevated
+                                      ? Colors.white.withValues(alpha: 0.08)
+                                      : Colors.white.withValues(alpha: 0.05)))
+                              : (isActive
+                                  ? Colors.white.withValues(alpha: 0.72)
+                                  : (isElevated
+                                      ? Colors.white.withValues(alpha: 0.65)
+                                      : Colors.white.withValues(alpha: 0.55)))),
+                          (isDark
+                              ? (isActive
+                                  ? const Color(0xFFEEFF08).withValues(alpha: 0.22)
+                                  : (isElevated
+                                      ? Colors.white.withValues(alpha: 0.08)
+                                      : Colors.white.withValues(alpha: 0.05)))
+                              : (isActive
+                                  ? Colors.white.withValues(alpha: 0.72)
+                                  : (isElevated
+                                      ? Colors.white.withValues(alpha: 0.65)
+                                      : Colors.white.withValues(alpha: 0.55)))),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.06, 0.94, 1.0],
+                      ),
+                    ),
+                  ),
                 ),
-                child: content,
               ),
-            ),
-          ],
+
+              // Layer 5: Directional Side-Edge Glow (.edge)
+              if (widget.showEdgeGlow &&
+                  widget.edgeGlowPosition != KratosEdgeGlowPosition.none &&
+                  !isDisabled)
+                Positioned(
+                  top: widget.edgeGlowPosition == KratosEdgeGlowPosition.bottom
+                      ? null
+                      : 0,
+                  bottom: widget.edgeGlowPosition == KratosEdgeGlowPosition.bottom
+                      ? 0
+                      : null,
+                  left: 0,
+                  right: 0,
+                  height: 2.0,
+                  child: IgnorePointer(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final width = constraints.maxWidth;
+                        final leftPad = widget.edgeGlowPosition ==
+                                KratosEdgeGlowPosition.bottom
+                            ? width * 0.35
+                            : width * 0.09;
+                        final rightPad = widget.edgeGlowPosition ==
+                                KratosEdgeGlowPosition.bottom
+                            ? 0.0
+                            : width * 0.15;
+                        return Padding(
+                          padding: EdgeInsets.only(left: leftPad, right: rightPad),
+                          child: Container(
+                            height: 2.0,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.transparent,
+                                  glowColor.withValues(alpha: isDark ? 0.90 : 0.80),
+                                  Colors.white,
+                                  glowColor.withValues(alpha: isDark ? 0.90 : 0.80),
+                                  Colors.transparent,
+                                ],
+                                stops: const [0.0, 0.30, 0.50, 0.70, 1.0],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: glowColor
+                                      .withValues(alpha: isDark ? 0.85 : 0.65),
+                                  blurRadius: 9,
+                                  spreadRadius: 0,
+                                ),
+                                BoxShadow(
+                                  color: glowColor
+                                      .withValues(alpha: isDark ? 0.60 : 0.40),
+                                  blurRadius: 24,
+                                  spreadRadius: 0,
+                                ),
+                                BoxShadow(
+                                  color: glowColor
+                                      .withValues(alpha: isDark ? 0.35 : 0.20),
+                                  blurRadius: 38,
+                                  spreadRadius: 0,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+
+              // Layer 6: Content
+              DefaultTextStyle.merge(
+                style: TextStyle(
+                  color: isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextPrimary,
+                  fontFamily: 'Roboto',
+                ),
+                child: IconTheme.merge(
+                  data: IconThemeData(
+                    color: isDark ? const Color(0xFFF3F1E8) : KratosTheme.lightTextSecondary,
+                  ),
+                  child: content,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -355,9 +365,7 @@ class _KratosGlassCardState extends State<KratosGlassCard> {
     final targetScale = disableAnimations
         ? 1.0
         : (_pressed
-            ? (isWeb
-                ? KratosMotion.buttonPressScaleWeb
-                : KratosMotion.buttonPressScaleMobile)
+            ? (isWeb ? KratosMotion.buttonPressScaleWeb : KratosMotion.buttonPressScaleMobile)
             : (isWeb && _hovered ? 1.006 : 1.0));
 
     return MouseRegion(
@@ -580,382 +588,700 @@ class _KratosOpeningSequenceState extends State<KratosOpeningSequence> {
   }
 }
 
-/// Fixed KRATOS Environment with deep black base, dark volcanic undertones,
-/// subtle technical lattice grid, and the geometric crystal/star signature.
-/// Fully deterministic and GPU-cached with zero per-frame CPU overhead.
-class KratosEnvironment extends StatelessWidget {
-  const KratosEnvironment({super.key});
+/// Procedural fine monochromatic noise generator cached once in memory.
+/// Avoids regenerating textures per frame and provides GPU-accelerated repeated shader tiling.
+class KratosNoiseGenerator {
+  static ui.Image? _cachedNoiseImage;
+  static bool _isGenerating = false;
+  static final List<VoidCallback> _listeners = [];
+
+  static ui.Image? get cachedImage => _cachedNoiseImage;
+
+  static void ensureInitialized() {
+    if (_cachedNoiseImage != null || _isGenerating) return;
+    _isGenerating = true;
+
+    const int width = 180;
+    const int height = 180;
+    final Uint8List pixels = Uint8List(width * height * 4);
+
+    // Seeded pseudo-random generator for deterministic, uniform, fine monochromatic noise
+    int seed = 1337;
+    int nextRandom() {
+      seed = (seed * 1664525 + 1013904223) & 0x7FFFFFFF;
+      return seed;
+    }
+
+    for (int i = 0; i < width * height; i++) {
+      final int val = nextRandom() & 0xFF;
+      // Restrained subtle alpha
+      final int alpha = 18 + (nextRandom() % 24);
+      final int offset = i * 4;
+      pixels[offset] = val;
+      pixels[offset + 1] = val;
+      pixels[offset + 2] = val;
+      pixels[offset + 3] = alpha;
+    }
+
+    ui.decodeImageFromPixels(
+      pixels,
+      width,
+      height,
+      ui.PixelFormat.rgba8888,
+      (ui.Image img) {
+        _cachedNoiseImage = img;
+        _isGenerating = false;
+        for (final listener in _listeners) {
+          listener();
+        }
+        _listeners.clear();
+      },
+    );
+  }
+
+  static void addListener(VoidCallback cb) {
+    if (_cachedNoiseImage != null) {
+      cb();
+    } else {
+      _listeners.add(cb);
+      ensureInitialized();
+    }
+  }
+}
+
+/// Global KRATOS Glass Environment recreating the reference visual direction:
+/// - Deep black (#070908) and warm off-white (#E9E9E3) themes.
+/// - 4 large, overlapping, curved translucent glass ribbons with 165°/160° gradients and specular edge reflections.
+/// - Multi-layered atmospheric lighting concentrated at opposing corners.
+/// - Fine monochromatic procedural grain texture.
+/// - Subtle vertical sinusoidal ambient motion across ribbons.
+class KratosEnvironment extends StatefulWidget {
+  final Widget? child;
+
+  const KratosEnvironment({super.key, this.child});
+
+  @override
+  State<KratosEnvironment> createState() => _KratosEnvironmentState();
+}
+
+class _KratosEnvironmentState extends State<KratosEnvironment>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 120),
+    )..repeat();
+    KratosNoiseGenerator.ensureInitialized();
+    KratosNoiseGenerator.addListener(_onNoiseLoaded);
+  }
+
+  void _onNoiseLoaded() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return IgnorePointer(
-      child: RepaintBoundary(
-        child: CustomPaint(
-          painter: _KratosAtmospherePainter(isDark: isDark),
-          isComplex: true,
-          willChange: false,
-          child: const SizedBox.expand(),
-        ),
+    final disableAnimations =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+    final backgroundWidget = RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          return CustomPaint(
+            painter: _KratosGlassRibbonPainter(
+              isDark: isDark,
+              timeSeconds:
+                  disableAnimations ? 0.0 : _controller.value * 120.0,
+              noiseImage: KratosNoiseGenerator.cachedImage,
+            ),
+            isComplex: true,
+            willChange: !disableAnimations,
+            child: const SizedBox.expand(),
+          );
+        },
       ),
+    );
+
+    if (widget.child == null) {
+      return IgnorePointer(child: backgroundWidget);
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        IgnorePointer(child: backgroundWidget),
+        widget.child!,
+      ],
     );
   }
 }
 
-class _KratosAtmospherePainter extends CustomPainter {
+class _KratosGlassRibbonPainter extends CustomPainter {
   final bool isDark;
+  final double timeSeconds;
+  final ui.Image? noiseImage;
 
-  const _KratosAtmospherePainter({required this.isDark});
-
-  static const List<Offset> _arrow = [
-    Offset(-120, 900),
-    Offset(150, 900),
-    Offset(585, 505),
-    Offset(980, 95),
-    Offset(1260, 95),
-    Offset(585, 700),
-  ];
-
-  static Color _c(int rgb, double alpha, [double mul = 1.0]) =>
-      Color(0xFF000000 | rgb).withValues(alpha: alpha * mul);
+  const _KratosGlassRibbonPainter({
+    required this.isDark,
+    required this.timeSeconds,
+    this.noiseImage,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
     final rect = Offset.zero & size;
 
-    _paintBase(canvas, size, rect);
-    _paintAtmosphere(canvas, size, rect);
-    _paintArrow(canvas, size);
+    _paintBaseAndAtmosphere(canvas, size, rect);
+    _paintGlassRibbons(canvas, size, rect);
+    _paintNoise(canvas, rect);
     _paintVignette(canvas, size, rect);
   }
 
-  void _ellipseGlow(
-    Canvas canvas,
-    Rect clip,
-    Offset center,
-    double rx,
-    double ry,
-    List<Color> colors,
-    List<double> stops,
-  ) {
-    canvas.save();
-    canvas.clipRect(clip);
-    canvas.translate(center.dx, center.dy);
-    canvas.scale(rx, ry);
-    canvas.drawCircle(
-      Offset.zero,
-      1.0,
-      Paint()..shader = ui.Gradient.radial(Offset.zero, 1.0, colors, stops),
-    );
-    canvas.restore();
-  }
+  void _paintBaseAndAtmosphere(Canvas canvas, Size size, Rect rect) {
+    // 1. Base canvas gradient: linear-gradient(145deg, #030503, #080b08 52%, #050705)
+    final baseGradient = isDark
+        ? const LinearGradient(
+            begin: Alignment(-0.82, -0.57),
+            end: Alignment(0.82, 0.57),
+            colors: [
+              Color(0xFF030503),
+              Color(0xFF080B08),
+              Color(0xFF050705),
+            ],
+            stops: [0.0, 0.52, 1.0],
+          )
+        : const LinearGradient(
+            begin: Alignment(-0.82, -0.57),
+            end: Alignment(0.82, 0.57),
+            colors: [
+              Color(0xFFF1F3ED),
+              Color(0xFFE9E9E3),
+              Color(0xFFE7ECE4),
+            ],
+            stops: [0.0, 0.52, 1.0],
+          );
 
-  void _paintBase(Canvas canvas, Size size, Rect rect) {
-    // linear-gradient(145deg,#030503,#080b08 52%,#050705)
-    const sinA = 0.5736; // sin(145deg)
-    const cosA = -0.8192; // cos(145deg)
-    final len = size.width * sinA + size.height * 0.8192;
-    final c = rect.center;
-    final dir = const Offset(sinA, -cosA);
     canvas.drawRect(
       rect,
-      Paint()
-        ..shader = ui.Gradient.linear(
-          c - dir * (len / 2),
-          c + dir * (len / 2),
-          isDark ? const [Color(0xFF030503), Color(0xFF080B08), Color(0xFF050705)] : const [Color(0xFFFFFFFF), Color(0xFFF9FAF7), Color(0xFFF1F3ED)],
-          const [0.0, 0.52, 1.0],
-        ),
+      Paint()..shader = baseGradient.createShader(rect),
     );
 
-    // radial-gradient(ellipse 70% 55% at 78% 12%, rgba(238,255,8,.12), transparent 64%)
-    _ellipseGlow(
-      canvas,
-      rect,
-      Offset(size.width * 0.78, size.height * 0.12),
-      size.width * 0.70,
-      size.height * 0.55,
-      [isDark ? _c(0xEEFF08, .12) : _c(0xA8B800, .13), isDark ? const Color(0x00EEFF08) : const Color(0x00A8B800)],
-      const [0.0, 0.64],
+    // 2. Opposing Corner Ambient Glow 1: Top-Right (ellipse 70% 55% at 78% 12%)
+    _drawRadialEllipticalGlow(
+      canvas: canvas,
+      center: Offset(size.width * 0.78, size.height * 0.12),
+      radiusX: size.width * 0.70,
+      radiusY: size.height * 0.55,
+      colors: isDark
+          ? [
+              const Color(0xFFEEFF08).withValues(alpha: 0.12),
+              Colors.transparent,
+            ]
+          : [
+              const Color(0xFFA8B800).withValues(alpha: 0.09),
+              Colors.transparent,
+            ],
+      stops: const [0.0, 0.64],
     );
-    // radial-gradient(ellipse 55% 55% at 8% 88%, rgba(98,124,27,.07), transparent 68%)
-    _ellipseGlow(
-      canvas,
-      rect,
-      Offset(size.width * 0.08, size.height * 0.88),
-      size.width * 0.55,
-      size.height * 0.55,
-      [_c(0x627C1B, isDark ? .07 : .09), const Color(0x00627C1B)],
-      const [0.0, 0.68],
+
+    // 3. Atmosphere Top-Right Circle (.atmosphere: 900x900 right:-310px top:-330px blur:58px)
+    _drawRadialEllipticalGlow(
+      canvas: canvas,
+      center: Offset(size.width * 0.95, size.height * 0.05),
+      radiusX: size.width * 0.65,
+      radiusY: size.width * 0.65,
+      colors: isDark
+          ? [
+              const Color(0xFFEEFF08).withValues(alpha: 0.22),
+              const Color(0xFFADC419).withValues(alpha: 0.10),
+              const Color(0xFF485E14).withValues(alpha: 0.035),
+              Colors.transparent,
+            ]
+          : [
+              const Color(0xFFA8B800).withValues(alpha: 0.12),
+              Colors.white.withValues(alpha: 0.55),
+              const Color(0xFFE7ECE4).withValues(alpha: 0.15),
+              Colors.transparent,
+            ],
+      stops: const [0.0, 0.23, 0.48, 0.72],
+    );
+
+    // 4. Opposing Corner Ambient Glow 2: Bottom-Left (ellipse 55% 55% at 8% 88%)
+    _drawRadialEllipticalGlow(
+      canvas: canvas,
+      center: Offset(size.width * 0.08, size.height * 0.88),
+      radiusX: size.width * 0.55,
+      radiusY: size.height * 0.55,
+      colors: isDark
+          ? [
+              const Color(0xFF627C1B).withValues(alpha: 0.07),
+              Colors.transparent,
+            ]
+          : [
+              const Color(0xFF718000).withValues(alpha: 0.05),
+              Colors.transparent,
+            ],
+      stops: const [0.0, 0.68],
+    );
+
+    // 5. Atmosphere Bottom-Left Circle (.atmosphere-bottom: 680x680 left:-330px bottom:-350px blur:50px)
+    _drawRadialEllipticalGlow(
+      canvas: canvas,
+      center: Offset(size.width * 0.05, size.height * 0.95),
+      radiusX: size.width * 0.55,
+      radiusY: size.width * 0.55,
+      colors: isDark
+          ? [
+              const Color(0xFF97B11D).withValues(alpha: 0.12),
+              const Color(0xFF475F14).withValues(alpha: 0.045),
+              Colors.transparent,
+            ]
+          : [
+              const Color(0xFFA8B800).withValues(alpha: 0.07),
+              const Color(0xFFE7ECE4).withValues(alpha: 0.35),
+              Colors.transparent,
+            ],
+      stops: const [0.0, 0.40, 0.72],
     );
   }
 
-  void _paintAtmosphere(Canvas canvas, Size size, Rect rect) {
+  void _drawRadialEllipticalGlow({
+    required Canvas canvas,
+    required Offset center,
+    required double radiusX,
+    required double radiusY,
+    required List<Color> colors,
+    required List<double> stops,
+  }) {
     canvas.save();
-    canvas.clipRect(rect);
-    // .atmosphere: 900px circle, right:-310 top:-330
-    final topCenter = Offset(size.width - 140, 120);
-    const topR = 450.0 * 1.4142;
+    canvas.translate(center.dx, center.dy);
+    canvas.scale(1.0, radiusY / radiusX);
     canvas.drawCircle(
-      topCenter,
-      450,
+      Offset.zero,
+      radiusX,
       Paint()
         ..shader = ui.Gradient.radial(
-          topCenter,
-          topR,
-          [
-            _c(isDark ? 0xEEFF08 : 0xA8B800, isDark ? .22 : .16),
-            _c(isDark ? 0xADC419 : 0x98AA10, isDark ? .10 : .08),
-            _c(0x485E14, .035),
-            const Color(0x00485E14),
-          ],
-          const [0.0, 0.23, 0.48, 0.72],
-        ),
-    );
-    // .atmosphere-bottom: 680px circle, left:-330 bottom:-350
-    final botCenter = Offset(10, size.height + 10);
-    const botR = 340.0 * 1.4142;
-    canvas.drawCircle(
-      botCenter,
-      340,
-      Paint()
-        ..shader = ui.Gradient.radial(
-          botCenter,
-          botR,
-          [
-            _c(0x97B11D, isDark ? .12 : .10),
-            _c(0x475F14, .045),
-            const Color(0x00475F14),
-          ],
-          const [0.0, 0.40, 0.72],
+          Offset.zero,
+          radiusX,
+          colors,
+          stops,
         ),
     );
     canvas.restore();
   }
 
-  ui.Gradient _bb(
-    Rect bb,
-    Offset from,
-    Offset to,
-    List<Color> colors,
-    List<double> stops,
-  ) {
-    return ui.Gradient.linear(
-      Offset(bb.left + bb.width * from.dx, bb.top + bb.height * from.dy),
-      Offset(bb.left + bb.width * to.dx, bb.top + bb.height * to.dy),
-      colors,
-      stops,
-    );
-  }
-
-  Path _poly(List<Offset> pts, {required bool close}) {
-    final p = Path()..moveTo(pts.first.dx, pts.first.dy);
-    for (final o in pts.skip(1)) {
-      p.lineTo(o.dx, o.dy);
-    }
-    if (close) p.close();
-    return p;
-  }
-
-  void _paintArrow(Canvas canvas, Size size) {
-    final compact = size.width <= 760;
-    final double w;
-    final double h;
-    final double left;
-    final double top;
-    final double opacity;
-    final double wideW;
-    final double tightW;
-    if (compact) {
-      w = 820;
-      h = 620;
-      left = -310;
-      top = -120;
-      opacity = .66;
-      wideW = 64;
-      tightW = 20;
-    } else {
-      final w105 = size.width * 1.05;
-      final w80 = size.width * 0.8;
-      w = w105 < 1180 ? w105 : 1180;
-      h = w80 < 900 ? w80 : 900;
-      left = -150;
-      top = -250;
-      opacity = .88;
-      wideW = 82;
-      tightW = 25;
-    }
-
-    final arrowRect = Rect.fromLTWH(left, top, w, h);
+  void _drawSingleRibbon({
+    required Canvas canvas,
+    required double cx,
+    required double cy,
+    required double width,
+    required double height,
+    required double angleRad,
+    required double waveOffset,
+    required double sheenX,
+    required double sheenY,
+  }) {
     canvas.save();
-    canvas.clipRect(arrowRect); // svg overflow: hidden
-    canvas.saveLayer(
-      arrowRect,
-      Paint()..color = Color.fromRGBO(255, 255, 255, opacity),
-    );
-    canvas.translate(left, top);
-    canvas.scale(w / 1200, h / 900);
+    canvas.translate(cx, cy + waveOffset);
+    canvas.rotate(angleRad);
 
-    final body = _poly(_arrow, close: true);
-    final bodyBox = Rect.fromLTRB(-120, 95, 1260, 900);
+    final localRect = Rect.fromCenter(
+      center: Offset.zero,
+      width: width,
+      height: height,
+    );
+    final ribbonPath = Path()..addOval(localRect);
 
-    // arrow-glow-wide
+    // 1. Soft outer ambient glow / shadow
     canvas.drawPath(
-      body,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = wideW
-        ..color = isDark ? _c(0xEEFF08, .23, .8) : _c(0xA8B800, .20, .8)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 42),
-    );
-    // arrow-glow-tight
-    canvas.drawPath(
-      body,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = tightW
-        ..color = isDark ? _c(0xEEFF08, .34, .9) : _c(0xA8B800, .26, .9)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 13),
-    );
-    // arrow-body fill
-    canvas.drawPath(
-      body,
+      ribbonPath,
       Paint()
         ..style = PaintingStyle.fill
-        ..shader = _bb(
-          bodyBox,
-          const Offset(0, 1),
-          const Offset(1, 0),
-          [
-            isDark ? _c(0x101704, .72) : _c(0xFFFFFF, .78),
-            isDark ? _c(0x34400A, .58) : _c(0xE2E9C6, .62),
-            _c(0xB8CA24, isDark ? .26 : .30),
-            isDark ? _c(0xEEFF08, .40) : _c(0xA8B800, .42),
-          ],
+        ..color = isDark
+            ? const Color(0xFFEEFF08).withValues(alpha: 0.045)
+            : const Color(0xFFC8D78C).withValues(alpha: 0.16)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 28),
+    );
+
+    // 2. Translucent glass fill with exact 165°/160° linear gradient stops from reference (#kratos-body)
+    final fillColors = isDark
+        ? const [
+            Color(0xB8101704), // #101704 (0.72)
+            Color(0x9434400A), // #34400A (0.58)
+            Color(0x42B8CA24), // #B8CA24 (0.26)
+            Color(0x66EEFF08), // #EEFF08 (0.40)
+          ]
+        : const [
+            Color(0xB8F1F3ED), // #F1F3ED (0.72)
+            Color(0x94E7ECE4), // #E7ECE4 (0.58)
+            Color(0x5CD6DECE), // #D6DECE (0.36)
+            Color(0x40A8B800), // #A8B800 (0.25)
+          ];
+
+    canvas.drawPath(
+      ribbonPath,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..shader = ui.Gradient.linear(
+          Offset(-width * 0.42, -height * 0.42),
+          Offset(width * 0.42, height * 0.42),
+          fillColors,
           const [0.0, 0.34, 0.62, 1.0],
         ),
     );
-    // arrow-body stroke
+
+    // 3. Hairline glass stroke / border from reference (#kratos-edge)
+    final strokeColors = isDark
+        ? const [
+            Color(0x1FFFFFFF), // #FFFFFF (0.12)
+            Color(0xD9EEFF08), // #EEFF08 (0.85)
+            Color(0x73FFFFFF), // #FFFFFF (0.45)
+            Color(0xA6EEFF08), // #EEFF08 (0.65)
+          ]
+        : const [
+            Color(0x73FFFFFF),
+            Color(0xB3A8B800),
+            Color(0x8CFFFFFF),
+            Color(0x80A8B800),
+          ];
+
     canvas.drawPath(
-      body,
+      ribbonPath,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.2
-        ..strokeJoin = StrokeJoin.round
-        ..color = isDark ? _c(0xEEFF08, .42) : _c(0xA8B800, .55),
-    );
-
-    // arrow-face-a
-    final faceA = [const Offset(150, 900), const Offset(585, 505), const Offset(585, 700)];
-    canvas.drawPath(
-      _poly(faceA, close: true),
-      Paint()
-        ..shader = _bb(
-          const Rect.fromLTRB(150, 505, 585, 900),
-          const Offset(0, 1),
-          const Offset(1, 0),
-          [
-            isDark ? _c(0x050804, .86, .72) : _c(0xDDE5C0, .80, .72),
-            _c(0x9CAC1D, .28, .72),
-            _c(0xFFFFFF, isDark ? .32 : .70, .72),
-          ],
-          const [0.0, 0.55, 1.0],
-        ),
-    );
-    // arrow-face-b
-    final faceB = [
-      const Offset(585, 505),
-      const Offset(980, 95),
-      const Offset(1260, 95),
-      const Offset(585, 700),
-    ];
-    canvas.drawPath(
-      _poly(faceB, close: true),
-      Paint()
-        ..shader = _bb(
-          const Rect.fromLTRB(585, 95, 1260, 700),
-          const Offset(0, 0),
-          const Offset(1, 1),
-          [
-            _c(0xFFFFFF, isDark ? .30 : .75, .56),
-            isDark ? _c(0xEEFF08, .22, .56) : _c(0xA8B800, .22, .56),
-            isDark ? _c(0x080B03, .82, .56) : _c(0xD3DDB0, .80, .56),
-          ],
-          const [0.0, 0.38, 1.0],
-        ),
-    );
-
-    // arrow-facet (2 polylines)
-    final facetPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4
-      ..strokeCap = StrokeCap.round
-      ..color = isDark ? _c(0xFFFFF2, .22) : _c(0x6B7A10, .22);
-    canvas.drawPath(
-      _poly(const [Offset(150, 900), Offset(585, 505), Offset(980, 95)], close: false),
-      facetPaint,
-    );
-    canvas.drawPath(
-      _poly(const [Offset(585, 700), Offset(585, 505), Offset(1260, 95)], close: false),
-      facetPaint,
-    );
-
-    // arrow-edge
-    canvas.drawPath(
-      _poly(
-        const [Offset(150, 900), Offset(585, 505), Offset(980, 95), Offset(1260, 95)],
-        close: false,
-      ),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round
-        ..shader = _bb(
-          const Rect.fromLTRB(150, 95, 1260, 900),
-          const Offset(0, 1),
-          const Offset(1, 0),
-          [
-            _c(0xFFFFFF, isDark ? .12 : .6, .75),
-            isDark ? _c(0xEEFF08, .85, .75) : _c(0xA8B800, .9, .75),
-            _c(0xFFFFFF, isDark ? .45 : .9, .75),
-            isDark ? _c(0xEEFF08, .65, .75) : _c(0xA8B800, .75, .75),
-          ],
+        ..strokeWidth = 1.0
+        ..shader = ui.Gradient.linear(
+          Offset(-width * 0.45, -height * 0.45),
+          Offset(width * 0.45, height * 0.45),
+          strokeColors,
           const [0.0, 0.38, 0.72, 1.0],
         ),
     );
 
-    // arrow-reflect
-    canvas.drawPath(
-      _poly(const [Offset(170, 875), Offset(585, 505), Offset(960, 120)], close: false),
+    // 4. Inset specular reflection along upper curve
+    canvas.save();
+    canvas.clipPath(ribbonPath);
+    final innerRect = Rect.fromCenter(
+      center: Offset(sheenX, -height * 0.03 + sheenY),
+      width: width * 0.985,
+      height: height * 0.97,
+    );
+    canvas.drawOval(
+      innerRect,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 8
-        ..strokeCap = StrokeCap.round
-        ..color = _c(0xFFFFFF, isDark ? .16 : .9, .45)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
+        ..strokeWidth = 2.0
+        ..shader = ui.Gradient.linear(
+          Offset(-width * 0.30, -height * 0.45),
+          Offset(width * 0.30, -height * 0.10),
+          [
+            Colors.transparent,
+            Colors.white.withValues(alpha: isDark ? 0.22 : 0.50),
+            (isDark ? const Color(0xFFEEFF08) : const Color(0xFFA8B800))
+                .withValues(alpha: isDark ? 0.18 : 0.35),
+            Colors.transparent,
+          ],
+          const [0.0, 0.30, 0.70, 1.0],
+        )
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
+    );
+    canvas.restore();
+
+    canvas.restore();
+  }
+
+  void _paintArrowWatermark(Canvas canvas, Size size) {
+    final scale = math.max(size.width / 1200.0, size.height / 900.0);
+    canvas.save();
+    canvas.translate(-150.0 * scale, -250.0 * scale);
+    canvas.scale(scale, scale);
+
+    final pBody = Path()
+      ..moveTo(-120, 900)
+      ..lineTo(150, 900)
+      ..lineTo(585, 505)
+      ..lineTo(980, 95)
+      ..lineTo(1260, 95)
+      ..lineTo(585, 700)
+      ..close();
+
+    final pFaceA = Path()
+      ..moveTo(150, 900)
+      ..lineTo(585, 505)
+      ..lineTo(585, 700)
+      ..close();
+
+    final pFaceB = Path()
+      ..moveTo(585, 505)
+      ..lineTo(980, 95)
+      ..lineTo(1260, 95)
+      ..lineTo(585, 700)
+      ..close();
+
+    final pFacet1 = Path()
+      ..moveTo(150, 900)
+      ..lineTo(585, 505)
+      ..lineTo(980, 95);
+
+    final pFacet2 = Path()
+      ..moveTo(585, 700)
+      ..lineTo(585, 505)
+      ..lineTo(1260, 95);
+
+    final pEdge = Path()
+      ..moveTo(150, 900)
+      ..lineTo(585, 505)
+      ..lineTo(980, 95)
+      ..lineTo(1260, 95);
+
+    final pReflect = Path()
+      ..moveTo(170, 875)
+      ..lineTo(585, 505)
+      ..lineTo(960, 120);
+
+    // Arrow body fill shader (<linearGradient id="kratos-body" x1="0" y1="1" x2="1" y2="0">)
+    final bodyPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = ui.Gradient.linear(
+        const Offset(0, 900),
+        const Offset(1200, 0),
+        isDark
+            ? const [
+                Color(0xB8101704), // #101704 (0.72)
+                Color(0x9434400A), // #34400A (0.58)
+                Color(0x42B8CA24), // #B8CA24 (0.26)
+                Color(0x66EEFF08), // #EEFF08 (0.40)
+              ]
+            : const [
+                Color(0xB8F1F3ED),
+                Color(0x94E7ECE4),
+                Color(0x5CD6DECE),
+                Color(0x40A8B800),
+              ],
+        const [0.0, 0.34, 0.62, 1.0],
+      );
+
+    // Arrow body stroke
+    final strokePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..strokeJoin = StrokeJoin.round
+      ..color = isDark
+          ? const Color(0xFFEEFF08).withValues(alpha: 0.42)
+          : const Color(0xFFA8B800).withValues(alpha: 0.35);
+
+    canvas.drawPath(pBody, bodyPaint);
+    canvas.drawPath(pBody, strokePaint);
+
+    // Arrow Face A (<linearGradient id="kratos-face-a" x1="0" y1="1" x2="1" y2="0">)
+    final faceAPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = ui.Gradient.linear(
+        const Offset(150, 900),
+        const Offset(585, 505),
+        isDark
+            ? [
+                const Color(0xFF050804).withValues(alpha: 0.86 * 0.72),
+                const Color(0xFF9CAC1D).withValues(alpha: 0.28 * 0.72),
+                const Color(0xFFFFFFFF).withValues(alpha: 0.32 * 0.72),
+              ]
+            : [
+                const Color(0xFFF1F3ED).withValues(alpha: 0.86 * 0.72),
+                const Color(0xFFA8B800).withValues(alpha: 0.28 * 0.72),
+                const Color(0xFFFFFFFF).withValues(alpha: 0.32 * 0.72),
+              ],
+        const [0.0, 0.55, 1.0],
+      );
+    canvas.drawPath(pFaceA, faceAPaint);
+
+    // Arrow Face B (<linearGradient id="kratos-face-b" x1="0" y1="0" x2="1" y2="1">)
+    final faceBPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = ui.Gradient.linear(
+        const Offset(585, 95),
+        const Offset(1260, 700),
+        isDark
+            ? [
+                const Color(0xFFFFFFFF).withValues(alpha: 0.30 * 0.56),
+                const Color(0xFFEEFF08).withValues(alpha: 0.22 * 0.56),
+                const Color(0xFF080B03).withValues(alpha: 0.82 * 0.56),
+              ]
+            : [
+                const Color(0xFFFFFFFF).withValues(alpha: 0.30 * 0.56),
+                const Color(0xFFA8B800).withValues(alpha: 0.22 * 0.56),
+                const Color(0xFFE7ECE4).withValues(alpha: 0.82 * 0.56),
+              ],
+        const [0.0, 0.38, 1.0],
+      );
+    canvas.drawPath(pFaceB, faceBPaint);
+
+    // Arrow Facets
+    final facetPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4
+      ..strokeCap = StrokeCap.round
+      ..color = isDark
+          ? const Color(0xFFFFFFF2).withValues(alpha: 0.22)
+          : const Color(0xFFFFFFFF).withValues(alpha: 0.40);
+    canvas.drawPath(pFacet1, facetPaint);
+    canvas.drawPath(pFacet2, facetPaint);
+
+    // Arrow Edge (<linearGradient id="kratos-edge" x1="0" y1="1" x2="1" y2="0">)
+    final edgePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0
+      ..strokeCap = StrokeCap.round
+      ..shader = ui.Gradient.linear(
+        const Offset(150, 900),
+        const Offset(1260, 95),
+        isDark
+            ? [
+                const Color(0xFFFFFFFF).withValues(alpha: 0.12 * 0.75),
+                const Color(0xFFEEFF08).withValues(alpha: 0.85 * 0.75),
+                const Color(0xFFFFFFFF).withValues(alpha: 0.45 * 0.75),
+                const Color(0xFFEEFF08).withValues(alpha: 0.65 * 0.75),
+              ]
+            : [
+                const Color(0xFFFFFFFF).withValues(alpha: 0.25 * 0.75),
+                const Color(0xFFA8B800).withValues(alpha: 0.85 * 0.75),
+                const Color(0xFFFFFFFF).withValues(alpha: 0.45 * 0.75),
+                const Color(0xFFA8B800).withValues(alpha: 0.65 * 0.75),
+              ],
+        const [0.0, 0.38, 0.72, 1.0],
+      );
+    canvas.drawPath(pEdge, edgePaint);
+
+    // Arrow Reflect Line
+    final reflectPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8.0
+      ..color = Colors.white.withValues(alpha: isDark ? 0.16 * 0.45 : 0.28 * 0.45)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7);
+    canvas.drawPath(pReflect, reflectPaint);
+
+    canvas.restore();
+  }
+
+  void _paintGlassRibbons(Canvas canvas, Size size, Rect rect) {
+    // 1. Signature KRATOS Arrow Watermark from reference HTML SVG
+    _paintArrowWatermark(canvas, size);
+
+    final w = size.width;
+    final h = size.height;
+
+    // Ribbon 1: -28 deg (-0.4887 rad), center (0.475*w, 0.20*h), size 1.45*w x 0.38*h
+    _drawSingleRibbon(
+      canvas: canvas,
+      cx: w * 0.475,
+      cy: h * 0.20,
+      width: w * 1.45,
+      height: h * 0.38,
+      angleRad: -28.0 * math.pi / 180.0,
+      waveOffset: 12.0 * math.sin(2 * math.pi * timeSeconds / 20.0),
+      sheenX: 0,
+      sheenY: 0,
     );
 
-    canvas.restore(); // layer
-    canvas.restore(); // clip
+    // Ribbon 2: 34 deg (0.5934 rad), center (0.77*w, 0.39*h), size 1.30*w x 0.32*h
+    _drawSingleRibbon(
+      canvas: canvas,
+      cx: w * 0.77,
+      cy: h * 0.39,
+      width: w * 1.30,
+      height: h * 0.32,
+      angleRad: 34.0 * math.pi / 180.0,
+      waveOffset: 10.0 * math.sin(2 * math.pi * (timeSeconds / 26.0 + 0.25)),
+      sheenX: 0,
+      sheenY: 0,
+    );
+
+    // Ribbon 3: -34 deg (-0.5934 rad), center (0.37*w, 0.645*h), size 1.50*w x 0.37*h
+    _drawSingleRibbon(
+      canvas: canvas,
+      cx: w * 0.37,
+      cy: h * 0.645,
+      width: w * 1.50,
+      height: h * 0.37,
+      angleRad: -34.0 * math.pi / 180.0,
+      waveOffset: 14.0 * math.sin(2 * math.pi * (timeSeconds / 29.0 + 0.50)),
+      sheenX: 0,
+      sheenY: 0,
+    );
+
+    // Ribbon 4: 31 deg (0.5411 rad), center (0.755*w, 0.84*h), size 1.35*w x 0.30*h
+    _drawSingleRibbon(
+      canvas: canvas,
+      cx: w * 0.755,
+      cy: h * 0.84,
+      width: w * 1.35,
+      height: h * 0.30,
+      angleRad: 31.0 * math.pi / 180.0,
+      waveOffset: 11.0 * math.sin(2 * math.pi * (timeSeconds / 24.0 + 0.75)),
+      sheenX: 0,
+      sheenY: 0,
+    );
+  }
+
+  void _paintNoise(Canvas canvas, Rect rect) {
+    final image = noiseImage;
+    if (image == null) return;
+
+    final shader = ImageShader(
+      image,
+      TileMode.repeated,
+      TileMode.repeated,
+      Matrix4.identity().storage,
+    );
+
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = shader
+        ..blendMode = isDark ? BlendMode.softLight : BlendMode.multiply
+        ..color = Color.fromRGBO(255, 255, 255, isDark ? 0.22 : 0.14),
+    );
   }
 
   void _paintVignette(Canvas canvas, Size size, Rect rect) {
-    // radial-gradient(ellipse at center, transparent 42%, rgba(0,0,0,.32) 100%)
-    _ellipseGlow(
-      canvas,
-      rect,
-      rect.center,
-      size.width / 2 * 1.4142,
-      size.height / 2 * 1.4142,
-      [const Color(0x00000000), const Color(0x00000000), isDark ? const Color(0x52000000) : const Color(0x14101810)],
-      const [0.0, 0.42, 1.0],
+    // Reference: .vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 42%,rgba(0,0,0,.32) 100%)}
+    _drawRadialEllipticalGlow(
+      canvas: canvas,
+      center: rect.center,
+      radiusX: size.width * 0.75,
+      radiusY: size.height * 0.75,
+      colors: isDark
+          ? const [
+              Color(0x00000000),
+              Color(0x00000000),
+              Color(0x52000000), // rgba(0, 0, 0, 0.32)
+            ]
+          : const [
+              Color(0x00000000),
+              Color(0x00000000),
+              Color(0x14000000), // rgba(0, 0, 0, 0.08)
+            ],
+      stops: const [0.0, 0.42, 1.0],
     );
   }
 
   @override
-  bool shouldRepaint(covariant _KratosAtmospherePainter oldDelegate) =>
-      oldDelegate.isDark != isDark;
+  bool shouldRepaint(covariant _KratosGlassRibbonPainter oldDelegate) =>
+      oldDelegate.isDark != isDark ||
+      oldDelegate.timeSeconds != timeSeconds ||
+      oldDelegate.noiseImage != noiseImage;
 }
 
 /// Shared Manus design reference: Section Header with eyebrow, Space Grotesk title,

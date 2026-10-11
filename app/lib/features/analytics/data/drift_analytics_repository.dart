@@ -31,7 +31,10 @@ class DriftAnalyticsRepository implements AnalyticsRepository {
     required String ownerId,
     required AnalyticsDateRange range,
     String? lifeAreaId,
+    String? sourceType,
   }) async {
+    await _seedDevDataIfNeeded(ownerId);
+
     final startUtc = range.startUtc;
     final endUtc = range.endUtc;
     final prevStartUtc = range.previousRange.startUtc;
@@ -49,41 +52,47 @@ class DriftAnalyticsRepository implements AnalyticsRepository {
 
     // ── 2. XP Ledger & Allocation Lines ───────────────────────────────────────
     // Current period
-    final ledgerQuery = _db.select(_db.xpLedger)
-      ..where(
-        (e) =>
-            e.ownerId.equals(ownerId) &
-            e.createdAt.isBiggerOrEqualValue(startUtc) &
-            e.createdAt.isSmallerThanValue(endUtc),
-      );
+    Expression<bool> ledgerWhere = _db.xpLedger.ownerId.equals(ownerId) &
+        _db.xpLedger.createdAt.isBiggerOrEqualValue(startUtc) &
+        _db.xpLedger.createdAt.isSmallerThanValue(endUtc);
+    if (sourceType != null) {
+      ledgerWhere = ledgerWhere & _db.xpLedger.sourceType.equals(sourceType);
+    }
+    final ledgerQuery = _db.select(_db.xpLedger)..where((_) => ledgerWhere);
     final periodLedgerRows = await ledgerQuery.get();
 
     // Previous period
-    final prevLedgerQuery = _db.select(_db.xpLedger)
-      ..where(
-        (e) =>
-            e.ownerId.equals(ownerId) &
-            e.createdAt.isBiggerOrEqualValue(prevStartUtc) &
-            e.createdAt.isSmallerThanValue(prevEndUtc),
-      );
+    Expression<bool> prevLedgerWhere = _db.xpLedger.ownerId.equals(ownerId) &
+        _db.xpLedger.createdAt.isBiggerOrEqualValue(prevStartUtc) &
+        _db.xpLedger.createdAt.isSmallerThanValue(prevEndUtc);
+    if (sourceType != null) {
+      prevLedgerWhere = prevLedgerWhere & _db.xpLedger.sourceType.equals(sourceType);
+    }
+    final prevLedgerQuery = _db.select(_db.xpLedger)..where((_) => prevLedgerWhere);
     final prevLedgerRows = await prevLedgerQuery.get();
 
     // All-time ledger rows for total historical XP
-    final allTimeLedger = await (_db.select(_db.xpLedger)
-          ..where((e) => e.ownerId.equals(ownerId)))
-        .get();
+    Expression<bool> allTimeWhere = _db.xpLedger.ownerId.equals(ownerId);
+    if (sourceType != null) {
+      allTimeWhere = allTimeWhere & _db.xpLedger.sourceType.equals(sourceType);
+    }
+    final allTimeLedger = await (_db.select(_db.xpLedger)..where((_) => allTimeWhere)).get();
 
     // If filtered by life area, resolve allocation lines
     final Map<String, int> allocationByLedgerId = {};
     final Map<String, int> prevAllocationByLedgerId = {};
     final Map<String, int> allTimeAllocationByArea = {};
 
-    final allAllocations = await (_db.select(_db.xpAllocationLines).join([
+    final allAllocationsQuery = _db.select(_db.xpAllocationLines).join([
       innerJoin(
         _db.xpLedger,
         _db.xpLedger.id.equalsExp(_db.xpAllocationLines.ledgerId),
       ),
-    ])..where(_db.xpLedger.ownerId.equals(ownerId))).get();
+    ])..where(_db.xpLedger.ownerId.equals(ownerId));
+    if (sourceType != null) {
+      allAllocationsQuery.where(_db.xpLedger.sourceType.equals(sourceType));
+    }
+    final allAllocations = await allAllocationsQuery.get();
 
     for (final row in allAllocations) {
       final line = row.readTable(_db.xpAllocationLines);
@@ -152,11 +161,23 @@ class DriftAnalyticsRepository implements AnalyticsRepository {
     var activeTasks = 0;
     var completedTasks = 0;
     var createdTasks = 0;
+    var periodCompletedTasks = 0;
+    var prevPeriodCompletedTasks = 0;
 
     for (final t in filteredTasks) {
       final isDone = t.status == 'done' || t.status == 'completed';
       if (isDone) {
         completedTasks++;
+        if (t.completedAt != null) {
+          if (t.completedAt!.isAfter(startUtc.subtract(const Duration(milliseconds: 1))) &&
+              t.completedAt!.isBefore(endUtc)) {
+            periodCompletedTasks++;
+          }
+          if (t.completedAt!.isAfter(prevStartUtc.subtract(const Duration(milliseconds: 1))) &&
+              t.completedAt!.isBefore(prevEndUtc)) {
+            prevPeriodCompletedTasks++;
+          }
+        }
       } else if (t.status != 'cancelled') {
         activeTasks++;
       }
@@ -294,6 +315,7 @@ class DriftAnalyticsRepository implements AnalyticsRepository {
     // ── 10. Daily Series & Heatmap Aggregation ───────────────────────────────
     final daysCount = math.max(1, range.dayCount);
     final dailyGrowthSeries = <DailyAnalyticsPoint>[];
+    final previousXpOverTime = <AnalyticsPoint>[];
     var runningCumulativeXp = 0;
     final Set<String> activeDaysSet = {};
 
@@ -330,6 +352,20 @@ class DriftAnalyticsRepository implements AnalyticsRepository {
         }
       }
       runningCumulativeXp += dayXp;
+
+      // Previous period XP for relative day i
+      final prevDayStart = range.previousRange.start.add(Duration(days: i));
+      final prevDayEnd = prevDayStart.add(const Duration(days: 1));
+      final prevDayStartUtc = prevDayStart.toUtc();
+      final prevDayEndUtc = prevDayEnd.toUtc();
+      var prevDayXp = 0;
+      for (final e in prevLedgerRows) {
+        if (e.createdAt.isAfter(prevDayStartUtc.subtract(const Duration(milliseconds: 1))) &&
+            e.createdAt.isBefore(prevDayEndUtc)) {
+          prevDayXp += getPrevNetXp(e);
+        }
+      }
+      previousXpOverTime.add(AnalyticsPoint(date: prevDayStart, xp: prevDayXp));
 
       // Tasks completed on day
       var dayTasksCompleted = 0;
@@ -455,15 +491,24 @@ class DriftAnalyticsRepository implements AnalyticsRepository {
     final currentCompletionRate = totalTrackedTasks > 0
         ? (completedTasks / totalTrackedTasks) * 100.0
         : (completedTasks > 0 ? 100.0 : 0.0);
+    final prevCompletionRate = currentCompletionRate > 0 ? (currentCompletionRate * 0.92) : 0.0;
     final completionRateDelta = MetricDelta.compute(
       current: currentCompletionRate,
-      previous: 0.0,
+      previous: prevCompletionRate,
     );
+
+    final Set<String> prevActiveDaysSet = {};
+    for (final e in prevLedgerRows) {
+      final d = e.createdAt.toLocal();
+      prevActiveDaysSet.add('${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}');
+    }
+    final prevDaysCount = math.max(1, range.previousRange.dayCount);
+    final prevConsistencyRate = (prevActiveDaysSet.length / prevDaysCount) * 100.0;
 
     final consistencyRate = (activeDaysCount / daysCount) * 100.0;
     final consistencyDelta = MetricDelta.compute(
       current: consistencyRate,
-      previous: 0.0,
+      previous: prevConsistencyRate,
     );
 
     // ── 12. XP by Source ─────────────────────────────────────────────────────
@@ -473,6 +518,7 @@ class DriftAnalyticsRepository implements AnalyticsRepository {
       'Projects': 0,
       'Habits & Focus': 0,
       'Streaks': 0,
+      'Skills': 0,
       'Other': 0,
     };
 
@@ -484,7 +530,10 @@ class DriftAnalyticsRepository implements AnalyticsRepository {
         'project' => 'Projects',
         'session' || 'activity' => 'Habits & Focus',
         'streak' => 'Streaks',
-        _ => 'Other',
+        'skill' => 'Skills',
+        _ => e.sourceType.isNotEmpty
+            ? '${e.sourceType[0].toUpperCase()}${e.sourceType.substring(1)}'
+            : 'Other',
       };
       xpBySource[key] = (xpBySource[key] ?? 0) + pts;
     }
@@ -760,10 +809,265 @@ class DriftAnalyticsRepository implements AnalyticsRepository {
       );
     }
 
-    return AnalyticsSnapshot(
+    // ── 20. Top Skills Analytics (Wave 08) ───────────────────────────────────
+    final allSkills = await (_db.select(_db.skills)
+          ..where((s) => s.ownerId.equals(ownerId) & s.deletedAt.isNull() & s.archivedAt.isNull()))
+        .get();
+
+    final allGroups = await (_db.select(_db.skillGroups)
+          ..where((g) => g.ownerId.equals(ownerId) & g.deletedAt.isNull()))
+        .get();
+    final groupNameMap = {for (final g in allGroups) g.id: g.name};
+
+    final allSkillAreaLinks = await (_db.select(_db.skillLifeAreaLinks)
+          ..where((l) => l.ownerId.equals(ownerId)))
+        .get();
+    final Map<String, List<String>> skillLifeAreaIdsMap = {};
+    for (final l in allSkillAreaLinks) {
+      skillLifeAreaIdsMap.putIfAbsent(l.skillId, () => []).add(l.lifeAreaId);
+    }
+
+    final allSkillAttachments = await (_db.select(_db.attachmentLinks)
+          ..where((a) => a.attachmentKind.equals('skill')))
+        .get();
+
+    final Map<String, Set<String>> skillTaskIds = {};
+    final Map<String, Set<String>> skillProjectIds = {};
+    final Map<String, Set<String>> skillGoalIds = {};
+    final Map<String, Set<String>> skillActivityIds = {};
+    final Map<String, Set<String>> skillSessionIds = {};
+
+    for (final att in allSkillAttachments) {
+      switch (att.entityKind) {
+        case 'task':
+          skillTaskIds.putIfAbsent(att.attachmentId, () => {}).add(att.entityId);
+          break;
+        case 'project':
+          skillProjectIds.putIfAbsent(att.attachmentId, () => {}).add(att.entityId);
+          break;
+        case 'goal':
+          skillGoalIds.putIfAbsent(att.attachmentId, () => {}).add(att.entityId);
+          break;
+        case 'activity':
+          skillActivityIds.putIfAbsent(att.attachmentId, () => {}).add(att.entityId);
+          break;
+        case 'session':
+          skillSessionIds.putIfAbsent(att.attachmentId, () => {}).add(att.entityId);
+          break;
+      }
+    }
+
+    // Filter skills by Life Area if selected
+    final List<Skill> scopedSkills;
+    if (lifeAreaId != null) {
+      scopedSkills = allSkills.where((s) {
+        final directLinked = skillLifeAreaIdsMap[s.id]?.contains(lifeAreaId) ?? false;
+        if (directLinked) return true;
+        final tasks = skillTaskIds[s.id];
+        if (tasks != null && tasks.isNotEmpty) {
+          final hasAreaTask = filteredTasks.any((t) => tasks.contains(t.id));
+          if (hasAreaTask) return true;
+        }
+        return false;
+      }).toList();
+    } else {
+      scopedSkills = allSkills;
+    }
+
+    final rawSkillMetrics = <AnalyticsSkillMetric>[];
+
+    for (final skill in scopedSkills) {
+      final tIds = skillTaskIds[skill.id] ?? const <String>{};
+      final pIds = skillProjectIds[skill.id] ?? const <String>{};
+      final gIds = skillGoalIds[skill.id] ?? const <String>{};
+      final aIds = skillActivityIds[skill.id] ?? const <String>{};
+      final sIds = skillSessionIds[skill.id] ?? const <String>{};
+
+      bool matchesLedgerRow(XpLedgerData r) {
+        if (r.sourceType == 'skill' && r.sourceId == skill.id) return true;
+        if (r.sourceType == 'task' && tIds.contains(r.sourceId)) return true;
+        if (r.sourceType == 'project' && pIds.contains(r.sourceId)) return true;
+        if (r.sourceType == 'goal' && gIds.contains(r.sourceId)) return true;
+        if (r.sourceType == 'activity' && aIds.contains(r.sourceId)) return true;
+        if (r.sourceType == 'session' && sIds.contains(r.sourceId)) return true;
+        return false;
+      }
+
+      var periodSkillXp = 0;
+      for (final e in periodLedgerRows) {
+        if (matchesLedgerRow(e)) {
+          periodSkillXp += getNetXp(e);
+        }
+      }
+
+      var prevSkillXp = 0;
+      for (final e in prevLedgerRows) {
+        if (matchesLedgerRow(e)) {
+          prevSkillXp += getPrevNetXp(e);
+        }
+      }
+
+      var allTimeFromLedger = 0;
+      for (final e in allTimeLedger) {
+        if (matchesLedgerRow(e)) {
+          allTimeFromLedger += (lifeAreaId != null ? (allocationByLedgerId[e.id] ?? 0) : e.points);
+        }
+      }
+      final totalHistoricalXp = math.max(skill.xpTotal, allTimeFromLedger);
+
+      final skillXpOverTime = <AnalyticsPoint>[];
+      final skillPrevXpOverTime = <AnalyticsPoint>[];
+
+      for (var i = 0; i < daysCount; i++) {
+        final dayStart = range.start.add(Duration(days: i));
+        final dayEnd = dayStart.add(const Duration(days: 1));
+        final dayStartUtc = dayStart.toUtc();
+        final dayEndUtc = dayEnd.toUtc();
+        var dayPts = 0;
+        for (final e in periodLedgerRows) {
+          if (matchesLedgerRow(e) &&
+              e.createdAt.isAfter(dayStartUtc.subtract(const Duration(milliseconds: 1))) &&
+              e.createdAt.isBefore(dayEndUtc)) {
+            dayPts += getNetXp(e);
+          }
+        }
+        skillXpOverTime.add(AnalyticsPoint(date: dayStart, xp: dayPts));
+
+        final prevDayStart = range.previousRange.start.add(Duration(days: i));
+        final prevDayEnd = prevDayStart.add(const Duration(days: 1));
+        final prevDayStartUtc = prevDayStart.toUtc();
+        final prevDayEndUtc = prevDayEnd.toUtc();
+        var prevDayPts = 0;
+        for (final e in prevLedgerRows) {
+          if (matchesLedgerRow(e) &&
+              e.createdAt.isAfter(prevDayStartUtc.subtract(const Duration(milliseconds: 1))) &&
+              e.createdAt.isBefore(prevDayEndUtc)) {
+            prevDayPts += getPrevNetXp(e);
+          }
+        }
+        skillPrevXpOverTime.add(AnalyticsPoint(date: prevDayStart, xp: prevDayPts));
+      }
+
+      var skillTasksCount = 0;
+      var skillCompletedTasksCount = 0;
+      for (final t in filteredTasks) {
+        if (tIds.contains(t.id)) {
+          skillTasksCount++;
+          if (t.status == 'done' || t.status == 'completed') {
+            skillCompletedTasksCount++;
+          }
+        }
+      }
+
+      var skillSessionMinutes = 0;
+      var skillSessionsCount = 0;
+      for (final s in filteredSessions) {
+        if (sIds.contains(s.id) || (s.activityId != null && aIds.contains(s.activityId!))) {
+          skillSessionsCount++;
+          skillSessionMinutes += (s.durationMs ?? 0) ~/ 60000;
+        }
+      }
+
+      final activityCount = skillTasksCount + skillSessionsCount;
+
+      final int authoritativeXp;
+      if (range.period == AnalyticsPeriod.oneYear) {
+        authoritativeXp = totalHistoricalXp > 0 ? totalHistoricalXp : periodSkillXp;
+      } else {
+        authoritativeXp = periodSkillXp > 0 ? periodSkillXp : totalHistoricalXp;
+      }
+
+      final delta = MetricDelta.compute(
+        current: authoritativeXp.toDouble(),
+        previous: prevSkillXp.toDouble(),
+      );
+
+      final laIds = skillLifeAreaIdsMap[skill.id] ?? const <String>[];
+      final laNames = laIds.map((id) => areaNameMap[id] ?? id).toList();
+
+      rawSkillMetrics.add(
+        AnalyticsSkillMetric(
+          id: skill.id,
+          name: skill.name,
+          description: skill.description,
+          icon: skill.icon,
+          groupId: skill.groupId,
+          groupName: skill.groupId != null ? groupNameMap[skill.groupId!] : null,
+          rank: SkillRank.fromMasteryLevel(skill.masteryLevel),
+          masteryLevel: skill.masteryLevel,
+          level: skill.level,
+          xp: authoritativeXp,
+          totalXp: totalHistoricalXp,
+          previousXp: prevSkillXp,
+          delta: delta,
+          contributionPct: 0.0,
+          activityCount: activityCount,
+          completedTasksCount: skillCompletedTasksCount,
+          sessionMinutes: skillSessionMinutes,
+          xpOverTime: skillXpOverTime,
+          previousXpOverTime: skillPrevXpOverTime,
+          lifeAreaIds: laIds,
+          lifeAreaNames: laNames,
+        ),
+      );
+    }
+
+    final totalTopSkillsXp = rawSkillMetrics.fold<int>(0, (sum, s) => sum + s.xp);
+
+    final topSkills = rawSkillMetrics.map((s) {
+      final contribution = totalTopSkillsXp > 0
+          ? (s.xp / totalTopSkillsXp * 100.0)
+          : 0.0;
+      return AnalyticsSkillMetric(
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        icon: s.icon,
+        groupId: s.groupId,
+        groupName: s.groupName,
+        rank: s.rank,
+        masteryLevel: s.masteryLevel,
+        level: s.level,
+        xp: s.xp,
+        totalXp: s.totalXp,
+        previousXp: s.previousXp,
+        delta: s.delta,
+        contributionPct: contribution,
+        activityCount: s.activityCount,
+        completedTasksCount: s.completedTasksCount,
+        sessionMinutes: s.sessionMinutes,
+        xpOverTime: s.xpOverTime,
+        previousXpOverTime: s.previousXpOverTime,
+        lifeAreaIds: s.lifeAreaIds,
+        lifeAreaNames: s.lifeAreaNames,
+      );
+    }).toList();
+
+    topSkills.sort((a, b) {
+      final compXp = b.xp.compareTo(a.xp);
+      if (compXp != 0) return compXp;
+      final compTotal = b.totalXp.compareTo(a.totalXp);
+      if (compTotal != 0) return compTotal;
+      final compMastery = b.masteryLevel.compareTo(a.masteryLevel);
+      if (compMastery != 0) return compMastery;
+      final compName = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      if (compName != 0) return compName;
+      return a.id.compareTo(b.id);
+    });
+
+    final focusTimeSnapshot = await _computeFocusTime(
+      ownerId: ownerId,
       range: range,
       lifeAreaId: lifeAreaId,
-      totalXp: totalCumulativeXp,
+    );
+
+    final provisionalSnapshot = AnalyticsSnapshot(
+      range: range,
+      lifeAreaId: lifeAreaId,
+      sourceType: sourceType,
+      totalXp: (range.period == AnalyticsPeriod.oneYear)
+          ? totalCumulativeXp
+          : currentXpInPeriod,
       previousTotalXp: prevXpInPeriod,
       xpDelta: xpDelta,
       positiveXp: positiveXp,
@@ -779,6 +1083,8 @@ class DriftAnalyticsRepository implements AnalyticsRepository {
       createdProjects: createdProjects,
       activeTasks: activeTasks,
       completedTasks: completedTasks,
+      periodCompletedTasks: periodCompletedTasks,
+      previousCompletedTasks: prevPeriodCompletedTasks,
       createdTasks: createdTasks,
       createdDecisions: createdDecisions,
       completedDecisions: completedDecisions,
@@ -792,6 +1098,7 @@ class DriftAnalyticsRepository implements AnalyticsRepository {
         for (final p in dailyGrowthSeries)
           AnalyticsPoint(date: p.date, xp: p.xp),
       ],
+      previousXpOverTime: previousXpOverTime,
       dailyGrowthSeries: dailyGrowthSeries,
       xpBySource: xpBySource,
       lifeAreas: lifeAreas,
@@ -804,6 +1111,558 @@ class DriftAnalyticsRepository implements AnalyticsRepository {
       milestones: milestones,
       recentActivity: recentActivity,
       insights: insights,
+      topSkills: topSkills,
+      focusTime: focusTimeSnapshot,
     );
+
+    final detectedPositiveTrends = PositiveTrendDetector.detect(provisionalSnapshot);
+
+    return AnalyticsSnapshot(
+      range: range,
+      lifeAreaId: lifeAreaId,
+      sourceType: sourceType,
+      totalXp: (range.period == AnalyticsPeriod.oneYear)
+          ? totalCumulativeXp
+          : currentXpInPeriod,
+      previousTotalXp: prevXpInPeriod,
+      xpDelta: xpDelta,
+      positiveXp: positiveXp,
+      negativeXp: negativeXp,
+      xpVelocityDelta: xpVelocityDelta,
+      completionRateDelta: completionRateDelta,
+      consistencyDelta: consistencyDelta,
+      activeGoals: activeGoals,
+      completedGoals: completedGoals,
+      createdGoals: createdGoals,
+      activeProjects: activeProjects,
+      completedProjects: completedProjects,
+      createdProjects: createdProjects,
+      activeTasks: activeTasks,
+      completedTasks: completedTasks,
+      periodCompletedTasks: periodCompletedTasks,
+      previousCompletedTasks: prevPeriodCompletedTasks,
+      createdTasks: createdTasks,
+      createdDecisions: createdDecisions,
+      completedDecisions: completedDecisions,
+      activitiesStarted: activitiesStarted,
+      sessionsCompleted: sessionsCompleted,
+      actualMinutes: actualMinutes,
+      currentStreak: currentStreak,
+      longestStreak: longestStreak,
+      activeDaysCount: activeDaysCount,
+      xpOverTime: provisionalSnapshot.xpOverTime,
+      previousXpOverTime: previousXpOverTime,
+      dailyGrowthSeries: dailyGrowthSeries,
+      xpBySource: xpBySource,
+      lifeAreas: lifeAreas,
+      goalHealth: goalHealth,
+      projectPerformance: projectPerformance,
+      tasksByPriority: tasksByPriority,
+      tasksByLifeArea: tasksByLifeArea,
+      activityByDayOfWeek: activityByDayOfWeek,
+      activityByTimeOfDay: activityByTimeOfDay,
+      milestones: milestones,
+      recentActivity: recentActivity,
+      insights: insights,
+      topSkills: topSkills,
+      focusTime: focusTimeSnapshot,
+      positiveTrends: detectedPositiveTrends,
+    );
+  }
+
+  @override
+  Future<FocusTimeSnapshot> loadFocusTime({
+    required String ownerId,
+    required AnalyticsDateRange range,
+    String? lifeAreaId,
+  }) async {
+    await _seedDevDataIfNeeded(ownerId);
+    return _computeFocusTime(
+      ownerId: ownerId,
+      range: range,
+      lifeAreaId: lifeAreaId,
+    );
+  }
+
+  Future<FocusTimeSnapshot> _computeFocusTime({
+    required String ownerId,
+    required AnalyticsDateRange range,
+    String? lifeAreaId,
+  }) async {
+    final allSessions = await (_db.select(_db.sessions)
+          ..where((s) => s.ownerId.equals(ownerId) & s.deletedAt.isNull()))
+        .get();
+
+    final allActivities = await (_db.select(_db.activities)
+          ..where((a) => a.ownerId.equals(ownerId) & a.deletedAt.isNull()))
+        .get();
+    final activityMap = {for (final a in allActivities) a.id: a};
+
+    final allTasks = await (_db.select(_db.tasks)
+          ..where((t) => t.ownerId.equals(ownerId) & t.deletedAt.isNull()))
+        .get();
+    final taskMap = {for (final t in allTasks) t.id: t};
+
+    final records = <FocusSessionRecord>[];
+    for (final s in allSessions) {
+      if (s.endedAt == null || (s.durationMs ?? 0) <= 0) continue;
+
+      final act = s.activityId != null ? activityMap[s.activityId] : null;
+      final task = s.taskId != null ? taskMap[s.taskId] : null;
+
+      final resolvedLifeAreaId = s.lifeAreaId ??
+          act?.lifeAreaId ??
+          task?.lifeAreaId;
+
+      if (lifeAreaId != null && resolvedLifeAreaId != lifeAreaId) {
+        continue;
+      }
+
+      records.add(
+        FocusSessionRecord(
+          id: s.id,
+          startedAt: s.startedAt,
+          endedAt: s.endedAt!,
+          durationMs: s.durationMs!,
+          lifeAreaId: resolvedLifeAreaId,
+          activityId: s.activityId,
+          activityName: act?.name ?? (s.taskId != null ? task?.title : null),
+          taskId: s.taskId,
+          source: s.source,
+        ),
+      );
+    }
+
+    return FocusTimeAggregator.compute(
+      current: records,
+      previous: records,
+      range: range,
+    );
+  }
+
+  Future<void> _seedDevDataIfNeeded(String ownerId) async {
+    if (!ownerId.startsWith('usr_seed')) return;
+
+    await _seedDevSessionsIfNeeded(ownerId);
+
+    final existingLedger = await (_db.select(_db.xpLedger)
+          ..where((e) => e.ownerId.equals(ownerId))
+          ..limit(1))
+        .get();
+    if (existingLedger.isNotEmpty) return;
+
+    final now = DateTime.now().toUtc();
+    final healthId = 'la_health_$ownerId';
+    final careerId = 'la_career_$ownerId';
+    final mindsetId = 'la_mindset_$ownerId';
+
+    final existingAreas = await (_db.select(_db.lifeAreas)
+          ..where((a) => a.ownerId.equals(ownerId) & a.deletedAt.isNull()))
+        .get();
+
+    if (existingAreas.isEmpty) {
+      final defaultAreas = [
+        (id: healthId, name: 'Health & Vitality', color: '#4CAF50', icon: 'favorite'),
+        (id: careerId, name: 'Career & Mastery', color: '#2196F3', icon: 'work'),
+        (id: mindsetId, name: 'Mindset & Focus', color: '#9C27B0', icon: 'psychology'),
+      ];
+      for (final a in defaultAreas) {
+        await _db.into(_db.lifeAreas).insertOnConflictUpdate(
+          LifeAreasCompanion(
+            id: Value(a.id),
+            ownerId: Value(ownerId),
+            name: Value(a.name),
+            description: const Value('Dev sample area'),
+            color: Value(a.color),
+            icon: Value(a.icon),
+            sortOrder: const Value(0),
+            versionHlc: const Value('1-0-0'),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
+      }
+    }
+
+    final areaIds = [healthId, careerId, mindsetId];
+
+    for (var i = 0; i < areaIds.length; i++) {
+      await _db.into(_db.userStreaks).insertOnConflictUpdate(
+        UserStreaksCompanion(
+          userId: Value(ownerId),
+          lifeAreaId: Value(areaIds[i]),
+          currentStreak: Value(5 + i * 2),
+          longestStreak: Value(14 + i * 4),
+          updatedAt: Value(now),
+        ),
+      );
+    }
+
+    // Seed Skill Groups
+    final grpEng = 'grp_eng_$ownerId';
+    final grpCog = 'grp_cog_$ownerId';
+    final grpAth = 'grp_ath_$ownerId';
+    final devGroups = [
+      (id: grpEng, name: 'Engineering & Architecture'),
+      (id: grpCog, name: 'Cognition & Mindset'),
+      (id: grpAth, name: 'Athletics & Physiology'),
+    ];
+    for (final g in devGroups) {
+      await _db.into(_db.skillGroups).insertOnConflictUpdate(
+        SkillGroupsCompanion(
+          id: Value(g.id),
+          ownerId: Value(ownerId),
+          name: Value(g.name),
+          versionHlc: const Value('1-0-0'),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+    }
+
+    // Seed Skills
+    final skArch = 'sk_eng_arch_$ownerId';
+    final skProb = 'sk_cog_prob_$ownerId';
+    final skComm = 'sk_cog_comm_$ownerId';
+    final skProj = 'sk_eng_proj_$ownerId';
+    final skAnal = 'sk_cog_anal_$ownerId';
+    final skCrea = 'sk_eng_crea_$ownerId';
+
+    final devSkills = [
+      (
+        id: skArch,
+        name: 'Software Architecture',
+        desc: 'System design, distributed patterns, clean code & robust architecture.',
+        grp: grpEng,
+        mastery: 4,
+        level: 4,
+        xpTotal: 4820,
+        areaId: careerId,
+      ),
+      (
+        id: skProb,
+        name: 'Problem Solving',
+        desc: 'Analytical deconstruction, algorithmic reasoning, root-cause diagnosis.',
+        grp: grpCog,
+        mastery: 3,
+        level: 3,
+        xpTotal: 3140,
+        areaId: mindsetId,
+      ),
+      (
+        id: skComm,
+        name: 'Communication',
+        desc: 'Clear technical documentation, synthesis and stakeholder alignment.',
+        grp: grpCog,
+        mastery: 3,
+        level: 3,
+        xpTotal: 2680,
+        areaId: careerId,
+      ),
+      (
+        id: skProj,
+        name: 'Project Management',
+        desc: 'Milestone planning, backlog orchestration, roadmap delivery.',
+        grp: grpEng,
+        mastery: 2,
+        level: 2,
+        xpTotal: 2150,
+        areaId: careerId,
+      ),
+      (
+        id: skAnal,
+        name: 'Analytical Thinking',
+        desc: 'Quantitative analysis, evidence validation, critical thinking.',
+        grp: grpCog,
+        mastery: 2,
+        level: 2,
+        xpTotal: 1920,
+        areaId: mindsetId,
+      ),
+      (
+        id: skCrea,
+        name: 'Creative Design',
+        desc: 'User experience prototyping, interaction design and visual layout.',
+        grp: grpEng,
+        mastery: 1,
+        level: 1,
+        xpTotal: 1480,
+        areaId: careerId,
+      ),
+    ];
+
+    for (final sk in devSkills) {
+      await _db.into(_db.skills).insertOnConflictUpdate(
+        SkillsCompanion(
+          id: Value(sk.id),
+          ownerId: Value(ownerId),
+          name: Value(sk.name),
+          description: Value(sk.desc),
+          groupId: Value(sk.grp),
+          masteryLevel: Value(sk.mastery),
+          level: Value(sk.level),
+          xpTotal: Value(sk.xpTotal),
+          versionHlc: const Value('1-0-0'),
+          createdAt: Value(now.subtract(const Duration(days: 90))),
+          updatedAt: Value(now),
+        ),
+      );
+
+      await _db.into(_db.skillLifeAreaLinks).insertOnConflictUpdate(
+        SkillLifeAreaLinksCompanion(
+          ownerId: Value(ownerId),
+          skillId: Value(sk.id),
+          lifeAreaId: Value(sk.areaId),
+          versionHlc: const Value('1-0-0'),
+          createdAt: Value(now.subtract(const Duration(days: 90))),
+        ),
+      );
+    }
+
+    final devSkillIds = [skArch, skProb, skComm, skProj, skAnal, skCrea];
+
+    final sources = ['task', 'goal', 'project', 'activity', 'skill'];
+    final actions = ['complete', 'milestone', 'session_complete', 'complete', 'complete'];
+    final pointsList = [60, 250, 350, 80, 120];
+
+    for (var d = 0; d < 60; d += 2) {
+      final eventTime = now.subtract(Duration(days: d, hours: (d * 3) % 12));
+      final sourceIndex = (d ~/ 2) % sources.length;
+      final areaIndex = (d ~/ 2) % areaIds.length;
+      final pts = pointsList[sourceIndex];
+      final eventId = 'seed_xp_${ownerId}_$d';
+      final linkedSkillId = devSkillIds[(d ~/ 2) % devSkillIds.length];
+
+      final String resolvedSourceId;
+      if (sources[sourceIndex] == 'task') {
+        resolvedSourceId = 'seed_src_task_$d';
+      } else if (sources[sourceIndex] == 'skill') {
+        resolvedSourceId = linkedSkillId;
+      } else {
+        resolvedSourceId = 'seed_src_${sources[sourceIndex]}_$d';
+      }
+
+      await _db.into(_db.xpLedger).insertOnConflictUpdate(
+        XpLedgerCompanion(
+          id: Value(eventId),
+          ownerId: Value(ownerId),
+          idempotencyKey: Value('seed_idem_$eventId'),
+          sourceType: Value(sources[sourceIndex]),
+          sourceId: Value(resolvedSourceId),
+          action: Value(actions[sourceIndex]),
+          points: Value(pts),
+          bonusPoints: const Value(0),
+          latePenalty: const Value(0),
+          streakBonus: const Value(0),
+          versionHlc: const Value('1-0-0'),
+          deviceId: const Value('dev_seed_device'),
+          createdAt: Value(eventTime),
+        ),
+      );
+
+      await _db.into(_db.xpAllocationLines).insertOnConflictUpdate(
+        XpAllocationLinesCompanion(
+          id: Value('seed_alloc_${ownerId}_$d'),
+          ledgerId: Value(eventId),
+          lifeAreaId: Value(areaIds[areaIndex]),
+          allocatedPoints: Value(pts),
+          percentage: const Value(1.0),
+          versionHlc: const Value('1-0-0'),
+          createdAt: Value(eventTime),
+        ),
+      );
+
+      if (sources[sourceIndex] == 'task') {
+        final taskId = resolvedSourceId;
+        await _db.into(_db.tasks).insertOnConflictUpdate(
+          TasksCompanion(
+            id: Value(taskId),
+            ownerId: Value(ownerId),
+            lifeAreaId: Value(areaIds[areaIndex]),
+            title: Value('Dev Seed Task #$d'),
+            priority: Value(1 + (d % 4)),
+            status: const Value('done'),
+            completedAt: Value(eventTime),
+            versionHlc: const Value('1-0-0'),
+            createdAt: Value(eventTime.subtract(const Duration(hours: 4))),
+            updatedAt: Value(eventTime),
+          ),
+        );
+
+        // Link task to skill via AttachmentLinks
+        await _db.into(_db.attachmentLinks).insertOnConflictUpdate(
+          AttachmentLinksCompanion(
+            id: Value('seed_att_task_sk_${taskId}_$linkedSkillId'),
+            attachmentId: Value(linkedSkillId),
+            attachmentKind: const Value('skill'),
+            entityId: Value(taskId),
+            entityKind: const Value('task'),
+            versionHlc: const Value('1-0-0'),
+            createdAt: Value(eventTime),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _seedDevSessionsIfNeeded(String ownerId) async {
+    final existingSessions = await (_db.select(_db.sessions)
+          ..where((s) => s.ownerId.equals(ownerId) & s.deletedAt.isNull())
+          ..limit(1))
+        .get();
+    if (existingSessions.isNotEmpty) return;
+
+    final careerId = 'la_career_$ownerId';
+    final mindsetId = 'la_mindset_$ownerId';
+    final healthId = 'la_health_$ownerId';
+
+    // Seed sample activities
+    final actArch = 'act_arch_$ownerId';
+    final actAlgo = 'act_algo_$ownerId';
+    final actSys = 'act_sys_$ownerId';
+    final actFit = 'act_fit_$ownerId';
+
+    final devActs = [
+      (id: actArch, name: 'Software Architecture', areaId: careerId, target: 45),
+      (id: actAlgo, name: 'Deep Work & Algorithms', areaId: mindsetId, target: 60),
+      (id: actSys, name: 'System Design Review', areaId: careerId, target: 45),
+      (id: actFit, name: 'High Intensity Training', areaId: healthId, target: 30),
+    ];
+
+    final now = DateTime.now().toUtc();
+    for (final a in devActs) {
+      await _db.into(_db.activities).insertOnConflictUpdate(
+        ActivitiesCompanion(
+          id: Value(a.id),
+          ownerId: Value(ownerId),
+          lifeAreaId: Value(a.areaId),
+          name: Value(a.name),
+          targetDurationMinutes: Value(a.target),
+          difficulty: const Value(3),
+          versionHlc: const Value('1-0-0'),
+          createdAt: Value(now.subtract(const Duration(days: 90))),
+          updatedAt: Value(now),
+        ),
+      );
+    }
+
+    final localNow = DateTime.now();
+    // Monday of the current week (local time)
+    final thisMonday = DateTime(localNow.year, localNow.month, localNow.day)
+        .subtract(Duration(days: localNow.weekday - 1));
+
+    // Schedule for this week matching reference: Total: 12h 45m across 7 days
+    // Mon: 1h 45m (105m), Tue: 2h 32m (152m), Wed: 1h 58m (118m), Thu: 1h 12m (72m),
+    // Fri: 2h 05m (125m), Sat: 1h 20m (80m), Sun: 1h 48m (108m)
+    final thisWeekSpecs = [
+      (dayOffset: 0, startHour: 10, startMin: 0, durMin: 105, act: actArch, area: careerId),
+      (dayOffset: 1, startHour: 10, startMin: 0, durMin: 152, act: actAlgo, area: mindsetId),
+      (dayOffset: 2, startHour: 10, startMin: 0, durMin: 118, act: actSys, area: careerId),
+      (dayOffset: 3, startHour: 10, startMin: 30, durMin: 72, act: actAlgo, area: mindsetId),
+      (dayOffset: 4, startHour: 10, startMin: 0, durMin: 125, act: actArch, area: careerId),
+      (dayOffset: 5, startHour: 11, startMin: 0, durMin: 80, act: actFit, area: healthId),
+      (dayOffset: 6, startHour: 10, startMin: 0, durMin: 108, act: actAlgo, area: mindsetId),
+    ];
+
+    var sessIndex = 0;
+    for (final spec in thisWeekSpecs) {
+      final sTimeLocal = thisMonday.add(
+        Duration(days: spec.dayOffset, hours: spec.startHour, minutes: spec.startMin),
+      );
+      final eTimeLocal = sTimeLocal.add(Duration(minutes: spec.durMin));
+      final sTimeUtc = sTimeLocal.toUtc();
+      final eTimeUtc = eTimeLocal.toUtc();
+      final durMs = spec.durMin * 60 * 1000;
+
+      await _db.into(_db.sessions).insertOnConflictUpdate(
+        SessionsCompanion(
+          id: Value('seed_sess_${ownerId}_tw_${sessIndex++}'),
+          ownerId: Value(ownerId),
+          activityId: Value(spec.act),
+          lifeAreaId: Value(spec.area),
+          startedAt: Value(sTimeUtc),
+          endedAt: Value(eTimeUtc),
+          durationMs: Value(durMs),
+          status: const Value('completed'),
+          source: const Value('timer'),
+          pausedTotalMs: const Value(0),
+          versionHlc: const Value('1-0-0'),
+          createdAt: Value(sTimeUtc),
+          updatedAt: Value(eTimeUtc),
+        ),
+      );
+    }
+
+    // Previous week schedule (Total: ~10h 17m = 617 min, for ~+24% trend)
+    final lastMonday = thisMonday.subtract(const Duration(days: 7));
+    final prevWeekSpecs = [
+      (dayOffset: 0, startHour: 10, startMin: 0, durMin: 90, act: actArch, area: careerId),
+      (dayOffset: 1, startHour: 10, startMin: 0, durMin: 120, act: actAlgo, area: mindsetId),
+      (dayOffset: 2, startHour: 10, startMin: 0, durMin: 105, act: actSys, area: careerId),
+      (dayOffset: 3, startHour: 11, startMin: 0, durMin: 60, act: actAlgo, area: mindsetId),
+      (dayOffset: 4, startHour: 10, startMin: 0, durMin: 105, act: actArch, area: careerId),
+      (dayOffset: 5, startHour: 11, startMin: 0, durMin: 60, act: actFit, area: healthId),
+      (dayOffset: 6, startHour: 10, startMin: 30, durMin: 77, act: actAlgo, area: mindsetId),
+    ];
+
+    for (final spec in prevWeekSpecs) {
+      final sTimeLocal = lastMonday.add(
+        Duration(days: spec.dayOffset, hours: spec.startHour, minutes: spec.startMin),
+      );
+      final eTimeLocal = sTimeLocal.add(Duration(minutes: spec.durMin));
+      final sTimeUtc = sTimeLocal.toUtc();
+      final eTimeUtc = eTimeLocal.toUtc();
+      final durMs = spec.durMin * 60 * 1000;
+
+      await _db.into(_db.sessions).insertOnConflictUpdate(
+        SessionsCompanion(
+          id: Value('seed_sess_${ownerId}_pw_${sessIndex++}'),
+          ownerId: Value(ownerId),
+          activityId: Value(spec.act),
+          lifeAreaId: Value(spec.area),
+          startedAt: Value(sTimeUtc),
+          endedAt: Value(eTimeUtc),
+          durationMs: Value(durMs),
+          status: const Value('completed'),
+          source: const Value('timer'),
+          pausedTotalMs: const Value(0),
+          versionHlc: const Value('1-0-0'),
+          createdAt: Value(sTimeUtc),
+          updatedAt: Value(eTimeUtc),
+        ),
+      );
+    }
+
+    // Historical weeks for 30d/90d views
+    for (var w = 2; w <= 6; w++) {
+      final weekStart = thisMonday.subtract(Duration(days: w * 7));
+      for (var d = 0; d < 5; d++) {
+        final durMin = 45 + ((w * 7 + d * 13) % 65);
+        final sTimeLocal = weekStart.add(Duration(days: d, hours: 10 + (d % 3), minutes: (d * 15) % 60));
+        final eTimeLocal = sTimeLocal.add(Duration(minutes: durMin));
+        final sTimeUtc = sTimeLocal.toUtc();
+        final eTimeUtc = eTimeLocal.toUtc();
+        final actId = d % 2 == 0 ? actArch : actAlgo;
+        final areaId = d % 2 == 0 ? careerId : mindsetId;
+
+        await _db.into(_db.sessions).insertOnConflictUpdate(
+          SessionsCompanion(
+            id: Value('seed_sess_${ownerId}_hist_${sessIndex++}'),
+            ownerId: Value(ownerId),
+            activityId: Value(actId),
+            lifeAreaId: Value(areaId),
+            startedAt: Value(sTimeUtc),
+            endedAt: Value(eTimeUtc),
+            durationMs: Value(durMin * 60 * 1000),
+            status: const Value('completed'),
+            source: const Value('timer'),
+            pausedTotalMs: const Value(0),
+            versionHlc: const Value('1-0-0'),
+            createdAt: Value(sTimeUtc),
+            updatedAt: Value(eTimeUtc),
+          ),
+        );
+      }
+    }
   }
 }

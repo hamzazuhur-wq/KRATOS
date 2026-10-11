@@ -233,6 +233,18 @@ class Sessions extends Table {
   IntColumn get durationMs => integer().nullable()();
   TextColumn get note => text().nullable()();
   TextColumn get lifeAreaId => text().nullable()();
+
+  /// Lifecycle: 'running' | 'paused' | 'completed'. Legacy rows are completed.
+  TextColumn get status => text().withDefault(const Constant('completed'))();
+
+  /// Capture origin: 'timer' | 'manual'.
+  TextColumn get source => text().withDefault(const Constant('timer'))();
+
+  /// Set while paused; excluded from focused time on resume/stop.
+  DateTimeColumn get pausedAt => dateTime().nullable()();
+
+  /// Accumulated paused milliseconds (already-resumed pauses).
+  IntColumn get pausedTotalMs => integer().withDefault(const Constant(0))();
   DateTimeColumn get deletedAt => dateTime().nullable()();
   TextColumn get deletedBy => text().nullable()();
   TextColumn get deletedReason => text().nullable()();

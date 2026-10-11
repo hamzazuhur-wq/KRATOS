@@ -37,7 +37,7 @@ class CalendarMonthView extends StatelessWidget {
                 );
               }
               final day = index - offset + 1;
-              final cellDate = DateTime(date.year, date.month, day);
+
               final dayEvents = events.where((e) => e.startTime.day == day && e.startTime.month == date.month).toList();
               
               return Container(
@@ -88,7 +88,7 @@ class CalendarMonthView extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 2),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
-        color: accent.withOpacity(0.2),
+        color: accent.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(2),
       ),
       child: Text(

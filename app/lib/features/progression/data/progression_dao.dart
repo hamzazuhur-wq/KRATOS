@@ -13,8 +13,18 @@ class ProgressionDao extends DatabaseAccessor<AppDatabase>
     with _$ProgressionDaoMixin {
   ProgressionDao(super.db);
 
+  Future<void>? _seedingFuture;
+  List<LevelCurve>? _cachedCurves;
+  List<TierDefinition>? _cachedTiers;
+
+  /// Invalidate in-memory cached curves and tiers.
+  void invalidateCache() {
+    _cachedCurves = null;
+    _cachedTiers = null;
+  }
+
   /// Ensure initial curves and tiers are populated in the local SQLite database.
-  Future<void> ensureSeeded() async {
+  Future<void> ensureSeeded() => _seedingFuture ??= () async {
     final curveCount = await (select(db.levelCurves)..limit(1)).get();
     if (curveCount.isEmpty) {
       await _seedCurves();
@@ -24,7 +34,7 @@ class ProgressionDao extends DatabaseAccessor<AppDatabase>
     if (tierCount.isEmpty) {
       await _seedTiers();
     }
-  }
+  }();
 
   Future<void> _seedCurves() async {
     final list = <LevelCurvesCompanion>[];
@@ -52,6 +62,7 @@ class ProgressionDao extends DatabaseAccessor<AppDatabase>
     await batch((b) {
       b.insertAll(db.levelCurves, list, mode: InsertMode.insertOrReplace);
     });
+    _cachedCurves = null;
   }
 
   Future<void> _seedTiers() async {
@@ -103,17 +114,32 @@ class ProgressionDao extends DatabaseAccessor<AppDatabase>
     await batch((b) {
       b.insertAll(db.tierDefinitions, tiers, mode: InsertMode.insertOrReplace);
     });
+    _cachedTiers = null;
   }
 
   /// All level curves ordered by level.
-  Future<List<LevelCurve>> allCurves() =>
-      (select(db.levelCurves)..orderBy([(c) => OrderingTerm.asc(c.level)]))
-          .get();
+  Future<List<LevelCurve>> allCurves() async {
+    if (_cachedCurves != null && _cachedCurves!.isNotEmpty) {
+      return _cachedCurves!;
+    }
+    final result = await (select(db.levelCurves)
+          ..orderBy([(c) => OrderingTerm.asc(c.level)]))
+        .get();
+    _cachedCurves = result;
+    return result;
+  }
 
   /// All tier definitions ordered by ordinal.
-  Future<List<TierDefinition>> allTiers() =>
-      (select(db.tierDefinitions)..orderBy([(t) => OrderingTerm.asc(t.ordinal)]))
-          .get();
+  Future<List<TierDefinition>> allTiers() async {
+    if (_cachedTiers != null && _cachedTiers!.isNotEmpty) {
+      return _cachedTiers!;
+    }
+    final result = await (select(db.tierDefinitions)
+          ..orderBy([(t) => OrderingTerm.asc(t.ordinal)]))
+        .get();
+    _cachedTiers = result;
+    return result;
+  }
 
   /// Update an existing tier definition.
   Future<void> updateTierDefinition({
@@ -122,19 +148,23 @@ class ProgressionDao extends DatabaseAccessor<AppDatabase>
     String? color,
     String? icon,
     int? ordinal,
-  }) =>
-      (update(db.tierDefinitions)..where((t) => t.name.equals(name))).write(
-        TierDefinitionsCompanion(
-          entryXp: Value(entryXp),
-          color: color != null ? Value(color) : const Value.absent(),
-          icon: icon != null ? Value(icon) : const Value.absent(),
-          ordinal: ordinal != null ? Value(ordinal) : const Value.absent(),
-        ),
-      );
+  }) async {
+    _cachedTiers = null;
+    await (update(db.tierDefinitions)..where((t) => t.name.equals(name))).write(
+      TierDefinitionsCompanion(
+        entryXp: Value(entryXp),
+        color: color != null ? Value(color) : const Value.absent(),
+        icon: icon != null ? Value(icon) : const Value.absent(),
+        ordinal: ordinal != null ? Value(ordinal) : const Value.absent(),
+      ),
+    );
+  }
 
   /// Upsert a tier definition.
-  Future<void> upsertTierDefinition(TierDefinitionsCompanion tier) =>
-      into(db.tierDefinitions).insertOnConflictUpdate(tier);
+  Future<void> upsertTierDefinition(TierDefinitionsCompanion tier) async {
+    _cachedTiers = null;
+    await into(db.tierDefinitions).insertOnConflictUpdate(tier);
+  }
 
   /// Find matching level curve for given total XP.
   Future<LevelCurve> findLevelForXp(int totalXp) async {

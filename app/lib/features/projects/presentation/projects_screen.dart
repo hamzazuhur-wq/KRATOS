@@ -42,6 +42,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   List<Skill> _skills = [];
   bool _filtersLoaded = false;
 
+  /// Single long-lived subscription. Filters are applied client-side in the
+  /// builder, so filter/search changes and unrelated rebuilds never restart it.
+  late final Stream<List<ProjectWithDetails>> _projectsStream;
+
   @override
   void initState() {
     super.initState();
@@ -49,38 +53,77 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       database: widget.database,
       xpLedgerWriter: DriftXpLedgerWriter(widget.database),
     );
+    _projectsStream = _repository.watchProjects(widget.ownerId);
     _loadFilters();
   }
 
+  List<ProjectWithDetails> _applyFilters(List<ProjectWithDetails> all) {
+    final q = _searchQuery.trim().toLowerCase();
+    return all.where((d) {
+      final p = d.project;
+      if (_selectedStatus != 'all' &&
+          p.status.toLowerCase() != _selectedStatus.toLowerCase()) {
+        return false;
+      }
+      if (_selectedLifeAreaId != null &&
+          _selectedLifeAreaId!.isNotEmpty &&
+          p.lifeAreaId != _selectedLifeAreaId) {
+        return false;
+      }
+      if (_selectedGoalId != null &&
+          _selectedGoalId!.isNotEmpty &&
+          p.goalId != _selectedGoalId) {
+        return false;
+      }
+      if (q.isNotEmpty) {
+        final matchTitle = p.title.toLowerCase().contains(q);
+        final matchDesc = p.description?.toLowerCase().contains(q) ?? false;
+        if (!matchTitle && !matchDesc) return false;
+      }
+      if (_selectedSkillId != null &&
+          _selectedSkillId!.isNotEmpty &&
+          !d.skills.any((s) => s.id == _selectedSkillId)) {
+        return false;
+      }
+      return true;
+    }).toList(growable: false);
+  }
+
   Future<void> _loadFilters() async {
-    final areas =
-        await (widget.database.select(widget.database.lifeAreas)
-              ..where(
-                (a) => a.ownerId.equals(widget.ownerId) & a.deletedAt.isNull(),
-              )
-              ..orderBy([(a) => OrderingTerm.asc(a.sortOrder)]))
-            .get();
+    try {
+      final areas =
+          await (widget.database.select(widget.database.lifeAreas)
+                ..where(
+                  (a) => a.ownerId.equals(widget.ownerId) & a.deletedAt.isNull(),
+                )
+                ..orderBy([(a) => OrderingTerm.asc(a.sortOrder)]))
+              .get();
 
-    final goals =
-        await (widget.database.select(widget.database.goals)
-              ..where(
-                (g) =>
-                    g.ownerId.equals(widget.ownerId) &
-                    g.parentId.isNull() &
-                    g.deletedAt.isNull(),
-              )
-              ..orderBy([(g) => OrderingTerm.asc(g.title)]))
-            .get();
+      final goals =
+          await (widget.database.select(widget.database.goals)
+                ..where(
+                  (g) =>
+                      g.ownerId.equals(widget.ownerId) &
+                      g.parentId.isNull() &
+                      g.deletedAt.isNull(),
+                )
+                ..orderBy([(g) => OrderingTerm.asc(g.title)]))
+              .get();
 
-    final skills = await widget.database.skillsDao.listSkills(widget.ownerId);
+      final skills = await widget.database.skillsDao.listSkills(widget.ownerId);
 
-    if (mounted) {
-      setState(() {
-        _lifeAreas = areas;
-        _goals = goals;
-        _skills = skills;
-        _filtersLoaded = true;
-      });
+      if (mounted) {
+        setState(() {
+          _lifeAreas = areas;
+          _goals = goals;
+          _skills = skills;
+          _filtersLoaded = true;
+        });
+      }
+    } catch (e, st) {
+      debugPrint('[ProjectsScreen] filter load failed: $e\n$st');
+      // Filters are optional; the project list must not depend on them.
+      if (mounted) setState(() => _filtersLoaded = true);
     }
   }
 
@@ -149,14 +192,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         fit: StackFit.expand,
         children: [
           StreamBuilder<List<ProjectWithDetails>>(
-            stream: _repository.watchProjects(
-              widget.ownerId,
-              query: _searchQuery,
-              status: _selectedStatus,
-              lifeAreaId: _selectedLifeAreaId,
-              goalId: _selectedGoalId,
-              skillId: _selectedSkillId,
-            ),
+            stream: _projectsStream,
             builder: (context, snapshot) {
               if (snapshot.hasError) {
                 return Center(
@@ -167,7 +203,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 );
               }
 
-              final projects = snapshot.data ?? [];
+              final projects = _applyFilters(snapshot.data ?? const []);
 
               return KratosPageEntrance(
                 child: CustomScrollView(

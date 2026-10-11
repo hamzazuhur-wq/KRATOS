@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -11,13 +12,13 @@ import 'kratos_theme.dart';
 import 'number_pop_in.dart';
 import 'kratos_visuals.dart';
 import '../features/activities/presentation/activities_screen.dart';
-import '../features/calendar/presentation/calendar_screen.dart';
 import '../features/activities/presentation/activity_detail_screen.dart';
 import '../features/goals/presentation/goals_screen.dart';
 import '../features/home/data/due_today_repository.dart';
 import '../features/home/presentation/due_today_screen.dart';
 import '../features/home/presentation/home_dashboard_screen.dart';
 import '../features/ideas/presentation/ideas_dashboard_screen.dart';
+import '../features/analytics/domain/analytics_models.dart';
 import '../features/levels/presentation/levels_dashboard_screen.dart';
 import '../features/life_areas/presentation/life_areas_screen.dart';
 import '../features/profile/data/profile_repository.dart';
@@ -47,6 +48,7 @@ class AppShell extends StatefulWidget {
   final AppDatabase database;
   final String userId;
   final SyncTransport? syncTransport;
+  final int initialTabIndex;
 
   const AppShell({
     super.key,
@@ -54,6 +56,7 @@ class AppShell extends StatefulWidget {
     required this.userId,
     this.syncTransport,
     this.onSignOut,
+    this.initialTabIndex = 0,
   });
 
   @override
@@ -61,14 +64,14 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
-  int _currentIndex = 0; // 0 = Home
+  late int _currentIndex;
   final GlobalKey<ScaffoldState> _mobileScaffoldKey =
       GlobalKey<ScaffoldState>();
   late final DeadlineNotificationScheduler _notificationScheduler;
   SyncEngine? _syncEngine;
   StreamSubscription<SyncConnectionState>? _syncSubscription;
   SyncConnectionState _syncState = SyncConnectionState.offline;
-  final List<Widget?> _tabScreens = List<Widget?>.filled(7, null);
+  final List<Widget?> _tabScreens = List<Widget?>.filled(6, null);
   StreakInfo _streakInfo = StreakInfo.create(
     userId: Id(''),
     lifeAreaId: Id('overall'),
@@ -81,6 +84,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialTabIndex;
     WidgetsBinding.instance.addObserver(this);
     _notificationScheduler = DeadlineNotificationScheduler(widget.database);
     _profileStream = ProfileRepository(database: widget.database)
@@ -216,8 +220,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     2 => 'GOALS',
     3 => 'ACTIVITIES',
     4 => 'IDEAS',
-    5 => 'CALENDAR',
-      6 => 'STATS',
+    5 => 'STATS',
     _ => 'KRATOS',
   };
 
@@ -230,15 +233,14 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         _buildGlobalMainBar(context, isMobile: !isDesktop);
 
     if (isDesktop) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          const KratosEnvironment(),
-          Scaffold(
-            backgroundColor: Colors.transparent,
-            body: Row(
-              children: [
-                Container(
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Row(
+          children: [
+            ClipRect(
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: Container(
                   width: 270,
                   decoration: BoxDecoration(
                     gradient: isDark
@@ -246,24 +248,24 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              Color(0xF2121613),
-                              Color(0xF20D100E),
-                              Color(0xF5080A08),
+                              Color(0x991B1E1B),
+                              Color(0xB3141714),
+                              Color(0xCC0E110E),
                             ],
                           )
                         : const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              Color(0xF8FFFFFF),
-                              Color(0xF4F8F9FA),
-                              Color(0xF2F0F2F5),
+                              Color(0xB3FFFFFF),
+                              Color(0x99F8F9FA),
+                              Color(0x80F0F2F5),
                             ],
                           ),
                     border: Border(
                       right: BorderSide(
                         color: isDark
-                            ? Colors.white.withValues(alpha: 0.09)
+                            ? Colors.white.withValues(alpha: 0.12)
                             : KratosTheme.lightBorderGlass,
                         width: 1.0,
                       ),
@@ -271,7 +273,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                     boxShadow: [
                       BoxShadow(
                         color: isDark
-                            ? Colors.black.withValues(alpha: 0.40)
+                            ? Colors.black.withValues(alpha: 0.35)
                             : const Color(0x0C0F172A),
                         blurRadius: 20,
                         offset: const Offset(4, 0),
@@ -285,6 +287,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                     ),
                   ),
                 ),
+              ),
+            ),
                 Expanded(
                   child: Scaffold(
                     backgroundColor: Colors.transparent,
@@ -333,25 +337,22 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                 ),
               ],
             ),
-          ),
-        ],
-      );
+          );
     }
 
-    return Stack(
-        fit: StackFit.expand,
-        children: [
-          const KratosEnvironment(),
-        Scaffold(
-          key: _mobileScaffoldKey,
-          backgroundColor: Colors.transparent,
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(64),
-            child: _buildGlobalMainBar(context, isMobile: true),
-          ),
-          drawer: Drawer(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
+    return Scaffold(
+      key: _mobileScaffoldKey,
+      backgroundColor: Colors.transparent,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(64),
+        child: _buildGlobalMainBar(context, isMobile: true),
+      ),
+      drawer: Drawer(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: ClipRect(
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: Container(
               decoration: BoxDecoration(
                 gradient: isDark
@@ -359,24 +360,24 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Color(0xF5141815),
-                          Color(0xF50E110F),
-                          Color(0xF8080A08),
+                          Color(0xCC141815),
+                          Color(0xD90E110F),
+                          Color(0xE6080A08),
                         ],
                       )
                     : const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Color(0xF8FFFFFF),
-                          Color(0xF5F8F9FA),
-                          Color(0xF5F0F2F5),
+                          Color(0xCCFFFFFF),
+                          Color(0xB3F8F9FA),
+                          Color(0x99F0F2F5),
                         ],
                       ),
                 border: Border(
                   right: BorderSide(
                     color: isDark
-                        ? Colors.white.withValues(alpha: 0.10)
+                        ? Colors.white.withValues(alpha: 0.12)
                         : KratosTheme.lightBorderGlass,
                     width: 1.0,
                   ),
@@ -384,7 +385,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                 boxShadow: [
                   BoxShadow(
                     color: isDark
-                        ? Colors.black.withValues(alpha: 0.60)
+                        ? Colors.black.withValues(alpha: 0.50)
                         : const Color(0x180F172A),
                     blurRadius: 28,
                     offset: const Offset(6, 0),
@@ -396,7 +397,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               ),
             ),
           ),
-          body: Stack(
+        ),
+      ),  body: Stack(
             children: [
               Column(
                 children: [
@@ -469,9 +471,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               ),
             ],
           ),
-        ),
-      ],
-    );
+        );
   }
 
   Widget _buildGlobalMainBar(BuildContext context, {required bool isMobile}) {
@@ -548,14 +548,23 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         database: widget.database,
         ownerId: widget.userId,
       ),
-      5 => CalendarScreen(
-          database: widget.database,
+      _ => () {
+        final uri = Uri.base;
+        final p = uri.queryParameters['period']?.toLowerCase();
+        final period = switch (p) {
+          '7d' || 'seven' => AnalyticsPeriod.sevenDays,
+          '90d' || 'ninety' => AnalyticsPeriod.ninetyDays,
+          '1y' || 'year' => AnalyticsPeriod.year,
+          _ => AnalyticsPeriod.thirtyDays,
+        };
+        final source = uri.queryParameters['source'];
+        return AnalyticsScreen(
           ownerId: widget.userId,
-        ),
-        _ => AnalyticsScreen(
-        ownerId: widget.userId,
-        database: widget.database,
-      ),
+          database: widget.database,
+          initialPeriod: period,
+          initialSource: source,
+        );
+      }(),
     };
     return _tabScreens
         .map((screen) => screen ?? const SizedBox.shrink())
@@ -737,7 +746,10 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               _buildSidebarTile(
                 icon: Icons.notification_important_outlined,
                 title: 'Due Today',
-                trailing: _buildDueBadge(),
+                trailing: _DueTodayNavBadge(
+                  database: widget.database,
+                  userId: widget.userId,
+                ),
                 onTap: () {
                   final nav = Navigator.of(context);
                   if (isDrawer) nav.pop();
@@ -788,19 +800,11 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                 },
               ),
               _buildSidebarTile(
-                icon: Icons.calendar_month_outlined,
-                  title: 'Calendar',
-                  isSelected: _currentIndex == 5,
-                  onTap: () {
-                    setState(() => _currentIndex = 5);
-                  },
-                ),
-                _buildSidebarTile(
-                  icon: Icons.analytics_outlined,
-                  title: 'Stats',
-                  isSelected: _currentIndex == 6,
-                  onTap: () {
-                    setState(() => _currentIndex = 6);
+                icon: Icons.analytics_outlined,
+                title: 'Stats',
+                isSelected: _currentIndex == 5,
+                onTap: () {
+                  setState(() => _currentIndex = 5);
                   if (isDrawer) Navigator.of(context).pop();
                 },
               ),
@@ -949,36 +953,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     );
   }
 
-  /// Live overdue badge for the Due Today navigation entry.
-  Widget _buildDueBadge() {
-    return StreamBuilder<DueOverview>(
-      stream: DueTodayRepository(widget.database)
-          .watchDueOverview(widget.userId),
-      builder: (context, snapshot) {
-        final count = snapshot.data?.overdueCount ?? 0;
-        if (count == 0) return const SizedBox.shrink();
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFF3B30).withValues(alpha: 0.18),
-            borderRadius: BorderRadius.circular(9),
-            border: Border.all(
-              color: const Color(0xFFFF3B30).withValues(alpha: 0.6),
-            ),
-          ),
-          child: KratosNumberPopIn(
-            '$count',
-            style: const TextStyle(
-              color: Color(0xFFFF3B30),
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildFallbackInitial(String name) {
     final initial = name.trim().isNotEmpty
         ? name.trim().substring(0, 1).toUpperCase()
@@ -1116,7 +1090,63 @@ class _SidebarNavTileState extends State<_SidebarNavTile> {
   }
 }
 
+class _DueTodayNavBadge extends StatefulWidget {
+  final AppDatabase database;
+  final String userId;
 
+  const _DueTodayNavBadge({
+    required this.database,
+    required this.userId,
+  });
 
+  @override
+  State<_DueTodayNavBadge> createState() => _DueTodayNavBadgeState();
+}
 
+class _DueTodayNavBadgeState extends State<_DueTodayNavBadge> {
+  late Stream<DueOverview> _overviewStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _overviewStream = DueTodayRepository(widget.database).watchDueOverview(widget.userId);
+  }
+
+  @override
+  void didUpdateWidget(covariant _DueTodayNavBadge oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.database != widget.database || oldWidget.userId != widget.userId) {
+      _overviewStream = DueTodayRepository(widget.database).watchDueOverview(widget.userId);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DueOverview>(
+      stream: _overviewStream,
+      builder: (context, snapshot) {
+        final count = snapshot.data?.overdueCount ?? 0;
+        if (count == 0) return const SizedBox.shrink();
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFF3B30).withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(
+              color: const Color(0xFFFF3B30).withValues(alpha: 0.6),
+            ),
+          ),
+          child: KratosNumberPopIn(
+            '$count',
+            style: const TextStyle(
+              color: Color(0xFFFF3B30),
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
 

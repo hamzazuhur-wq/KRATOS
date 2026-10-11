@@ -3,12 +3,16 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 
 import '../domain/auth_models.dart';
 import '../domain/auth_service.dart';
 
 class SupabaseAuthService implements AuthService {
+  static const String _devSessionKey = 'kratos_dev_session_active';
+  static const String _devUserIdKey = 'kratos_dev_user_id';
+
   final supa.SupabaseClient _client;
   final _stateController = StreamController<AuthState>.broadcast();
   StreamSubscription<supa.AuthState>? _authSubscription;
@@ -22,6 +26,8 @@ class SupabaseAuthService implements AuthService {
     final initialSession = _client.auth.currentSession;
     if (initialSession != null) {
       _currentState = AuthAuthenticated(KratosUser.fromSupabase(initialSession.user));
+    } else {
+      _checkStoredDevSession();
     }
 
     // Subscribe to official Supabase auth state change stream.
@@ -55,14 +61,34 @@ class SupabaseAuthService implements AuthService {
       case supa.AuthChangeEvent.signedOut:
         _emit(const AuthUnauthenticated());
       case supa.AuthChangeEvent.initialSession:
-        // No persisted session restored
         if (_currentState is! AuthAuthenticated) {
-          _emit(const AuthUnauthenticated());
+          _checkStoredDevSession();
         }
       default:
         if (_client.auth.currentSession == null && _currentState is! AuthError) {
-          _emit(const AuthUnauthenticated());
+          _checkStoredDevSession();
         }
+    }
+  }
+
+  Future<void> _checkStoredDevSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool(_devSessionKey) == true) {
+        final savedId = prefs.getString(_devUserIdKey) ?? 'usr_seed_dev_01';
+        if (_currentState is! AuthAuthenticated) {
+          _emit(AuthAuthenticated(KratosUser.devMock(
+            id: savedId,
+            displayName: 'Developer Operative',
+            email: 'dev@kratos.local',
+            method: AuthMethod.developerMock,
+          )));
+          return;
+        }
+      }
+    } catch (_) {}
+    if (_currentState is! AuthAuthenticated) {
+      _emit(const AuthUnauthenticated());
     }
   }
 
@@ -92,9 +118,17 @@ class SupabaseAuthService implements AuthService {
       // Canonical redirect targets:
       // Web: exact canonical production origin
       // Mobile: registered custom URL scheme deep link
-      final redirectUrl = kIsWeb
-          ? 'https://kratos-os.online/'
-          : 'io.supabase.kratos://login-callback/';
+      final String redirectUrl;
+      if (kIsWeb) {
+        final origin = Uri.base.origin;
+        if (origin.contains('localhost') || origin.contains('127.0.0.1')) {
+          redirectUrl = '$origin/';
+        } else {
+          redirectUrl = 'https://kratos-os.online/';
+        }
+      } else {
+        redirectUrl = 'io.supabase.kratos://login-callback/';
+      }
 
       await _client.auth.signInWithOAuth(
         supa.OAuthProvider.google,
@@ -108,6 +142,23 @@ class SupabaseAuthService implements AuthService {
       }
       _emit(const AuthError('Unable to complete Google sign-in. Please try again.'));
     }
+  }
+
+  @override
+  Future<void> signInAsDeveloper({String userId = 'usr_seed_dev_01'}) async {
+    _emit(const AuthAuthenticating());
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_devSessionKey, true);
+      await prefs.setString(_devUserIdKey, userId);
+    } catch (_) {}
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    _emit(AuthAuthenticated(KratosUser.devMock(
+      id: userId,
+      displayName: 'Developer Operative',
+      email: 'dev@kratos.local',
+      method: AuthMethod.developerMock,
+    )));
   }
 
   @override
@@ -277,6 +328,11 @@ class SupabaseAuthService implements AuthService {
 
   @override
   Future<void> signOut() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_devSessionKey);
+      await prefs.remove(_devUserIdKey);
+    } catch (_) {}
     try {
       await _client.auth.signOut();
     } catch (_) {

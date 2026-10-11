@@ -4,9 +4,10 @@
 
 import 'package:flutter/material.dart';
 
-import '../../../app/kratos_skeleton.dart';
-import '../../../app/number_pop_in.dart';
 import '../../../app/kratos_motion.dart';
+import '../../../app/kratos_skeleton.dart';
+import '../../../app/kratos_visuals.dart';
+import '../../../app/number_pop_in.dart';
 import '../data/xp_analytics_dao.dart';
 
 /// XP Dashboard — main analytics hub.
@@ -74,7 +75,7 @@ class _XpDashboardScreenState extends State<XpDashboardScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -165,22 +166,11 @@ class _HeroXpCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return KratosGlassCard(
+      variant: KratosSurfaceVariant.active,
+      borderRadius: BorderRadius.circular(20),
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFFC6F135).withValues(alpha: 0.12),
-            Colors.transparent,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFC6F135).withValues(alpha: 0.3),
-        ),
-      ),
+      accentColor: const Color(0xFFC6F135),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -245,13 +235,9 @@ class _DailySparkline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final max = dailyXp.reduce((a, b) => a > b ? a : b);
-    return Container(
+    return KratosGlassCard(
+      borderRadius: BorderRadius.circular(16),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: List.generate(dailyXp.length, (i) {
@@ -302,13 +288,9 @@ class _LifeAreaXpList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final totalXp = entries.fold<int>(0, (s, e) => s + e.xp);
-    return Container(
+    return KratosGlassCard(
+      borderRadius: BorderRadius.circular(16),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-      ),
       child: Column(
         children: entries.map((e) {
           final fraction = totalXp > 0 ? e.xp / totalXp : 0.0;
@@ -382,33 +364,31 @@ class _XpSourceBreakdown extends StatelessWidget {
     return Row(
       children: sources.map((s) {
         return Expanded(
-          child: Container(
-            margin: const EdgeInsets.only(right: 10),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
+          child: Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: KratosGlassCard(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-            ),
-            child: Column(
-              children: [
-                Icon(s.icon, color: const Color(0xFFC6F135), size: 22),
-                const SizedBox(height: 8),
-                KratosNumberPopIn(
-                  '${s.xp}',
-                  style: const TextStyle(
-                    color: Color(0xFFC6F135),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                children: [
+                  Icon(s.icon, color: const Color(0xFFC6F135), size: 22),
+                  const SizedBox(height: 8),
+                  KratosNumberPopIn(
+                    '${s.xp}',
+                    style: const TextStyle(
+                      color: Color(0xFFC6F135),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  s.label,
-                  style: const TextStyle(color: Colors.white38, fontSize: 11),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+                  const SizedBox(height: 2),
+                  Text(
+                    s.label,
+                    style: const TextStyle(color: Colors.white38, fontSize: 11),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
         );

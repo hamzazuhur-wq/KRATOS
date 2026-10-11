@@ -44,7 +44,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Privacy & Data Ownership'), findsOneWidget);
+      expect(find.text('PRIVACY & DATA OWNERSHIP'), findsOneWidget);
       expect(find.text('1. Local-First Sovereignty'), findsOneWidget);
       expect(find.text('2. Zero Data Monetization'), findsOneWidget);
       expect(find.text('3. Advisory AI Guardrails'), findsOneWidget);

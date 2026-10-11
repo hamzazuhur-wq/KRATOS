@@ -1,5 +1,10 @@
 import 'package:flutter/foundation.dart';
 
+import 'focus_time_models.dart';
+export 'focus_time_models.dart';
+import 'positive_trend_models.dart';
+export 'positive_trend_models.dart';
+
 enum AnalyticsPeriod {
   sevenDays,
   thirtyDays,
@@ -24,14 +29,31 @@ extension AnalyticsPeriodLabel on AnalyticsPeriod {
     AnalyticsPeriod.year => 'This Year',
     AnalyticsPeriod.custom => 'Custom',
   };
+
+  String get comparisonLabel => switch (this) {
+    AnalyticsPeriod.sevenDays => 'vs previous 7 days',
+    AnalyticsPeriod.thirtyDays => 'vs previous 30 days',
+    AnalyticsPeriod.ninetyDays => 'vs previous 90 days',
+    AnalyticsPeriod.year => 'vs previous year',
+    AnalyticsPeriod.oneYear => 'vs previous period',
+    AnalyticsPeriod.today => 'vs yesterday',
+    AnalyticsPeriod.week => 'vs previous week',
+    AnalyticsPeriod.month => 'vs previous month',
+    AnalyticsPeriod.custom => 'vs previous period',
+  };
 }
 
 @immutable
 class AnalyticsDateRange {
   final DateTime start;
   final DateTime end;
+  final AnalyticsPeriod? period;
 
-  const AnalyticsDateRange({required this.start, required this.end});
+  const AnalyticsDateRange({
+    required this.start,
+    required this.end,
+    this.period,
+  });
 
   factory AnalyticsDateRange.forPeriod(
     AnalyticsPeriod period, {
@@ -47,45 +69,56 @@ class AnalyticsDateRange {
         return AnalyticsDateRange(
           start: start,
           end: today.add(const Duration(days: 1)),
+          period: period,
         );
       case AnalyticsPeriod.thirtyDays:
         final start = today.subtract(const Duration(days: 29));
         return AnalyticsDateRange(
           start: start,
           end: today.add(const Duration(days: 1)),
+          period: period,
         );
       case AnalyticsPeriod.ninetyDays:
         final start = today.subtract(const Duration(days: 89));
         return AnalyticsDateRange(
           start: start,
           end: today.add(const Duration(days: 1)),
+          period: period,
         );
       case AnalyticsPeriod.oneYear:
         final start = today.subtract(const Duration(days: 364));
         return AnalyticsDateRange(
           start: start,
           end: today.add(const Duration(days: 1)),
+          period: period,
         );
       case AnalyticsPeriod.today:
         return AnalyticsDateRange(
           start: today,
           end: today.add(const Duration(days: 1)),
+          period: period,
         );
       case AnalyticsPeriod.week:
         final monday = today.subtract(Duration(days: today.weekday - 1));
         return AnalyticsDateRange(
           start: monday,
           end: monday.add(const Duration(days: 7)),
+          period: period,
         );
       case AnalyticsPeriod.month:
         final start = DateTime(today.year, today.month);
         return AnalyticsDateRange(
           start: start,
           end: DateTime(today.year, today.month + 1),
+          period: period,
         );
       case AnalyticsPeriod.year:
         final start = DateTime(today.year);
-        return AnalyticsDateRange(start: start, end: DateTime(today.year + 1));
+        return AnalyticsDateRange(
+          start: start,
+          end: DateTime(today.year + 1),
+          period: period,
+        );
       case AnalyticsPeriod.custom:
         if (customStart == null || customEnd == null) {
           throw ArgumentError('Custom analytics ranges require both dates.');
@@ -103,7 +136,7 @@ class AnalyticsDateRange {
         if (!end.isAfter(start)) {
           throw ArgumentError('Analytics end date must be after start date.');
         }
-        return AnalyticsDateRange(start: start, end: end);
+        return AnalyticsDateRange(start: start, end: end, period: period);
     }
   }
 
@@ -163,6 +196,10 @@ class MetricDelta {
       isNeutral: pct.abs() < 0.1,
     );
   }
+
+  bool get isNegative => !isPositive && !isNeutral;
+  String get formattedPercent =>
+      '${changePct >= 0 ? '+' : ''}${changePct.toStringAsFixed(1)}%';
 }
 
 @immutable
@@ -352,6 +389,7 @@ class AnalyticsInsightItem {
 class AnalyticsSnapshot {
   final AnalyticsDateRange range;
   final String? lifeAreaId;
+  final String? sourceType;
   final int totalXp;
   final int previousTotalXp;
   final MetricDelta xpDelta;
@@ -370,6 +408,8 @@ class AnalyticsSnapshot {
   final int createdProjects;
   final int activeTasks;
   final int completedTasks;
+  final int periodCompletedTasks;
+  final int previousCompletedTasks;
   final int createdTasks;
   final int createdDecisions;
   final int completedDecisions;
@@ -382,6 +422,7 @@ class AnalyticsSnapshot {
 
   // Breakdown & Time Series
   final List<AnalyticsPoint> xpOverTime;
+  final List<AnalyticsPoint> previousXpOverTime;
   final List<DailyAnalyticsPoint> dailyGrowthSeries;
   final Map<String, int> xpBySource;
   final List<AnalyticsLifeAreaMetric> lifeAreas;
@@ -395,10 +436,14 @@ class AnalyticsSnapshot {
   final List<MilestoneItem> milestones;
   final List<RecentActivityItem> recentActivity;
   final List<AnalyticsInsightItem> insights;
+  final List<AnalyticsSkillMetric> topSkills;
+  final FocusTimeSnapshot? focusTime;
+  final List<PositiveTrendInsight>? positiveTrends;
 
   const AnalyticsSnapshot({
     required this.range,
     required this.lifeAreaId,
+    this.sourceType,
     required this.totalXp,
     this.previousTotalXp = 0,
     required this.xpDelta,
@@ -415,6 +460,8 @@ class AnalyticsSnapshot {
     this.createdProjects = 0,
     required this.activeTasks,
     required this.completedTasks,
+    this.periodCompletedTasks = 0,
+    this.previousCompletedTasks = 0,
     this.createdTasks = 0,
     this.createdDecisions = 0,
     this.completedDecisions = 0,
@@ -425,6 +472,7 @@ class AnalyticsSnapshot {
     required this.longestStreak,
     this.activeDaysCount = 0,
     required this.xpOverTime,
+    this.previousXpOverTime = const [],
     this.dailyGrowthSeries = const [],
     required this.xpBySource,
     required this.lifeAreas,
@@ -437,7 +485,28 @@ class AnalyticsSnapshot {
     this.milestones = const [],
     this.recentActivity = const [],
     this.insights = const [],
+    this.topSkills = const [],
+    this.focusTime,
+    this.positiveTrends,
   });
+
+  FocusTimeSnapshot get safeFocusTime => focusTime ?? FocusTimeSnapshot.empty(range);
+
+  List<PositiveTrendInsight> get safePositiveTrends =>
+      positiveTrends ?? PositiveTrendDetector.detect(this);
+
+  List<PositiveTrendInsight> get previewPositiveTrends =>
+      safePositiveTrends.take(3).toList();
+
+  int get periodTasksCount =>
+      periodCompletedTasks > 0
+          ? periodCompletedTasks
+          : dailyGrowthSeries.fold<int>(0, (sum, p) => sum + p.tasksCompleted);
+
+  MetricDelta get tasksDelta => MetricDelta.compute(
+    current: periodTasksCount.toDouble(),
+    previous: previousCompletedTasks.toDouble(),
+  );
 
   int get totalTrackedItems => activeTasks + activeGoals + activeProjects;
   double get taskCompletionRate => (activeTasks + completedTasks) == 0
@@ -447,4 +516,114 @@ class AnalyticsSnapshot {
                 ? (activeTasks + completedTasks)
                 : 1) *
             100.0);
+}
+
+/// Documented KRATOS Skill ranks: D, C, B, A, S.
+/// Distinct from Life Area tiers (Foundation, Momentum, Bronze, Silver, Gold, Crystal, etc.).
+enum SkillRank {
+  d('D', 1),
+  c('C', 2),
+  b('B', 3),
+  a('A', 4),
+  s('S', 5);
+
+  final String label;
+  final int level;
+  int get masteryLevel => level;
+
+  const SkillRank(this.label, this.level);
+
+  static SkillRank fromMasteryLevel(int masteryLevel) {
+    if (masteryLevel >= 5) return SkillRank.s;
+    if (masteryLevel == 4) return SkillRank.a;
+    if (masteryLevel == 3) return SkillRank.b;
+    if (masteryLevel == 2) return SkillRank.c;
+    return SkillRank.d;
+  }
+}
+
+/// Production model for Top Skills in KRATOS Analytics.
+/// Captures authoritative period metric, historical XP, comparison deltas,
+/// real activity/completion counts, and daily time-series points.
+@immutable
+class AnalyticsSkillMetric {
+  final String id;
+  final String name;
+  final String? description;
+  final String? icon;
+  final String? groupId;
+  final String? groupName;
+  final SkillRank rank;
+  final int masteryLevel;
+  final int level;
+  final int xp; // Authoritative period XP (or all-time XP if all-time period is selected)
+  final int totalXp; // All-time XP
+  final int previousXp; // XP in previous comparison period
+  final MetricDelta delta; // Growth/change delta
+  final double contributionPct; // % of total skill XP across the active dataset
+  final int activityCount; // Associated activities, tasks, sessions
+  final int completedTasksCount; // Completed tasks linked to this skill
+  final int sessionMinutes; // Minutes spent in sessions linked to this skill
+  final List<AnalyticsPoint> xpOverTime; // Daily XP time series in period
+  final List<AnalyticsPoint> previousXpOverTime; // Daily XP time series in previous period
+  final List<String> lifeAreaIds;
+  final List<String> lifeAreaNames;
+
+  AnalyticsSkillMetric({
+    required this.id,
+    required this.name,
+    this.description,
+    this.icon,
+    this.groupId,
+    this.groupName,
+    required this.rank,
+    int? masteryLevel,
+    int? level,
+    int? xp,
+    int? periodXp,
+    int? totalXp,
+    int? allTimeXp,
+    int? previousXp,
+    int? previousPeriodXp,
+    MetricDelta? delta,
+    MetricDelta? xpDelta,
+    this.contributionPct = 0.0,
+    this.activityCount = 0,
+    this.completedTasksCount = 0,
+    int? sessionMinutes,
+    int? focusMinutes,
+    int? sessionsCount,
+    this.xpOverTime = const [],
+    this.previousXpOverTime = const [],
+    this.lifeAreaIds = const [],
+    this.lifeAreaNames = const [],
+    String? lifeAreaId,
+    String? lifeAreaName,
+  })  : masteryLevel = masteryLevel ?? rank.level,
+        level = level ?? rank.level,
+        xp = xp ?? periodXp ?? 0,
+        totalXp = totalXp ?? allTimeXp ?? 0,
+        previousXp = previousXp ?? previousPeriodXp ?? 0,
+        delta = delta ??
+            xpDelta ??
+            const MetricDelta(
+              current: 0,
+              previous: 0,
+              changePct: 0,
+              isPositive: true,
+              isNeutral: true,
+            ),
+        sessionMinutes = sessionMinutes ??
+            focusMinutes ??
+            (sessionsCount != null ? sessionsCount * 30 : 0);
+
+  int get periodXp => xp;
+  int get allTimeXp => totalXp;
+  MetricDelta get xpDelta => delta;
+  int get focusMinutes => sessionMinutes;
+  int get sessionsCount => sessionMinutes > 0 ? (sessionMinutes ~/ 30) : 0;
+  String? get lifeAreaName =>
+      lifeAreaNames.isNotEmpty ? lifeAreaNames.first : null;
+  String? get lifeAreaId =>
+      lifeAreaIds.isNotEmpty ? lifeAreaIds.first : null;
 }

@@ -21,6 +21,13 @@ abstract class AnalyticsRepository {
     required String ownerId,
     required AnalyticsDateRange range,
     String? lifeAreaId,
+    String? sourceType,
+  });
+
+  Future<FocusTimeSnapshot> loadFocusTime({
+    required String ownerId,
+    required AnalyticsDateRange range,
+    String? lifeAreaId,
   });
 }
 
@@ -38,9 +45,28 @@ class MockAnalyticsRepository implements AnalyticsRepository {
     required String ownerId,
     required AnalyticsDateRange range,
     String? lifeAreaId,
+    String? sourceType,
   }) {
     return Future.value(
-      AnalyticsMockData.snapshot(range: range, lifeAreaId: lifeAreaId),
+      AnalyticsMockData.snapshot(
+        range: range,
+        lifeAreaId: lifeAreaId,
+        sourceType: sourceType,
+      ),
+    );
+  }
+
+  @override
+  Future<FocusTimeSnapshot> loadFocusTime({
+    required String ownerId,
+    required AnalyticsDateRange range,
+    String? lifeAreaId,
+  }) {
+    return Future.value(
+      AnalyticsMockData.snapshot(
+        range: range,
+        lifeAreaId: lifeAreaId,
+      ).safeFocusTime,
     );
   }
 }

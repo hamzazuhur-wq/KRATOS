@@ -1,0 +1,53 @@
+﻿class SettingsGroup extends StatelessWidget {
+  final List<Widget> children;
+  final double dividerIndent;
+  final bool active;
+  final SettingsTone tone;
+  final EdgeInsetsGeometry? padding;
+
+  const SettingsGroup({
+    super.key,
+    required this.children,
+    this.dividerIndent = 66,
+    this.active = false,
+    this.tone = SettingsTone.normal,
+    this.padding,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = SettingsTokens.of(context);
+    final toneColor = tone == SettingsTone.normal ? t.accent : _toneColor(t, tone);
+    final highlighted = active || tone != SettingsTone.normal;
+
+    final rows = <Widget>[];
+    for (var i = 0; i < children.length; i++) {
+      if (i > 0) {
+        rows.add(Divider(
+          height: 1,
+          thickness: 1,
+          indent: dividerIndent,
+          endIndent: 0,
+          color: t.hairline,
+        ));
+      }
+      rows.add(children[i]);
+    }
+
+    return KratosGlassCard(
+      variant: highlighted ? KratosSurfaceVariant.active : KratosSurfaceVariant.normal,
+      padding: padding ?? EdgeInsets.zero,
+      accentColor: toneColor,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: rows,
+        ),
+      ),
+    );
+  }
+}
+
+/// Header + group convenience wrapper.

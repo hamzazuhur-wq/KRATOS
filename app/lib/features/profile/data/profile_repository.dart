@@ -35,105 +35,133 @@ class ProfileRepository {
     }
   }
 
+  Future<UserProfileData> _buildProfileSnapshot(
+    String userId,
+    User? userRow,
+    LevelsDashboardRepository levelsRepo,
+    XpAnalyticsDao xpDao,
+  ) async {
+    final authUser = authService?.currentUser;
+    final supaUser = supabaseClient?.auth.currentUser;
+
+    // Extract details
+    final displayName = userRow?.displayName ??
+        authUser?.displayName ??
+        supaUser?.userMetadata?['full_name'] as String? ??
+        'Operative';
+
+    final caption = userRow?.caption ??
+        supaUser?.userMetadata?['caption'] as String?;
+
+    final avatarUrl = userRow?.avatarUrl ??
+        authUser?.avatarUrl ??
+        supaUser?.userMetadata?['avatar_url'] as String?;
+
+    final email = userRow?.email ??
+        authUser?.email ??
+        supaUser?.email ??
+        'user@kratos.local';
+
+    final createdAt = userRow?.createdAt ??
+        authUser?.createdAt ??
+        DateTime.now().toUtc();
+
+    // Calculate Leading Life Area / XP Domain
+    final xpMap = await xpDao.xpByLifeArea(userId);
+    final activeAreas = await (database.select(database.lifeAreas)
+          ..where((a) =>
+              a.ownerId.equals(userId) &
+              a.archivedAt.isNull() &
+              a.deletedAt.isNull())
+          ..orderBy([(a) => drift.OrderingTerm.asc(a.sortOrder)]))
+        .get();
+
+    String primaryXpDomain = 'General Mastery';
+    int maxAreaXp = -1;
+    int totalXp = 0;
+
+    for (final area in activeAreas) {
+      final areaXp = xpMap[area.id] ?? 0;
+      totalXp += areaXp;
+      if (areaXp > maxAreaXp) {
+        maxAreaXp = areaXp;
+        primaryXpDomain = area.name;
+      }
+    }
+
+    if (activeAreas.isEmpty) {
+      primaryXpDomain = 'General Development';
+    }
+
+    // Calculate Highest Level reached from real Progression
+    String highestLevel = 'Bronze I';
+    try {
+      final progressions = await levelsRepo.getProgressions(userId);
+      if (progressions.isNotEmpty) {
+        progressions.sort((a, b) {
+          final levelCmp = b.progression.level.compareTo(a.progression.level);
+          if (levelCmp != 0) return levelCmp;
+          return b.progression.totalXp.compareTo(a.progression.totalXp);
+        });
+        final top = progressions.first;
+        highestLevel = '${top.progression.tier} Level ${top.progression.level}';
+      }
+    } catch (_) {
+      // Fallback to default Bronze I
+    }
+
+    return UserProfileData(
+      userId: Id(userId),
+      displayName: displayName,
+      caption: caption,
+      avatarUrl: avatarUrl,
+      email: email,
+      timezone: userRow?.timezone ?? 'UTC',
+      createdAt: createdAt,
+      primaryXpDomain: primaryXpDomain,
+      highestLevel: highestLevel,
+      totalXp: totalXp,
+    );
+  }
+
   /// Watch live profile with reactive updates from local Drift SQLite, XP ledger, and Levels.
   Stream<UserProfileData> watchProfile(String userId) async* {
     final levelsRepo = LevelsDashboardRepository(database);
     final xpDao = XpAnalyticsDao(database);
 
-    // Watch users table row
-    final userStream = (database.select(database.users)
+    // 1. Explicit initial snapshot emitted immediately to guarantee instant render
+    final initialRow = await (database.select(database.users)
           ..where((u) => u.id.equals(userId)))
-        .watchSingleOrNull();
+        .getSingleOrNull();
+    yield await _buildProfileSnapshot(userId, initialRow, levelsRepo, xpDao);
 
-    // Yield initial or reactive combination
-    await for (final userRow in userStream) {
-      final authUser = authService?.currentUser;
-      final supaUser = supabaseClient?.auth.currentUser;
+    // 2. Watch users table and related tables for reactive updates
+    final trigger = database.customSelect(
+      'SELECT 1',
+      readsFrom: {
+        database.users,
+        database.lifeAreas,
+        database.xpLedger,
+        database.xpAllocationLines,
+      },
+    ).watch();
 
-      // Extract details
-      final displayName = userRow?.displayName ??
-          authUser?.displayName ??
-          supaUser?.userMetadata?['full_name'] as String? ??
-          'Operative';
-
-      final caption = userRow?.caption ??
-          supaUser?.userMetadata?['caption'] as String?;
-
-      final avatarUrl = userRow?.avatarUrl ??
-          authUser?.avatarUrl ??
-          supaUser?.userMetadata?['avatar_url'] as String?;
-
-      final email = userRow?.email ??
-          authUser?.email ??
-          supaUser?.email ??
-          'user@kratos.local';
-
-      final createdAt = userRow?.createdAt ??
-          authUser?.createdAt ??
-          DateTime.now().toUtc();
-
-      // Calculate Leading Life Area / XP Domain
-      final xpMap = await xpDao.xpByLifeArea(userId);
-      final activeAreas = await (database.select(database.lifeAreas)
-            ..where((a) =>
-                a.ownerId.equals(userId) &
-                a.archivedAt.isNull() &
-                a.deletedAt.isNull())
-            ..orderBy([(a) => drift.OrderingTerm.asc(a.sortOrder)]))
-          .get();
-
-      String primaryXpDomain = 'General Mastery';
-      int maxAreaXp = -1;
-      int totalXp = 0;
-
-      for (final area in activeAreas) {
-        final areaXp = xpMap[area.id] ?? 0;
-        totalXp += areaXp;
-        if (areaXp > maxAreaXp) {
-          maxAreaXp = areaXp;
-          primaryXpDomain = area.name;
-        }
-      }
-
-      if (activeAreas.isEmpty) {
-        primaryXpDomain = 'General Development';
-      }
-
-      // Calculate Highest Level reached from real Progression
-      String highestLevel = 'Bronze I';
-      try {
-        final progressions = await levelsRepo.getProgressions(userId);
-        if (progressions.isNotEmpty) {
-          progressions.sort((a, b) {
-            final levelCmp = b.progression.level.compareTo(a.progression.level);
-            if (levelCmp != 0) return levelCmp;
-            return b.progression.totalXp.compareTo(a.progression.totalXp);
-          });
-          final top = progressions.first;
-          highestLevel = '${top.progression.tier} Level ${top.progression.level}';
-        }
-      } catch (_) {
-        // Fallback to default Bronze I
-      }
-
-      yield UserProfileData(
-        userId: Id(userId),
-        displayName: displayName,
-        caption: caption,
-        avatarUrl: avatarUrl,
-        email: email,
-        timezone: userRow?.timezone ?? 'UTC',
-        createdAt: createdAt,
-        primaryXpDomain: primaryXpDomain,
-        highestLevel: highestLevel,
-        totalXp: totalXp,
-      );
-    }
+    yield* trigger.asyncMap((_) async {
+      final updatedRow = await (database.select(database.users)
+            ..where((u) => u.id.equals(userId)))
+          .getSingleOrNull();
+      return _buildProfileSnapshot(userId, updatedRow, levelsRepo, xpDao);
+    });
   }
 
   /// One-shot fetch of profile snapshot.
   Future<UserProfileData> getProfile(String userId) async {
-    return watchProfile(userId).first;
+    final levelsRepo = LevelsDashboardRepository(database);
+    final xpDao = XpAnalyticsDao(database);
+    final userRow = await (database.select(database.users)
+          ..where((u) => u.id.equals(userId)))
+        .getSingleOrNull();
+    return _buildProfileSnapshot(userId, userRow, levelsRepo, xpDao);
   }
 
   /// Update profile identity metadata locally and in Supabase if connected.

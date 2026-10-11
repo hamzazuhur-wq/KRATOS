@@ -101,14 +101,18 @@ class _GoalsScreenState extends State<GoalsScreen> {
                       ),
                     ),
                     const SizedBox(width: 7),
-                    const Text(
-                      'STRATEGIC INTENT // DIRECTION',
-                      style: TextStyle(
-                        fontFamily: 'IBM Plex Mono',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.4,
-                        color: Color(0xFF686D65),
+                    const Flexible(
+                      child: Text(
+                        'STRATEGIC INTENT // DIRECTION',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Mono',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.4,
+                          color: Color(0xFF686D65),
+                        ),
                       ),
                     ),
                   ],

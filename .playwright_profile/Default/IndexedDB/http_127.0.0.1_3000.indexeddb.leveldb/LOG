@@ -1,0 +1,14 @@
+2026/10/09-22:03:00.917 50d4 Reusing MANIFEST C:\Users\hamza\Documents\antigravity\kratos\.playwright_profile\Default\IndexedDB\http_127.0.0.1_3000.indexeddb.leveldb/MANIFEST-000001
+2026/10/09-22:03:00.917 50d4 Recovering log #69
+2026/10/09-22:03:00.917 50d4 Reusing old log C:\Users\hamza\Documents\antigravity\kratos\.playwright_profile\Default\IndexedDB\http_127.0.0.1_3000.indexeddb.leveldb/000069.log 
+2026/10/09-22:03:00.918 50d4 Delete type=2 #67
+2026/10/09-22:03:00.943 50d4 Level-0 table #74: started
+2026/10/09-22:03:00.950 50d4 Level-0 table #74: 511 bytes OK
+2026/10/09-22:03:00.951 50d4 Delete type=0 #69
+2026/10/09-22:03:00.951 50d4 Manual compaction at level-0 from '\x00\x1d\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x1e\x00\x00\x00' @ 0 : 0; will stop at '\x00\x1d\x00\x00\x05' @ 6242 : 1
+2026/10/09-22:03:00.951 50d4 Compacting 1@0 + 1@1 files
+2026/10/09-22:03:00.957 50d4 Generated table #75@0: 2408 keys, 99080 bytes
+2026/10/09-22:03:00.957 50d4 Compacted 1@0 + 1@1 files => 99080 bytes
+2026/10/09-22:03:00.957 50d4 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/10/09-22:03:00.958 50d4 Delete type=2 #74
+2026/10/09-22:03:00.958 50d4 Manual compaction at level-0 from '\x00\x1d\x00\x00\x05' @ 6242 : 1 .. '\x00\x1e\x00\x00\x00' @ 0 : 0; will stop at (end)

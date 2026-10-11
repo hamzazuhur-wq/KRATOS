@@ -159,7 +159,6 @@ void main() {
                   SizedBox(height: 300, child: SkillsPageSkeleton()),
                   SizedBox(height: 300, child: XpDashboardSkeleton()),
                   SizedBox(height: 300, child: LifeAreasPageSkeleton()),
-                  SizedBox(height: 300, child: AnalyticsPageSkeleton()),
                   SizedBox(height: 300, child: GenericDetailSkeleton()),
                 ],
               ),

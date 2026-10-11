@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/kratos_visuals.dart';
 import '../../data/ideas_repository.dart';
 import '../../domain/idea_models.dart';
 
@@ -23,17 +24,12 @@ class BacklinksSection extends StatelessWidget {
         final backlinks = snapshot.data ?? [];
         if (backlinks.isEmpty) return const SizedBox.shrink();
 
-        return Container(
-          margin: const EdgeInsets.only(top: 32, bottom: 24),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF141814),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
-          ),
-          child: Column(
+        return Padding(
+          padding: const EdgeInsets.only(top: 32, bottom: 24),
+          child: KratosGlassCard(
+            borderRadius: BorderRadius.circular(14),
+            padding: const EdgeInsets.all(16),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -107,8 +103,9 @@ class BacklinksSection extends StatelessWidget {
               ),
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 }

@@ -8,7 +8,7 @@ import '../../../data/drift/app_database.dart';
 import '../../../domain/hlc.dart';
 import '../../../domain/ids.dart';
 import '../../sessions/domain/session_models.dart';
-import '../../streaks/domain/streak_service.dart';
+import '../../sessions/domain/session_service.dart';
 import '../../xp/data/xp_ledger_writer_impl.dart';
 import '../../xp/domain/xp_allocation_math.dart';
 import '../domain/activity_models.dart';
@@ -33,25 +33,23 @@ class ActivityDashboardRepository {
     required ActivityDashboardTime time,
     DateTimeRange? customRange,
   }) {
-    // Watch activities table and dependent tables
-    final activitiesQuery =
-        (_db.select(_db.activities)
-              ..where(
-                (a) =>
-                    a.ownerId.equals(ownerId) &
-                    a.deletedAt.isNull() &
-                    a.archivedAt.isNull() &
-                    (lifeAreaId != null
-                        ? a.lifeAreaId.equals(lifeAreaId)
-                        : const Constant(true)) &
-                    (categoryId != null
-                        ? a.categoryId.equals(categoryId)
-                        : const Constant(true)),
-              )
-              ..orderBy([(a) => OrderingTerm.asc(a.name)]))
-            .watch();
+    Future<List<ActivityDashboardItem>> fetch() async {
+      final activities = await (_db.select(_db.activities)
+            ..where(
+              (a) =>
+                  a.ownerId.equals(ownerId) &
+                  a.deletedAt.isNull() &
+                  a.archivedAt.isNull() &
+                  (lifeAreaId != null
+                      ? a.lifeAreaId.equals(lifeAreaId)
+                      : const Constant(true)) &
+                  (categoryId != null
+                      ? a.categoryId.equals(categoryId)
+                      : const Constant(true)),
+            )
+            ..orderBy([(a) => OrderingTerm.asc(a.name)]))
+          .get();
 
-    return activitiesQuery.asyncMap((activities) async {
       if (activities.isEmpty) return <ActivityDashboardItem>[];
 
       final range = _dateRange(time, customRange);
@@ -171,7 +169,26 @@ class ActivityDashboardRepository {
       }
 
       return items;
-    });
+    }
+
+    final triggerStream = _db
+        .customSelect(
+          'SELECT 1',
+          readsFrom: {
+            _db.activities,
+            _db.sessions,
+            _db.lifeAreas,
+            _db.categories,
+            _db.skills,
+            _db.attachmentLinks,
+          },
+        )
+        .watch();
+
+    return (() async* {
+      yield await fetch();
+      yield* triggerStream.asyncMap((_) => fetch());
+    })();
   }
 
   Stream<ActivityDetailData?> watchActivityDetail({
@@ -411,6 +428,8 @@ class ActivityDashboardRepository {
     return activityId;
   }
 
+  /// Manual time entry. Uses the SAME canonical Session model/pipeline as the
+  /// live timer (source = manual): Drift -> Outbox -> single idempotent XP award.
   Future<int> quickLogSession({
     required String activityId,
     required String ownerId,
@@ -420,98 +439,18 @@ class ActivityDashboardRepository {
     final act = await (_db.select(
       _db.activities,
     )..where((a) => a.id.equals(activityId))).getSingle();
-    final now = DateTime.now().toUtc();
-    final hlc = Hlc.now(Id(ownerId));
-    final durationMs = durationMinutes * 60 * 1000;
-    final sessionId = Id.uuidV7().value;
-
-    // Phase 2: use ActivityXpCalculator (same formula as timer path)
-    final difficulty = act.difficulty.clamp(1, 10);
-    int xpPoints = ActivityXpCalculator.calculateActivityXp(
-      difficulty,
-      _clampDuration(Duration(minutes: durationMinutes)),
+    final d = _clampDuration(Duration(minutes: durationMinutes));
+    final end = DateTime.now().toUtc();
+    final result = await SessionService(_db).logManual(
+      ownerId: ownerId,
+      entityType: 'activity',
+      entityId: activityId,
+      startedAt: end.subtract(d),
+      endedAt: end,
+      durationMs: d.inMilliseconds,
+      note: note ?? 'Completed focus on ${act.name}',
     );
-    if (xpPoints < 1) xpPoints = 1;
-    final effectiveArea = act.lifeAreaId;
-
-    await _db.transaction(() async {
-      await _db
-          .into(_db.sessions)
-          .insert(
-            SessionsCompanion.insert(
-              id: sessionId,
-              ownerId: ownerId,
-              activityId: Value(activityId),
-              lifeAreaId: Value(effectiveArea),
-              startedAt: now.subtract(
-                _clampDuration(Duration(minutes: durationMinutes)),
-              ),
-              endedAt: Value(now),
-              durationMs: Value(durationMs),
-              note: Value(note ?? 'Completed focus on ${act.name}'),
-              versionHlc: hlc.toString(),
-              createdAt: now,
-              updatedAt: now,
-            ),
-          );
-
-      await _db
-          .into(_db.syncOutbox)
-          .insert(
-            SyncOutboxCompanion.insert(
-              userId: ownerId,
-              op: 'upsert',
-              entity: 'sessions',
-              entityId: sessionId,
-              payloadJson: jsonEncode({
-                'id': sessionId,
-                'owner_id': ownerId,
-                'activity_id': activityId,
-                'life_area_id': effectiveArea,
-                'started_at': now
-                    .subtract(
-                      _clampDuration(Duration(minutes: durationMinutes)),
-                    )
-                    .toIso8601String(),
-                'ended_at': now.toIso8601String(),
-                'duration_ms': durationMs,
-              }),
-              hlc: hlc.toString(),
-              deviceId: 'local_device',
-            ),
-          );
-
-      if (effectiveArea != null && effectiveArea.isNotEmpty && xpPoints > 0) {
-        final writer = DriftXpLedgerWriter(_db);
-        final idempotencyKey = Id('xp_sess_$sessionId');
-        final streakService = StreakService(_db);
-
-        await writer.recordEvent(
-          ownerId: Id(ownerId),
-          idempotencyKey: idempotencyKey,
-          sourceType: 'session',
-          sourceId: Id(sessionId),
-          action: 'focus_completed',
-          basePoints: xpPoints,
-          allocationRatios: [
-            AllocationRatio(lifeAreaId: Id(effectiveArea), percentage: 100.0),
-          ],
-          clock: hlc,
-          deviceId: Id('local_device'),
-        );
-
-        await streakService.recordQualifyingCompletion(
-          userId: Id(ownerId),
-          sourceId: Id(sessionId),
-          lifeAreaId: Id(effectiveArea),
-          completedAt: now,
-          versionHlc: hlc.toString(),
-          deviceId: Id('local_device'),
-        );
-      }
-    });
-
-    return xpPoints;
+    return result.xpEarned;
   }
 
   Future<void> updateActivity({

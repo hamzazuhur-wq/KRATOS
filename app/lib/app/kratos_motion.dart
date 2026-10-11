@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -259,38 +260,9 @@ class KratosPageRoute<T> extends PageRouteBuilder<T> {
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             final disableAnimations =
                 MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-            
-            final isDark = Theme.of(context).brightness == Brightness.dark;
-            final bgDecoration = BoxDecoration(
-              gradient: isDark
-                  ? const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF141815),
-                        Color(0xFF0E110F),
-                        Color(0xFF080A08),
-                      ],
-                    )
-                  : const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFFFFFFFF),
-                        Color(0xFFF8F9FA),
-                        Color(0xFFF0F2F5),
-                      ],
-                    ),
-            );
 
             if (disableAnimations) {
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(decoration: bgDecoration),
-                  child,
-                ],
-              );
+              return child;
             }
 
             final curved = CurvedAnimation(
@@ -298,24 +270,15 @@ class KratosPageRoute<T> extends PageRouteBuilder<T> {
               curve: KratosMotion.webCurve,
               reverseCurve: Curves.easeInCubic,
             );
-            return Stack(
-              fit: StackFit.expand,
-              children: [
-                FadeTransition(
-                  opacity: curved,
-                  child: Container(decoration: bgDecoration),
-                ),
-                FadeTransition(
-                  opacity: curved,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0.03, 0),
-                      end: Offset.zero,
-                    ).animate(curved),
-                    child: child,
-                  ),
-                ),
-              ],
+            return FadeTransition(
+              opacity: curved,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.03, 0),
+                  end: Offset.zero,
+                ).animate(curved),
+                child: child,
+              ),
             );
           },
         );
@@ -381,6 +344,8 @@ class _KratosPageEntranceState extends State<KratosPageEntrance>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _animation;
+  Timer? _timer;
+  bool _started = false;
 
   @override
   void initState() {
@@ -390,17 +355,30 @@ class _KratosPageEntranceState extends State<KratosPageEntrance>
       parent: _controller,
       curve: KratosMotion.pageEntranceCurve,
     );
-    if (widget.delay > Duration.zero) {
-      Future.delayed(widget.delay, () {
-        if (mounted) _controller.forward();
-      });
-    } else {
-      _controller.forward();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_started) {
+      _started = true;
+      final disableAnimations =
+          MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+      if (disableAnimations) {
+        _controller.value = 1.0;
+      } else if (widget.delay > Duration.zero) {
+        _timer = Timer(widget.delay, () {
+          if (mounted) _controller.forward();
+        });
+      } else {
+        _controller.forward();
+      }
     }
   }
 
   @override
   void dispose() {
+    _timer?.cancel();
     _controller.dispose();
     super.dispose();
   }

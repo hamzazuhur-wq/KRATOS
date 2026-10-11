@@ -1,5 +1,5 @@
 // ignore_for_file: public_member_api_docs
-import 'dart:ui';
+
 
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../../app/kratos_dropdown.dart';
 import '../../../app/kratos_skeleton.dart';
+import '../../../app/kratos_visuals.dart';
 import '../../../app/number_pop_in.dart';
 import '../../../data/drift/app_database.dart';
 import '../../../domain/hlc.dart';
@@ -346,13 +347,9 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   }
 
   Widget _buildHeaderCard(ActivityDetailData data) {
-    return Container(
+    return KratosGlassCard(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
+      borderRadius: BorderRadius.circular(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -490,40 +487,16 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
 
         final isPaused = isThisActivityActive && activeState.isPaused;
 
-        return ClipRRect(
+        return KratosGlassCard(
+          variant: isThisActivityActive
+              ? KratosSurfaceVariant.active
+              : KratosSurfaceVariant.normal,
+          accentColor: isThisActivityActive
+              ? (isPaused ? Colors.amber : const Color(0xFFC6F135))
+              : null,
           borderRadius: BorderRadius.circular(16),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isThisActivityActive
-                    ? const Color(0xFF0F1A0F).withValues(alpha: 0.9)
-                    : Colors.white.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isThisActivityActive
-                      ? (isPaused
-                            ? Colors.amber.withValues(alpha: 0.6)
-                            : const Color(0xFFC6F135).withValues(alpha: 0.6))
-                      : Colors.white.withValues(alpha: 0.08),
-                  width: isThisActivityActive ? 1.5 : 1.0,
-                ),
-                boxShadow: isThisActivityActive
-                    ? [
-                        BoxShadow(
-                          color:
-                              (isPaused
-                                      ? Colors.amber
-                                      : const Color(0xFFC6F135))
-                                  .withValues(alpha: 0.15),
-                          blurRadius: 24,
-                          spreadRadius: 2,
-                        ),
-                      ]
-                    : [],
-              ),
-              child: Column(
+          padding: const EdgeInsets.all(20),
+          child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Row(
@@ -814,22 +787,16 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                   ],
                 ],
               ),
-            ),
-          ),
+            );
+          },
         );
-      },
-    );
-  }
+      }
 
-  Widget _buildSummaryCard(ActivityDetailData data) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
+      Widget _buildSummaryCard(ActivityDetailData data) {
+        return KratosGlassCard(
+          padding: const EdgeInsets.all(18),
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
@@ -891,19 +858,12 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final acidLime = isDark ? const Color(0xFFC6F135) : const Color(0xFF658F00);
-    final surfaceColor = theme.cardTheme.color ?? theme.colorScheme.surface;
-    final borderColor = theme.cardTheme.shape is RoundedRectangleBorder
-        ? (theme.cardTheme.shape as RoundedRectangleBorder).side.color
-        : theme.dividerColor;
+
     final textSecondary = theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7) ?? Colors.white70;
 
-    return Container(
+    return KratosGlassCard(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: surfaceColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor),
-      ),
+      borderRadius: BorderRadius.circular(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1020,13 +980,9 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   }
 
   Widget _buildRelatedContextCard(ActivityDetailData data) {
-    return Container(
+    return KratosGlassCard(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
+      borderRadius: BorderRadius.circular(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

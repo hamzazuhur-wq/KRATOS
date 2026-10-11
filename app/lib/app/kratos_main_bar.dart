@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -44,67 +46,70 @@ class KratosMainBar extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 58),
-        decoration: BoxDecoration(
-          gradient: isDark
-              ? const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xF2121513),
-                    Color(0xEB0A0D0B),
-                  ],
-                )
-              : const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xF8FFFFFF),
-                    Color(0xF2F7F8FA),
-                  ],
-                ),
-          border: Border(
-            bottom: BorderSide(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : const Color(0x1F0F172A),
-              width: 1.0,
-            ),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.35)
-                  : const Color(0x0A0F172A),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Top specular hairline
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 1.0,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      (isDark ? Colors.white : accent).withValues(
-                        alpha: isDark ? 0.16 : 0.20,
-                      ),
-                      Colors.transparent,
-                    ],
-                    stops: const [0.0, 0.5, 1.0],
-                  ),
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 58),
+            decoration: BoxDecoration(
+              gradient: isDark
+                  ? const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xA61B1E1B),
+                        Color(0xC0121512),
+                      ],
+                    )
+                  : const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xA6FFFFFF),
+                        Color(0x8CF5F6F2),
+                      ],
+                    ),
+              border: Border(
+                bottom: BorderSide(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : KratosTheme.lightBorderGlass,
+                  width: 1.0,
                 ),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.35)
+                      : const Color(0x0A0F172A),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
+            child: Stack(
+              children: [
+                // Top specular hairline
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 1.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          (isDark ? Colors.white : accent).withValues(
+                            alpha: isDark ? 0.35 : 0.40,
+                          ),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.5, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
@@ -117,20 +122,9 @@ class KratosMainBar extends StatelessWidget {
                   _KratosMark(sectionTitle: currentSection),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: StreamBuilder<UserProfileData>(
-                      stream: ProfileRepository(database: database)
-                          .watchProfile(ownerId),
-                      builder: (context, profileSnapshot) {
-                        return StreamBuilder<OverallProgressionSnapshot>(
-                          stream: OverallProgressionRepository(database).watch(ownerId),
-                          builder: (context, progressionSnapshot) {
-                            return _IdentityCluster(
-                              profile: profileSnapshot.data,
-                              progression: progressionSnapshot.data,
-                            );
-                          },
-                        );
-                      },
+                    child: _MainBarIdentitySection(
+                      database: database,
+                      ownerId: ownerId,
                     ),
                   ),
                   IconButton(
@@ -171,8 +165,10 @@ class KratosMainBar extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 }
 
 class _KratosMark extends StatelessWidget {
@@ -332,6 +328,63 @@ class _IdentityCluster extends StatelessWidget {
                 ),
               ),
           ],
+        );
+      },
+    );
+  }
+}
+
+class _MainBarIdentitySection extends StatefulWidget {
+  final AppDatabase database;
+  final String ownerId;
+
+  const _MainBarIdentitySection({
+    required this.database,
+    required this.ownerId,
+  });
+
+  @override
+  State<_MainBarIdentitySection> createState() => _MainBarIdentitySectionState();
+}
+
+class _MainBarIdentitySectionState extends State<_MainBarIdentitySection> {
+  late Stream<UserProfileData> _profileStream;
+  late Stream<OverallProgressionSnapshot> _progressionStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _initStreams();
+  }
+
+  void _initStreams() {
+    _profileStream = ProfileRepository(database: widget.database)
+        .watchProfile(widget.ownerId);
+    _progressionStream = OverallProgressionRepository(widget.database)
+        .watch(widget.ownerId);
+  }
+
+  @override
+  void didUpdateWidget(_MainBarIdentitySection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.ownerId != widget.ownerId || oldWidget.database != widget.database) {
+      _initStreams();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<UserProfileData>(
+      stream: _profileStream,
+      builder: (context, profileSnapshot) {
+        return StreamBuilder<OverallProgressionSnapshot>(
+          stream: _progressionStream,
+          builder: (context, progressionSnapshot) {
+            return _IdentityCluster(
+              profile: profileSnapshot.data,
+              progression: progressionSnapshot.data,
+            );
+          },
         );
       },
     );

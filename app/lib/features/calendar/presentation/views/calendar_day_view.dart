@@ -73,7 +73,7 @@ class CalendarDayView extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: accent.withOpacity(0.1),
+        color: accent.withValues(alpha: 0.1),
         border: Border(left: BorderSide(color: accent, width: 3)),
         borderRadius: BorderRadius.circular(4),
       ),
@@ -90,7 +90,7 @@ class CalendarDayView extends StatelessWidget {
           if (event.subtitle != null)
             Text(
               event.subtitle!,
-              style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 10),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             )

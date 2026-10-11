@@ -29,14 +29,34 @@ class _TasksScreenState extends State<TasksScreen> {
   String? _lifeAreaId;
   DateTimeRange? _customRange;
 
+  late final Stream<List<TaskDashboardLifeArea>> _areasStream;
+  Stream<List<TaskDashboardItem>>? _tasksStream;
+  Object? _tasksStreamKey;
+
   @override
   void initState() {
     super.initState();
     _repository = TaskDashboardRepository(widget.database);
+    _areasStream = _repository.watchLifeAreas(widget.ownerId);
     GlobalActiveSessionController().bindDatabase(
       widget.database,
       widget.ownerId,
     );
+  }
+
+  Stream<List<TaskDashboardItem>> _taskStreamFor() {
+    final key = (_status, _lifeAreaId, _time, _customRange);
+    if (_tasksStream == null || _tasksStreamKey != key) {
+      _tasksStreamKey = key;
+      _tasksStream = _repository.watchTasks(
+        ownerId: widget.ownerId,
+        status: _status,
+        lifeAreaId: _lifeAreaId,
+        time: _time,
+        customRange: _customRange,
+      );
+    }
+    return _tasksStream!;
   }
 
   @override
@@ -46,7 +66,7 @@ class _TasksScreenState extends State<TasksScreen> {
       fit: StackFit.expand,
       children: [
         StreamBuilder<List<TaskDashboardLifeArea>>(
-          stream: _repository.watchLifeAreas(widget.ownerId),
+          stream: _areasStream,
           builder: (context, areasSnapshot) {
             final areas = areasSnapshot.data ?? const <TaskDashboardLifeArea>[];
             if (_lifeAreaId != null &&
@@ -66,13 +86,7 @@ class _TasksScreenState extends State<TasksScreen> {
 
   Widget _taskBody(List<TaskDashboardLifeArea> areas) =>
       StreamBuilder<List<TaskDashboardItem>>(
-        stream: _repository.watchTasks(
-          ownerId: widget.ownerId,
-          status: _status,
-          lifeAreaId: _lifeAreaId,
-          time: _time,
-          customRange: _customRange,
-        ),
+        stream: _taskStreamFor(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return _ErrorState(message: '${snapshot.error}');
@@ -80,6 +94,7 @@ class _TasksScreenState extends State<TasksScreen> {
 
           final isLoading = !snapshot.hasData;
           final tasks = snapshot.data;
+
 
           return SkeletonReveal(
             loading: isLoading,
@@ -303,10 +318,10 @@ class _Header extends StatelessWidget {
           variant: KratosSurfaceVariant.interactive,
           interactive: true,
           padding: EdgeInsets.zero,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(23),
           child: InkWell(
             onTap: onNewTask,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(23),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(

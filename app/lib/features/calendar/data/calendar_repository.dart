@@ -29,11 +29,14 @@ class CalendarRepository {
   CalendarRepository({required this.database});
 
   Future<List<CalendarEvent>> fetchEvents(String ownerId, DateTime start, DateTime end) async {
+    final startUtc = start.toUtc();
+    final endUtc = end.toUtc();
+
     final tasksQuery = database.select(database.tasks)..where((t) => 
       t.ownerId.equals(ownerId) & 
       t.deletedAt.isNull() & 
       t.dueDate.isNotNull() &
-      t.dueDate.isBetweenValues(start, end)
+      t.dueDate.isBetweenValues(startUtc, endUtc)
     );
     final tasks = await tasksQuery.get();
 
@@ -41,14 +44,14 @@ class CalendarRepository {
       g.ownerId.equals(ownerId) & 
       g.deletedAt.isNull() & 
       g.dueDate.isNotNull() &
-      g.dueDate.isBetweenValues(start, end)
+      g.dueDate.isBetweenValues(startUtc, endUtc)
     );
     final goals = await goalsQuery.get();
 
     final sessionsQuery = database.select(database.sessions)..where((s) => 
       s.ownerId.equals(ownerId) & 
       s.deletedAt.isNull() & 
-      s.startedAt.isBetweenValues(start, end)
+      s.startedAt.isBetweenValues(startUtc, endUtc)
     );
     final sessions = await sessionsQuery.get();
 

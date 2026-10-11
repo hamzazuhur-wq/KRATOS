@@ -29,7 +29,7 @@ class XpSummaryCard extends StatelessWidget {
         variant: KratosSurfaceVariant.elevated,
         dashboardGlass: true,
         accentColor: lime,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(23),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

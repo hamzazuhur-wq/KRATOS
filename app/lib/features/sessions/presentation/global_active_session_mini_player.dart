@@ -1,9 +1,9 @@
-// ignore_for_file: public_member_api_docs
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
+import '../../../app/kratos_visuals.dart';
 import '../../../data/drift/app_database.dart';
 import '../domain/global_active_session_controller.dart';
+import '../domain/global_timer_controller.dart';
 
 class GlobalActiveSessionMiniPlayer extends StatelessWidget {
   final AppDatabase database;
@@ -27,7 +27,9 @@ class GlobalActiveSessionMiniPlayer extends StatelessWidget {
       initialData: controller.currentState,
       builder: (context, snapshot) {
         final state = snapshot.data;
-        if (state == null) return const SizedBox.shrink();
+        if (state == null || GlobalTimerController().owns(state.sessionId)) {
+          return const SizedBox.shrink();
+        }
 
         final hasTarget = state.targetDurationSeconds > 0;
         final targetStr = hasTarget ? ' / ${state.formattedTarget}' : '';
@@ -37,41 +39,20 @@ class GlobalActiveSessionMiniPlayer extends StatelessWidget {
           right: 16,
           child: Material(
             color: Colors.transparent,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Container(
-                  width: 340,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0A0F0A).withValues(alpha: 0.88),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: state.isPaused
-                          ? Colors.amber.withValues(alpha: 0.4)
-                          : const Color(0xFFC6F135).withValues(alpha: 0.4),
-                      width: 1.2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (state.isPaused ? Colors.amber : const Color(0xFFC6F135))
-                            .withValues(alpha: 0.15),
-                        blurRadius: 16,
-                        spreadRadius: 2,
-                      ),
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      InkWell(
-                        onTap: () {
+            child: SizedBox(
+              width: 340,
+              child: KratosGlassCard(
+                variant: KratosSurfaceVariant.active,
+                accentColor: state.isPaused
+                    ? Colors.amber
+                    : const Color(0xFFC6F135),
+                borderRadius: BorderRadius.circular(16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InkWell(
+                      onTap: () {
                           if (onOpenDetail != null) {
                             onOpenDetail!(state.entityType, state.entityId);
                           }
@@ -210,9 +191,8 @@ class GlobalActiveSessionMiniPlayer extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
     );
   }
 }

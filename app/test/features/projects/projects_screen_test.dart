@@ -31,19 +31,22 @@ void main() {
     await tester.tap(find.text('CREATE PROJECT'));
     await tester.pumpAndSettle();
 
-    expect(find.text('TEST PROJECT'), findsWidgets);
+    expect(find.text('Test Project'), findsWidgets);
     expect((await database.select(database.projects).get()).single.title,
         'Test Project');
 
-    await tester.tap(find.byTooltip('Edit Project'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, 'Edited Project');
-    await tester.ensureVisible(find.text('Save Changes'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Save Changes'));
+    await tester.tap(find.text('Test Project').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('EDITED PROJECT'), findsWidgets);
+    await tester.tap(find.byTooltip('Configure Project'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Edited Project');
+    await tester.ensureVisible(find.text('SAVE CHANGES'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('SAVE CHANGES'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edited Project'), findsWidgets);
     expect((await database.select(database.projects).get()).single.title,
         'Edited Project');
 

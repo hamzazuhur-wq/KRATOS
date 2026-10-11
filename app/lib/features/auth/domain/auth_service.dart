@@ -55,6 +55,9 @@ abstract class AuthService {
   /// Signs out of current Supabase session.
   Future<void> signOut();
 
+  /// Signs in immediately as a local developer / test operative without external redirects.
+  Future<void> signInAsDeveloper({String userId = 'usr_seed_dev_01'});
+
   /// Updates password for authenticated user (if supported).
   Future<void> updatePassword(String newPassword);
 

@@ -3,6 +3,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../../../app/kratos_visuals.dart';
+
 class EvidenceHubScreen extends StatefulWidget {
   const EvidenceHubScreen({super.key});
 
@@ -194,12 +196,9 @@ class _FileTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-      ),
+    return KratosGlassCard(
+      padding: EdgeInsets.zero,
+      borderRadius: BorderRadius.circular(12),
       child: ListTile(
         leading: Icon(_icon, color: const Color(0xFFC6F135), size: 24),
         title: Text(name, style: const TextStyle(color: Colors.white, fontSize: 13)),
@@ -236,12 +235,9 @@ class _LinkTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-      ),
+    return KratosGlassCard(
+      padding: EdgeInsets.zero,
+      borderRadius: BorderRadius.circular(12),
       child: ListTile(
         leading: const Icon(Icons.link, color: Color(0xFF00BCD4), size: 22),
         title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 13)),
@@ -279,12 +275,8 @@ class _EvidenceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-      ),
+    return KratosGlassCard(
+      borderRadius: BorderRadius.circular(12),
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [

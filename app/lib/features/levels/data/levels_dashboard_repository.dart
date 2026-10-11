@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart' hide Category;
 
 import '../../../data/drift/app_database.dart';
 import '../../../domain/ids.dart';
@@ -70,7 +71,18 @@ class LevelsDashboardRepository {
       ]);
   }
 
-  Future<List<LevelsDashboardEntry>> getProgressions(String ownerId) async {
+  static final Map<String, Future<List<LevelsDashboardEntry>>> _inFlight = {};
+
+  Future<List<LevelsDashboardEntry>> getProgressions(String ownerId) {
+    final existing = _inFlight[ownerId];
+    if (existing != null) return existing;
+
+    final future = _fetchProgressions(ownerId);
+    _inFlight[ownerId] = future;
+    return future.whenComplete(() => _inFlight.remove(ownerId));
+  }
+
+  Future<List<LevelsDashboardEntry>> _fetchProgressions(String ownerId) async {
     await _database.progressionDao.ensureSeeded();
     final tiers = await _database.progressionDao.allTiers();
     final curves = await _database.progressionDao.allCurves();
@@ -79,9 +91,17 @@ class LevelsDashboardRepository {
   }
 
   Stream<List<LevelsDashboardEntry>> watchProgressions(String ownerId) async* {
+    debugPrint('[LevelsRepo] watchProgressions started for $ownerId');
     await _database.progressionDao.ensureSeeded();
     final tiers = await _database.progressionDao.allTiers();
     final curves = await _database.progressionDao.allCurves();
+    final rows = await _buildQuery(ownerId).get();
+    debugPrint('[LevelsRepo] watchProgressions rows: ${rows.length}, tiers: ${tiers.length}, curves: ${curves.length}');
+
+    // customSelect().watch() does not guarantee an initial emission on web.
+    final initial = _mapRows(rows, tiers, curves);
+    debugPrint('[LevelsRepo] watchProgressions yielding initial: ${initial.length} entries');
+    yield initial;
 
     yield* _database
         .customSelect(

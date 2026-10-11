@@ -73,13 +73,13 @@ class _GoalCardState extends State<GoalCard> {
         variant: isCompleted ? KratosSurfaceVariant.normal : KratosSurfaceVariant.interactive,
         interactive: true,
         accentColor: statusColor.withValues(alpha: isDark ? 0.40 : 0.45),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(23),
         padding: EdgeInsets.zero,
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: widget.onTap,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(23),
             splashColor: statusColor.withValues(alpha: 0.12),
             highlightColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04),
             child: Padding(

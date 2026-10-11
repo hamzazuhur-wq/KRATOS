@@ -54,8 +54,8 @@ void main() {
 
     tearDown(() => db.close());
 
-    test('Schema version 12 reflects current database definition', () {
-      expect(db.schemaVersion, 14);
+    test('Schema version reflects current database definition', () {
+      expect(db.schemaVersion, 15);
     });
 
     test('Activities table contains difficulty column with default 5', () async {

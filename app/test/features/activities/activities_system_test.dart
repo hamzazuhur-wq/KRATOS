@@ -112,7 +112,7 @@ void main() {
   });
 
   tearDown(() async {
-    GlobalActiveSessionController().discard();
+    GlobalActiveSessionController().debugReset();
     await db.close();
   });
 
@@ -234,7 +234,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 200));
         await tester.pumpAndSettle();
 
-        expect(find.text('ACTIVITIES'), findsOneWidget);
+        expect(find.text('Activities Command'), findsOneWidget);
         expect(find.text('Weightlifting & Calisthenics'), findsOneWidget);
         expect(find.text('Learning & Growth'), findsWidgets);
         expect(find.text('Knowledge'), findsWidgets);

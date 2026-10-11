@@ -255,6 +255,28 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleDeveloperSignIn() async {
+    if (_isBusySubmitting || _isLaunchingGoogle) return;
+
+    setState(() {
+      _isBusySubmitting = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await widget.authService.signInAsDeveloper();
+      widget.onLoginSuccess?.call();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Unable to complete developer sign-in: $e';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isBusySubmitting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_mode == _AuthMode.verifyOtp && _verificationEmail != null) {
@@ -837,6 +859,51 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ],
                                   ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Quick Developer / Local Preview Sign-In
+                          OutlinedButton(
+                            key: const ValueKey('dev_sign_in_button'),
+                            onPressed: isBusy ? null : _handleDeveloperSignIn,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 14,
+                              ),
+                              side: BorderSide(
+                                color: KratosTheme.acidLime.withValues(alpha: 0.6),
+                                width: 1.2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              backgroundColor: KratosTheme.acidLime.withValues(alpha: 0.08),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.terminal_rounded,
+                                  color: KratosTheme.acidLime,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 10),
+                                const Flexible(
+                                  child: Text(
+                                    'تسجيل الدخول كمطور (Local Dev)',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 24),
 

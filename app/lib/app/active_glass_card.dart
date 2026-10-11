@@ -7,7 +7,7 @@ import 'kratos_visuals.dart';
 class ActiveGlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
-  final BorderRadius borderRadius;
+  final BorderRadius? borderRadius;
   final bool active;
   final Color? accentColor;
   final VoidCallback? onTap;
@@ -16,7 +16,7 @@ class ActiveGlassCard extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(16),
-    this.borderRadius = const BorderRadius.all(Radius.circular(16)),
+    this.borderRadius,
     this.active = true,
     this.accentColor,
     this.onTap,

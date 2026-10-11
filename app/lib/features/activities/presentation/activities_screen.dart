@@ -183,6 +183,18 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                 child: StreamBuilder<List<ActivityDashboardItem>>(
                   stream: _activitiesStream,
                   builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            'Unable to load activities: ${snapshot.error}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                        ),
+                      );
+                    }
                     final isLoading =
                         snapshot.connectionState == ConnectionState.waiting &&
                         !snapshot.hasData;

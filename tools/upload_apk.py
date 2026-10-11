@@ -10,6 +10,11 @@ import urllib.request
 import urllib.parse
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 def upload_to_litterbox(apk_path: Path) -> str | None:
     print("[UPLOAD] Trying litterbox.catbox.moe (72h temporary hosting)...")
     url = "https://litterbox.catbox.moe/resources/internals/api.php"

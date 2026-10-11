@@ -1,7 +1,6 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const url = require('url');
 
 const PORT = process.env.PORT || 3000;
 const WEB_DIR = path.join(__dirname, 'app', 'build', 'web');
@@ -30,42 +29,57 @@ const server = http.createServer((req, res) => {
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
 
-  const parsedUrl = url.parse(req.url);
-  let pathname = decodeURIComponent(parsedUrl.pathname);
+  try {
+    const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost:3000'}`);
+    let pathname = decodeURIComponent(parsedUrl.pathname);
 
-  if (pathname === '/') {
-    pathname = '/index.html';
-  }
-
-  let filePath = path.join(WEB_DIR, pathname);
-
-  fs.stat(filePath, (err, stats) => {
-    // If file doesn't exist, fallback to index.html for Flutter SPA navigation
-    if (err || !stats.isFile()) {
-      if (!path.extname(pathname) || pathname.indexOf('.') === -1) {
-        filePath = path.join(WEB_DIR, 'index.html');
-      } else {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('404 Not Found');
-        return;
-      }
+    if (pathname === '/') {
+      pathname = '/index.html';
     }
 
-    const ext = path.extname(filePath).toLowerCase();
-    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+    let filePath = path.join(WEB_DIR, pathname);
 
-    fs.readFile(filePath, (readErr, data) => {
-      if (readErr) {
-        res.writeHead(500, { 'Content-Type': 'text/plain' });
-        res.end('500 Internal Server Error');
-        return;
+    fs.stat(filePath, (err, stats) => {
+      if (err || !stats.isFile()) {
+        if (!path.extname(pathname) || pathname.indexOf('.') === -1) {
+          filePath = path.join(WEB_DIR, 'index.html');
+        } else {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          res.end('404 Not Found');
+          return;
+        }
       }
 
-      res.writeHead(200, { 'Content-Type': contentType });
-      res.end(data);
+      const ext = path.extname(filePath).toLowerCase();
+      const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+
+      fs.readFile(filePath, (readErr, data) => {
+        if (readErr) {
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          res.end('500 Internal Server Error');
+          return;
+        }
+
+        res.writeHead(200, { 'Content-Type': contentType });
+        res.end(data);
+      });
     });
-  });
+  } catch (e) {
+    res.writeHead(500, { 'Content-Type': 'text/plain' });
+    res.end('500 Error');
+  }
+});
+
+server.on('error', (err) => {
+  console.error('Server error:', err.message);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err.message);
 });
 
 server.listen(PORT, '0.0.0.0', () => {

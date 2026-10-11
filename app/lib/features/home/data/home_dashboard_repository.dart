@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../data/drift/app_database.dart';
 import '../../../domain/ids.dart';
@@ -46,17 +47,27 @@ class HomeDashboardRepository {
     // cannot remain on an indeterminate loading animation (and so consumers
     // receive the same contract on native and web).
     return (() async* {
-      yield await getHomeDashboard(ownerId);
+      final initial = await getHomeDashboard(ownerId);
+      yield initial;
       yield* triggerStream.asyncMap((_) => getHomeDashboard(ownerId));
     })();
   }
 
   /// Calculates a snapshot of all Home data.
   Future<HomeDashboardData> getHomeDashboard(String ownerId) async {
-    // 1. Profile data directly from users table
-    final userRow = await (database.select(
+    // 1. Kick off all independent queries concurrently to eliminate sequential waterfall latency
+    final userRowFuture = (database.select(
       database.users,
     )..where((u) => u.id.equals(ownerId))).getSingleOrNull();
+
+    final progressionsFuture = _levelsRepo.getProgressions(ownerId);
+    final endingTodayFuture = _getEndingTodayItems(ownerId);
+    final recentItemsFuture = _getRecentItems(ownerId);
+    final streakInfoFuture = _getStreakInfo(ownerId);
+    final workSummaryFuture = _getWorkSummary(ownerId);
+
+    final userRow = await userRowFuture;
+    final progressions = await progressionsFuture;
 
     final baseProfile = UserProfileData(
       userId: Id(ownerId),
@@ -71,10 +82,7 @@ class HomeDashboardRepository {
       totalXp: 0,
     );
 
-    // 2. Life Area Progression entries
-    final progressions = await _levelsRepo.getProgressions(ownerId);
-
-    // 3. Compute Aggregate XP and Range across active Life Areas
+    // 2. Compute Aggregate XP and Range across active Life Areas
     final aggregateProgression = _computeAggregateProgression(progressions);
     final globalProgression = GlobalProgressionDefinitions.resolve(
       aggregateProgression.totalXp,
@@ -86,15 +94,10 @@ class HomeDashboardRepository {
       totalXp: aggregateProgression.totalXp,
     );
 
-    // 4. Ending Today items (Tasks, Goals, Projects)
-    final endingTodayItems = await _getEndingTodayItems(ownerId);
-
-    // 5. Recent items (Tasks, Goals, Projects, Sessions)
-    final recentItems = await _getRecentItems(ownerId);
-
-    // 6. Streak info
-    final streakInfo = await _getStreakInfo(ownerId);
-    final workSummary = await _getWorkSummary(ownerId);
+    final endingTodayItems = await endingTodayFuture;
+    final recentItems = await recentItemsFuture;
+    final streakInfo = await streakInfoFuture;
+    final workSummary = await workSummaryFuture;
 
     return HomeDashboardData(
       profile: profile,
@@ -113,15 +116,20 @@ class HomeDashboardRepository {
     final end = start.add(const Duration(days: 1));
     final activeStatuses = const ['pending', 'in_progress', 'active', 'paused'];
 
-    final tasks = await (database.select(database.tasks)
+    final tasksFuture = (database.select(database.tasks)
           ..where((t) => t.ownerId.equals(ownerId) & t.deletedAt.isNull()))
         .get();
-    final goals = await (database.select(database.goals)
+    final goalsFuture = (database.select(database.goals)
           ..where((g) => g.ownerId.equals(ownerId) & g.deletedAt.isNull()))
         .get();
-    final projects = await (database.select(database.projects)
+    final projectsFuture = (database.select(database.projects)
           ..where((p) => p.ownerId.equals(ownerId) & p.deletedAt.isNull()))
         .get();
+
+    final results = await Future.wait([tasksFuture, goalsFuture, projectsFuture]);
+    final tasks = results[0] as List<Task>;
+    final goals = results[1] as List<Goal>;
+    final projects = results[2] as List<Project>;
 
     bool isCompleted(String status) =>
         status == 'completed' || status == 'done';
@@ -232,7 +240,40 @@ class HomeDashboardRepository {
             t.status.isNotIn(const ['completed', 'done']),
       );
 
-    final tasks = await tasksQuery.get();
+    final tasksFuture = tasksQuery.get();
+
+    // 2. Goals ending today
+    final goalsQuery = database.select(database.goals)
+      ..where(
+        (g) =>
+            g.ownerId.equals(ownerId) &
+            g.deletedAt.isNull() &
+            g.dueDate.isBiggerOrEqualValue(startUtc) &
+            g.dueDate.isSmallerThanValue(endUtc) &
+            g.status.isNotIn(const ['completed', 'done']),
+      );
+
+    final goalsFuture = goalsQuery.get();
+
+    // 3. Projects ending today
+    final projectsQuery = database.select(database.projects)
+      ..where(
+        (p) =>
+            p.ownerId.equals(ownerId) &
+            p.deletedAt.isNull() &
+            p.dueDate.isBiggerOrEqualValue(startUtc) &
+            p.dueDate.isSmallerThanValue(endUtc) &
+            p.status.isNotIn(const ['completed', 'done']),
+      );
+
+    final projectsFuture = projectsQuery.get();
+
+    final results =
+        await Future.wait([tasksFuture, goalsFuture, projectsFuture]);
+    final tasks = results[0] as List<Task>;
+    final goals = results[1] as List<Goal>;
+    final projects = results[2] as List<Project>;
+
     for (final task in tasks) {
       items.add(
         HomeEndingTodayItem(
@@ -248,18 +289,6 @@ class HomeDashboardRepository {
       );
     }
 
-    // 2. Goals ending today
-    final goalsQuery = database.select(database.goals)
-      ..where(
-        (g) =>
-            g.ownerId.equals(ownerId) &
-            g.deletedAt.isNull() &
-            g.dueDate.isBiggerOrEqualValue(startUtc) &
-            g.dueDate.isSmallerThanValue(endUtc) &
-            g.status.isNotIn(const ['completed', 'done']),
-      );
-
-    final goals = await goalsQuery.get();
     for (final goal in goals) {
       items.add(
         HomeEndingTodayItem(
@@ -275,18 +304,6 @@ class HomeDashboardRepository {
       );
     }
 
-    // 3. Projects ending today
-    final projectsQuery = database.select(database.projects)
-      ..where(
-        (p) =>
-            p.ownerId.equals(ownerId) &
-            p.deletedAt.isNull() &
-            p.dueDate.isBiggerOrEqualValue(startUtc) &
-            p.dueDate.isSmallerThanValue(endUtc) &
-            p.status.isNotIn(const ['completed', 'done']),
-      );
-
-    final projects = await projectsQuery.get();
     for (final project in projects) {
       items.add(
         HomeEndingTodayItem(
@@ -308,15 +325,109 @@ class HomeDashboardRepository {
 
   /// Cross-system snapshot of recently updated or completed items.
   Future<List<HomeRecentItem>> _getRecentItems(String ownerId) async {
-    final recent = <HomeRecentItem>[];
+    const queryTimeout = Duration(milliseconds: 3500);
+
+    Future<T> safeQuery<T>(
+      Future<T> Function() query,
+      T fallback,
+      String label,
+    ) async {
+      try {
+        return await query().timeout(
+          queryTimeout,
+          onTimeout: () {
+            debugPrint(
+              '[HomeDashboardRepo] _getRecentItems: $label timed out after ${queryTimeout.inMilliseconds}ms',
+            );
+            return fallback;
+          },
+        );
+      } catch (e) {
+        debugPrint('[HomeDashboardRepo] _getRecentItems: $label failed: $e');
+        return fallback;
+      }
+    }
 
     // 1. Recent Tasks (latest 3)
-    final recentTasks =
-        await (database.select(database.tasks)
-              ..where((t) => t.ownerId.equals(ownerId) & t.deletedAt.isNull())
-              ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)])
-              ..limit(3))
-            .get();
+    final tasksFuture = safeQuery(
+      () => (database.select(database.tasks)
+            ..where((t) => t.ownerId.equals(ownerId) & t.deletedAt.isNull())
+            ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)])
+            ..limit(3))
+          .get(),
+      <Task>[],
+      'tasks',
+    );
+
+    // 2. Recent Goals (latest 3)
+    final goalsFuture = safeQuery(
+      () => (database.select(database.goals)
+            ..where((g) => g.ownerId.equals(ownerId) & g.deletedAt.isNull())
+            ..orderBy([(g) => OrderingTerm.desc(g.updatedAt)])
+            ..limit(3))
+          .get(),
+      <Goal>[],
+      'goals',
+    );
+
+    // 3. Recent Projects (latest 3)
+    final projectsFuture = safeQuery(
+      () => (database.select(database.projects)
+            ..where((p) => p.ownerId.equals(ownerId) & p.deletedAt.isNull())
+            ..orderBy([(p) => OrderingTerm.desc(p.updatedAt)])
+            ..limit(3))
+          .get(),
+      <Project>[],
+      'projects',
+    );
+
+    // 4. Recent Sessions (latest 3)
+    final sessionsFuture = safeQuery(
+      () => (database.select(database.sessions).join([
+              leftOuterJoin(
+                database.activities,
+                database.activities.id.equalsExp(
+                  database.sessions.activityId,
+                ),
+              ),
+            ])
+            ..where(
+              database.sessions.ownerId.equals(ownerId) &
+                  database.sessions.deletedAt.isNull(),
+            )
+            ..orderBy([OrderingTerm.desc(database.sessions.startedAt)])
+            ..limit(3))
+          .get(),
+      <TypedResult>[],
+      'sessions',
+    );
+
+    // 5. Activity Events (latest 3)
+    final eventsFuture = safeQuery(
+      () => (database.select(database.activityEvents)
+            ..where((e) => e.ownerId.equals(ownerId))
+            ..orderBy([(e) => OrderingTerm.desc(e.occurredAt)])
+            ..limit(3))
+          .get(),
+      <ActivityEvent>[],
+      'activityEvents',
+    );
+
+    final results = await Future.wait([
+      tasksFuture,
+      goalsFuture,
+      projectsFuture,
+      sessionsFuture,
+      eventsFuture,
+    ]);
+
+    final recentTasks = results[0] as List<Task>;
+    final recentGoals = results[1] as List<Goal>;
+    final recentProjects = results[2] as List<Project>;
+    final sessionsWithActivities = results[3] as List<TypedResult>;
+    final recentEvents = results[4] as List<ActivityEvent>;
+
+    final recent = <HomeRecentItem>[];
 
     for (final t in recentTasks) {
       final isComp = t.status == 'completed' || t.status == 'done';
@@ -332,14 +443,6 @@ class HomeDashboardRepository {
       );
     }
 
-    // 2. Recent Goals (latest 3)
-    final recentGoals =
-        await (database.select(database.goals)
-              ..where((g) => g.ownerId.equals(ownerId) & g.deletedAt.isNull())
-              ..orderBy([(g) => OrderingTerm.desc(g.updatedAt)])
-              ..limit(3))
-            .get();
-
     for (final g in recentGoals) {
       final isComp = g.status == 'completed' || g.status == 'done';
       recent.add(
@@ -354,14 +457,6 @@ class HomeDashboardRepository {
       );
     }
 
-    // 3. Recent Projects (latest 3)
-    final recentProjects =
-        await (database.select(database.projects)
-              ..where((p) => p.ownerId.equals(ownerId) & p.deletedAt.isNull())
-              ..orderBy([(p) => OrderingTerm.desc(p.updatedAt)])
-              ..limit(3))
-            .get();
-
     for (final p in recentProjects) {
       final isComp = p.status == 'completed' || p.status == 'done';
       recent.add(
@@ -375,24 +470,6 @@ class HomeDashboardRepository {
         ),
       );
     }
-
-    // 4. Recent Sessions (latest 3)
-    final sessionsWithActivities =
-        await (database.select(database.sessions).join([
-                leftOuterJoin(
-                  database.activities,
-                  database.activities.id.equalsExp(
-                    database.sessions.activityId,
-                  ),
-                ),
-              ])
-              ..where(
-                database.sessions.ownerId.equals(ownerId) &
-                    database.sessions.deletedAt.isNull(),
-              )
-              ..orderBy([OrderingTerm.desc(database.sessions.startedAt)])
-              ..limit(3))
-            .get();
 
     for (final row in sessionsWithActivities) {
       final session = row.readTable(database.sessions);
@@ -414,11 +491,6 @@ class HomeDashboardRepository {
       );
     }
 
-    final recentEvents = await (database.select(database.activityEvents)
-          ..where((e) => e.ownerId.equals(ownerId))
-          ..orderBy([(e) => OrderingTerm.desc(e.occurredAt)])
-          ..limit(3))
-        .get();
     for (final event in recentEvents) {
       recent.add(
         HomeRecentItem(

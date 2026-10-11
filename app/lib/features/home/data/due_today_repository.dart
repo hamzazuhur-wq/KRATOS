@@ -7,6 +7,7 @@
 // today, and what slipped past its deadline without being completed?
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../data/drift/app_database.dart';
 
@@ -70,7 +71,15 @@ class DueTodayRepository {
 
   /// Reactive overview of overdue + due-today items.
   Stream<DueOverview> watchDueOverview(String ownerId) {
-    final trigger = database
+    return _watchDueOverviewInternal(ownerId);
+  }
+
+  Stream<DueOverview> _watchDueOverviewInternal(String ownerId) async* {
+    debugPrint('[DueTodayRepo] _watchDueOverviewInternal started for $ownerId');
+    final initial = await getDueOverview(ownerId);
+    debugPrint('[DueTodayRepo] yielding initial: ${initial.dueTodayCount} due, ${initial.overdueCount} overdue');
+    yield initial;
+    yield* database
         .customSelect(
           'SELECT 1',
           readsFrom: {
@@ -80,11 +89,12 @@ class DueTodayRepository {
             database.lifeAreas,
           },
         )
-        .watch();
-    return trigger.asyncMap((_) => getDueOverview(ownerId));
+        .watch()
+        .asyncMap((_) => getDueOverview(ownerId));
   }
 
   Future<DueOverview> getDueOverview(String ownerId, {DateTime? now}) async {
+    debugPrint('[DueTodayRepo] getDueOverview query starting for $ownerId');
     final reference = now ?? DateTime.now();
     final startOfToday = DateTime(
       reference.year,

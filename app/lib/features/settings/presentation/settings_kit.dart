@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/kratos_motion.dart';
 import '../../../app/kratos_theme.dart';
+import '../../../app/kratos_visuals.dart';
 
 /// Resolved colour tokens for the active brightness.
 class SettingsTokens {
@@ -219,7 +220,6 @@ class SettingsGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = SettingsTokens.of(context);
-    final radius = BorderRadius.circular(18);
     final toneColor = tone == SettingsTone.normal ? t.accent : _toneColor(t, tone);
     final highlighted = active || tone != SettingsTone.normal;
 
@@ -237,81 +237,16 @@ class SettingsGroup extends StatelessWidget {
       rows.add(children[i]);
     }
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        gradient: t.isDark
-            ? LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFF151816).withValues(alpha: 0.96),
-                  const Color(0xFF0C0F0D).withValues(alpha: 0.98),
-                ],
-              )
-            : LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFFFAFAF7).withValues(alpha: 0.94),
-                  const Color(0xFFF1F0EA).withValues(alpha: 0.94),
-                ],
-              ),
-        border: Border.all(
-          color: highlighted
-              ? toneColor.withValues(alpha: t.isDark ? 0.55 : 0.60)
-              : (t.isDark ? const Color(0x1AFFFFFF) : const Color(0x1F10130F)),
-          width: highlighted ? 1.2 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: t.isDark ? const Color(0x61000000) : const Color(0x0F10130F),
-            blurRadius: t.isDark ? 20 : 18,
-            offset: const Offset(0, 6),
-          ),
-          if (!t.isDark)
-            const BoxShadow(
-              color: Color(0x0A000000),
-              blurRadius: 3,
-              offset: Offset(0, 1),
-            ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: Stack(
-          children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 1,
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.white.withValues(alpha: t.isDark ? 0.20 : 0.9),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: padding ?? EdgeInsets.zero,
-              child: Material(
-                type: MaterialType.transparency,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: rows,
-                ),
-              ),
-            ),
-          ],
+    return KratosGlassCard(
+      variant: highlighted ? KratosSurfaceVariant.active : KratosSurfaceVariant.normal,
+      padding: padding ?? EdgeInsets.zero,
+      accentColor: toneColor,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: rows,
         ),
       ),
     );
@@ -1203,3 +1138,4 @@ class SettingsDialog extends StatelessWidget {
     );
   }
 }
+

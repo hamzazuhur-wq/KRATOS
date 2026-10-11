@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
-import 'package:drift_flutter/drift_flutter.dart';
+import 'package:flutter/foundation.dart';
+import 'connection/connection.dart';
 
 import 'aux_tables.dart';
 import 'core_tables.dart';
@@ -133,12 +134,17 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
+      debugPrint('[AppDatabase] onCreate starting createAll...');
       await m.createAll();
+      debugPrint('[AppDatabase] onCreate completed createAll successfully!');
+    },
+    beforeOpen: (details) async {
+      debugPrint('[AppDatabase] beforeOpen: was ${details.versionBefore}, now ${details.versionNow}');
     },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
@@ -274,29 +280,22 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(decisions);
         await m.createTable(activityEvents);
       }
+      if (from < 15) {
+        final sessionCols = await customSelect("PRAGMA table_info('sessions')")
+            .get();
+        bool has(String n) => sessionCols.any((c) => c.data['name'] == n);
+        if (!has('status')) await m.addColumn(sessions, sessions.status);
+        if (!has('source')) await m.addColumn(sessions, sessions.source);
+        if (!has('paused_at')) await m.addColumn(sessions, sessions.pausedAt);
+        if (!has('paused_total_ms')) {
+          await m.addColumn(sessions, sessions.pausedTotalMs);
+        }
+      }
     },
   );
 }
 
 QueryExecutor _openConnection() {
-  // Uses native SQLite on Mobile/Desktop and the bundled Wasm worker on Web.
-  // The explicit web options are required by drift_flutter 0.3+ at runtime.
-  // On Web, if the server is missing COOP/COEP headers (required for
-  // SharedArrayBuffer), the WasmDatabase worker may fail. The sqlite3Wasm
-  // fallback path below keeps the app alive in-memory in that case so the
-  // initialization doesn't hang silently.
-  return driftDatabase(
-    name: 'kratos_db',
-    web: DriftWebOptions(
-      sqlite3Wasm: Uri.parse('sqlite3.wasm'),
-      driftWorker: Uri.parse('drift_worker.js'),
-      // Allow Drift to fall back from the shared-memory Wasm worker to an
-      // in-memory database when SharedArrayBuffer is unavailable (missing
-      // COOP/COEP on the server). This prevents an indefinite initialization
-      // hang at the cost of data not persisting across hard refreshes in that
-      // scenario. Persistence will be restored once the server sends the
-      // correct headers.
-    ),
-  );
+  return connect('kratos_db');
 }
 

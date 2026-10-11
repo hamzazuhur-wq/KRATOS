@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../data/drift/app_database.dart';
 import '../../../domain/hlc.dart';
@@ -64,7 +65,8 @@ class ProjectsRepository {
         .watch();
 
     return (() async* {
-      yield await getProjectsWithDetails(
+      debugPrint('[ProjectsRepo] watchProjects started for $ownerId');
+      final initial = await getProjectsWithDetails(
         ownerId,
         query: query,
         status: status,
@@ -72,6 +74,8 @@ class ProjectsRepository {
         goalId: goalId,
         skillId: skillId,
       );
+      debugPrint('[ProjectsRepo] watchProjects yielding initial: ${initial.length} projects');
+      yield initial;
       yield* triggerStream.asyncMap(
         (_) => getProjectsWithDetails(
           ownerId,
@@ -94,7 +98,9 @@ class ProjectsRepository {
     String? goalId,
     String? skillId,
   }) async {
+    debugPrint('[ProjectsRepo] getProjectsWithDetails starting for $ownerId');
     final rawProjects = await _projectsDao.allProjects(ownerId);
+    debugPrint('[ProjectsRepo] raw projects count: ${rawProjects.length}');
     final results = <ProjectWithDetails>[];
 
     for (final project in rawProjects) {
@@ -166,9 +172,14 @@ class ProjectsRepository {
 
   /// Unified loader for a single project with all relations and live progress.
   Future<ProjectWithDetails?> getProjectWithDetails(String projectId) async {
+    debugPrint('[ProjectsRepo] getProjectWithDetails step 0 (findById) for $projectId');
     final project = await _projectsDao.findById(projectId);
-    if (project == null || project.deletedAt != null) return null;
+    if (project == null || project.deletedAt != null) {
+      debugPrint('[ProjectsRepo] getProjectWithDetails project not found or deleted');
+      return null;
+    }
 
+    debugPrint('[ProjectsRepo] getProjectWithDetails step 1 (lifeArea)');
     // Life Area
     LifeArea? lifeArea;
     if (project.lifeAreaId != null) {
@@ -177,6 +188,7 @@ class ProjectsRepository {
       )..where((a) => a.id.equals(project.lifeAreaId!))).getSingleOrNull();
     }
 
+    debugPrint('[ProjectsRepo] getProjectWithDetails step 2 (goal)');
     // Goal & Sub-goal
     Goal? goal;
     Goal? subGoal;
@@ -196,6 +208,7 @@ class ProjectsRepository {
       }
     }
 
+    debugPrint('[ProjectsRepo] getProjectWithDetails step 3 (level)');
     // Level
     String? levelName;
     if (project.levelId != null) {
@@ -207,6 +220,7 @@ class ProjectsRepository {
       }
     }
 
+    debugPrint('[ProjectsRepo] getProjectWithDetails step 4 (skills)');
     // Skills
     final skillLinks = await _attachmentLinksDao.forEntity(
       projectId,
@@ -226,9 +240,11 @@ class ProjectsRepository {
       );
     }
 
+    debugPrint('[ProjectsRepo] getProjectWithDetails step 5 (phases)');
     // Phases
     final phases = await _projectsDao.phasesForProject(projectId);
 
+    debugPrint('[ProjectsRepo] getProjectWithDetails step 6 (tasks)');
     // Tasks
     final tasks =
         await (database.select(database.tasks)..where(
@@ -236,6 +252,7 @@ class ProjectsRepository {
             ))
             .get();
 
+    debugPrint('[ProjectsRepo] getProjectWithDetails step 7 (activities)');
     // Activities
     final activities =
         await (database.select(database.activities)..where(
@@ -316,14 +333,9 @@ class ProjectsRepository {
       unphasedProjectTasks: unphasedTasks,
     );
 
-    // Keep cached progress in sync if changed
-    if ((project.progress - computedProgress).abs() > 0.001) {
-      await _projectsDao.updateProgress(
-        project.id,
-        computedProgress,
-        Hlc.now(Id.uuidV7()).toString(),
-      );
-    }
+    debugPrint('[ProjectsRepo] getProjectWithDetails step 8 (done: $projectId)');
+
+    // Return computed progress with project details (no DB write during read)
 
     return ProjectWithDetails(
       project: project,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../app/kratos_theme.dart';
+
 import '../../../../app/kratos_visuals.dart';
 import '../../../../data/drift/app_database.dart';
 import '../data/calendar_repository.dart';
@@ -30,6 +30,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
   DateTime _currentDate = DateTime.now();
   List<CalendarEvent> _events = [];
   bool _isLoading = true;
+  Object? _error;
+  int _loadRequestId = 0;
 
   @override
   void initState() {
@@ -39,7 +41,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   Future<void> _loadEvents() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     
     // Load a window based on view type
     DateTime start;
@@ -61,12 +66,26 @@ class _CalendarScreenState extends State<CalendarScreen> {
       end = end.add(Duration(days: 7 - (end.weekday == 7 ? 0 : end.weekday)));
     }
 
-    final events = await _repository.fetchEvents(widget.ownerId, start, end);
-    if (mounted) {
-      setState(() {
-        _events = events;
-        _isLoading = false;
-      });
+    final requestId = ++_loadRequestId;
+    try {
+      final events = await _repository
+          .fetchEvents(widget.ownerId, start, end)
+          .timeout(const Duration(seconds: 10));
+      if (mounted && requestId == _loadRequestId) {
+        setState(() {
+          _events = events;
+          _error = null;
+          _isLoading = false;
+        });
+      }
+    } catch (e, st) {
+      debugPrint('[CalendarScreen] load failed: $e\n$st');
+      if (mounted && requestId == _loadRequestId) {
+        setState(() {
+          _error = e;
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -99,6 +118,26 @@ class _CalendarScreenState extends State<CalendarScreen> {
           _buildHeader(),
           if (_isLoading)
             const Expanded(child: Center(child: CircularProgressIndicator(color: Color(0xFFC6F135))))
+          else if (_error != null)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Unable to load calendar: $_error',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: _loadEvents,
+                      child: const Text('Retry', style: TextStyle(color: Color(0xFFC6F135))),
+                    ),
+                  ],
+                ),
+              ),
+            )
           else if (_currentView == CalendarViewType.day)
             Expanded(child: CalendarDayView(date: _currentDate, events: _events))
           else if (_currentView == CalendarViewType.week)
@@ -181,10 +220,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFFC6F135).withOpacity(0.1) : Colors.transparent,
+          color: isActive ? const Color(0xFFC6F135).withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
-            color: isActive ? const Color(0xFFC6F135).withOpacity(0.5) : Colors.white12,
+            color: isActive ? const Color(0xFFC6F135).withValues(alpha: 0.5) : Colors.white12,
           ),
         ),
         child: Text(

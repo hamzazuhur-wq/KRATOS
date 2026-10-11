@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../app/kratos_theme.dart';
-import '../../../../app/kratos_visuals.dart';
 import '../calendar/presentation/views/calendar_day_view.dart';
 import '../calendar/presentation/views/calendar_week_view.dart';
 import '../calendar/presentation/views/calendar_month_view.dart';

@@ -120,21 +120,27 @@ class TaskDashboardRepository {
                t.due_date ASC, t.sort_order ASC, t.updated_at DESC
     ''';
 
-    return _db
-        .customSelect(
-          query,
-          variables: args,
-          readsFrom: {
-            _db.tasks,
-            _db.lifeAreas,
-            _db.goals,
-            _db.projects,
-            _db.categories,
-            _db.sessions,
-          },
-        )
-        .watch()
-        .map((rows) => rows.map(_fromRow).toList(growable: false));
+    final select = _db.customSelect(
+      query,
+      variables: args,
+      readsFrom: {
+        _db.tasks,
+        _db.lifeAreas,
+        _db.goals,
+        _db.projects,
+        _db.categories,
+        _db.sessions,
+      },
+    );
+    List<TaskDashboardItem> mapRows(List<QueryRow> rows) =>
+        rows.map(_fromRow).toList(growable: false);
+
+    // Drift's customSelect watcher does not guarantee an initial emission on
+    // every executor/platform (notably web). Emit a first snapshot explicitly.
+    return (() async* {
+      yield mapRows(await select.get());
+      yield* select.watch().map(mapRows);
+    })();
   }
 
   Stream<List<TaskDashboardLifeArea>> watchLifeAreas(String ownerId) {

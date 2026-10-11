@@ -164,6 +164,8 @@ class OnboardingService {
     final deviceId = Id.uuidV7().value;
     final versionHlc = Hlc.now(Id.uuidV7()).toString();
 
+    await _db.progressionDao.ensureSeeded();
+
     await _db.transaction(() async {
       // 1. User row
       final existingProfile = await (_db.select(_db.users)..where((row) => row.id.equals(userId))).getSingleOrNull();
@@ -269,6 +271,122 @@ class OnboardingService {
           versionHlc: Value(versionHlc),
           createdAt: Value(now),
           updatedAt: Value(now),
+        ),
+      );
+
+      // 5. Starter Task (Due today)
+      final starterTaskId = Id.uuidV7().value;
+      await _db.into(_db.tasks).insert(
+        TasksCompanion(
+          id: Value(starterTaskId),
+          ownerId: Value(userId),
+          title: const Value('Execute Deep Work Protocol'),
+          lifeAreaId: Value(careerAreaId),
+          primaryGoalId: Value(starterGoalId),
+          status: const Value('active'),
+          priority: const Value(1),
+          sortOrder: const Value(0),
+          xpReward: const Value(150),
+          dueDate: Value(now),
+          versionHlc: Value(versionHlc),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      // 6. Starter Activity
+      final starterActivityId = Id.uuidV7().value;
+      await _db.into(_db.activities).insert(
+        ActivitiesCompanion(
+          id: Value(starterActivityId),
+          ownerId: Value(userId),
+          name: const Value('Daily Focus Protocol'),
+          description: const Value('45-minute distraction-free focus sprint'),
+          lifeAreaId: Value(careerAreaId),
+          targetDurationMinutes: const Value(45),
+          difficulty: const Value(5),
+          versionHlc: Value(versionHlc),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      // 7. Starter Project
+      final starterProjectId = Id.uuidV7().value;
+      await _db.into(_db.projects).insert(
+        ProjectsCompanion(
+          id: Value(starterProjectId),
+          ownerId: Value(userId),
+          goalId: Value(starterGoalId),
+          lifeAreaId: Value(careerAreaId),
+          title: const Value('KRATOS Core Engine'),
+          description: const Value('Autonomous productivity and progression system architecture'),
+          status: const Value('active'),
+          difficulty: const Value(3),
+          progress: const Value(0.0),
+          memberIds: const Value('[]'),
+          versionHlc: Value(versionHlc),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      // 8. Starter Skill
+      final starterSkillId = Id.uuidV7().value;
+      await _db.into(_db.skills).insert(
+        SkillsCompanion(
+          id: Value(starterSkillId),
+          ownerId: Value(userId),
+          name: const Value('Systems Architecture'),
+          description: const Value('Designing high-throughput offline-first distributed workflows'),
+          xpTotal: const Value(350),
+          level: const Value(2),
+          masteryLevel: const Value(2),
+          icon: const Value('terminal'),
+          versionHlc: Value(versionHlc),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      // 9. Starter Idea Space & Idea
+      final starterSpaceId = Id.uuidV7().value;
+      await _db.into(_db.ideaSpaces).insert(
+        IdeaSpacesCompanion(
+          id: Value(starterSpaceId),
+          ownerId: Value(userId),
+          name: const Value('System Innovations'),
+          description: const Value('Architecture concepts and product engineering thoughts'),
+          icon: const Value('lightbulb'),
+          versionHlc: Value(versionHlc),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      final starterIdeaId = Id.uuidV7().value;
+      await _db.into(_db.ideas).insert(
+        IdeasCompanion(
+          id: Value(starterIdeaId),
+          ownerId: Value(userId),
+          title: const Value('Autonomous Goal Tracking Architecture'),
+          contentJson: const Value('[{"insert":"Automate progress metrics across daily activity logs.\\n"}]'),
+          excerpt: const Value('Automate progress metrics across daily activity logs.'),
+          isPinned: const Value(true),
+          versionHlc: Value(versionHlc),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      await _db.into(_db.ideaSpaceLinks).insert(
+        IdeaSpaceLinksCompanion(
+          id: Value(Id.uuidV7().value),
+          ideaId: Value(starterIdeaId),
+          ideaSpaceId: Value(starterSpaceId),
+          ownerId: Value(userId),
+          versionHlc: Value(versionHlc),
+          createdAt: Value(now),
         ),
       );
     });

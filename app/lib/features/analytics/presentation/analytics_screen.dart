@@ -1,28 +1,59 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
-import '../../../data/drift/app_database.dart';
-import '../../../app/kratos_dropdown.dart';
-import '../../../app/kratos_skeleton.dart';
+import '../../../app/kratos_motion.dart';
 import '../../../app/kratos_theme.dart';
-import '../../../app/kratos_visuals.dart';
+import '../../../data/drift/app_database.dart';
+import '../data/analytics_mock_data.dart';
 import '../data/analytics_repository.dart';
 import '../domain/analytics_models.dart';
+import 'insights_screen.dart';
+import 'widgets/analytics_daily_activity_card.dart';
+import 'widgets/analytics_kpi_cards.dart';
+import 'widgets/analytics_life_areas_overview_card.dart';
+import 'widgets/analytics_top_skills_card.dart';
+import 'widgets/analytics_xp_distribution_card.dart';
+import 'widgets/analytics_xp_progress_card.dart';
+import 'widgets/analytics_xp_trend_card.dart';
+import 'widgets/consistency_floating_detail.dart';
+import 'widgets/focus_time/analytics_focus_time_section.dart';
 
-enum _Metric { xp, activity, completion }
-
+/// KRATOS Analytics Screen — Wave 02 Foundation.
+///
+/// Scope strictly restricted to:
+/// - Transparent, non-obtrusive page structure sitting atop the fixed KRATOS environment
+/// - Analytics section heading, 3-bar identity icon, and supporting copy
+/// - Responsive controls foundation:
+///     1. Date Range selector (7D, 30D, 90D, Year, All Time)
+///     2. Life Area filter (All Life Areas + dynamic life areas)
+///     3. Source filter (All Sources, Tasks, Goals, Projects, Activities, Skills)
+///     4. Time Period / Granularity segmented toggle (Day, Week, Month, Year)
+/// - Empty content body below the filter row (cards/charts deferred to future waves)
 class AnalyticsScreen extends StatefulWidget {
-  final String ownerId;
+  final String? ownerId;
   final AppDatabase? database;
   final AnalyticsRepository? repository;
+  final ValueChanged<AnalyticsPeriod>? onPeriodChanged;
+  final ValueChanged<String?>? onLifeAreaChanged;
+  final ValueChanged<String?>? onSourceChanged;
+  final ValueChanged<String>? onGranularityChanged;
+  final AnalyticsPeriod initialPeriod;
+  final String? initialLifeAreaId;
+  final String? initialSource;
+  final String initialGranularity;
 
   const AnalyticsScreen({
     super.key,
-    required this.ownerId,
+    this.ownerId,
     this.database,
     this.repository,
+    this.onPeriodChanged,
+    this.onLifeAreaChanged,
+    this.onSourceChanged,
+    this.onGranularityChanged,
+    this.initialPeriod = AnalyticsPeriod.thirtyDays,
+    this.initialLifeAreaId,
+    this.initialSource,
+    this.initialGranularity = 'Month',
   });
 
   @override
@@ -30,763 +61,843 @@ class AnalyticsScreen extends StatefulWidget {
 }
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
-  late final AnalyticsRepository _repo;
-  late Future<List<({String id, String name})>> _areas;
-  late Future<AnalyticsSnapshot> _data;
-  AnalyticsPeriod _period = AnalyticsPeriod.thirtyDays;
-  String? _area;
-  _Metric _metric = _Metric.xp;
+  late AnalyticsPeriod _selectedPeriod;
+  late String? _selectedLifeAreaId;
+  late String? _selectedSource;
+  late String _selectedGranularity;
+  bool _showConsistencyDetail = false;
+  bool _isLoading = false;
+  bool _isNavigatingInsights = false;
+
+  void _openInsightsScreen(AnalyticsSnapshot snapshot) {
+    if (_isNavigatingInsights) return;
+    _isNavigatingInsights = true;
+    Navigator.of(context).push(
+      KratosPageRoute(
+        page: InsightsScreen(
+          snapshot: snapshot,
+          ownerId: widget.ownerId,
+          database: widget.database,
+          selectedPeriod: _selectedPeriod,
+          periodSubtitle: _selectedPeriod.comparisonLabel,
+        ),
+        settings: const RouteSettings(name: '/insights'),
+      ),
+    ).then((_) {
+      if (mounted) {
+        setState(() => _isNavigatingInsights = false);
+      }
+    });
+  }
+
+  List<({String id, String name})> _lifeAreas = const [];
+  AnalyticsSnapshot? _snapshot;
+
+  static const List<({String id, String name})> _fallbackLifeAreas = [
+    (id: 'la_health', name: 'Physical Health'),
+    (id: 'la_career', name: 'Career & Wealth'),
+    (id: 'la_mind', name: 'Knowledge & Mind'),
+    (id: 'la_relationships', name: 'Relationships'),
+    (id: 'la_inner_peace', name: 'Inner Peace'),
+  ];
+
+  static const List<({String? value, String label, IconData icon})>
+  _sourceOptions = [
+    (value: null, label: 'All Sources', icon: Icons.tune_rounded),
+    (value: 'task', label: 'Tasks', icon: Icons.checklist_rounded),
+    (value: 'goal', label: 'Goals', icon: Icons.track_changes_rounded),
+    (value: 'project', label: 'Projects', icon: Icons.account_tree_outlined),
+    (value: 'activity', label: 'Activities', icon: Icons.repeat_rounded),
+    (value: 'skill', label: 'Skills', icon: Icons.military_tech_outlined),
+  ];
+
+  static const List<({AnalyticsPeriod value, String label})> _periodOptions = [
+    (value: AnalyticsPeriod.sevenDays, label: 'Last 7 Days'),
+    (value: AnalyticsPeriod.thirtyDays, label: 'Last 30 Days'),
+    (value: AnalyticsPeriod.ninetyDays, label: 'Last 90 Days'),
+    (value: AnalyticsPeriod.year, label: 'This Year'),
+    (value: AnalyticsPeriod.oneYear, label: 'All Time'),
+  ];
 
   @override
   void initState() {
     super.initState();
-    _repo = widget.repository ?? AnalyticsRepository(widget.database);
-    _areas = _repo.listLifeAreas(widget.ownerId);
-    _load();
+    _selectedPeriod = widget.initialPeriod;
+    _selectedLifeAreaId = widget.initialLifeAreaId;
+    _selectedSource = widget.initialSource;
+    _selectedGranularity = widget.initialGranularity;
+    _loadLifeAreas();
+    _loadSnapshot();
   }
 
-  void _load() {
-    _data = _repo.load(
-      ownerId: widget.ownerId,
-      range: AnalyticsDateRange.forPeriod(_period),
-      lifeAreaId: _area,
-    );
-    if (mounted) setState(() {});
+  Future<void> _loadSnapshot() async {
+    final ownerId = widget.ownerId ?? 'usr_seed_dev_01';
+    final repo = widget.repository ?? AnalyticsRepository(widget.database);
+    final range = AnalyticsDateRange.forPeriod(_selectedPeriod);
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
+    try {
+      final snap = await repo
+          .load(
+            ownerId: ownerId,
+            range: range,
+            lifeAreaId: _selectedLifeAreaId,
+            sourceType: _selectedSource,
+          )
+          .timeout(const Duration(milliseconds: 1500));
+      if (mounted) {
+        setState(() {
+          _snapshot = snap;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _snapshot = AnalyticsMockData.snapshot(
+            range: range,
+            lifeAreaId: _selectedLifeAreaId,
+            sourceType: _selectedSource,
+          );
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadLifeAreas() async {
+    final ownerId = widget.ownerId ?? 'usr_seed_dev_01';
+    final repo = widget.repository ?? AnalyticsRepository(widget.database);
+    try {
+      final areas = await repo
+          .listLifeAreas(ownerId)
+          .timeout(const Duration(milliseconds: 1500));
+      if (mounted) {
+        setState(() {
+          _lifeAreas = areas.isNotEmpty ? areas : _fallbackLifeAreas;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _lifeAreas = _fallbackLifeAreas;
+        });
+      }
+    }
+  }
+
+  String _periodLabel(AnalyticsPeriod period) {
+    for (final opt in _periodOptions) {
+      if (opt.value == period) return opt.label;
+    }
+    return 'Last 30 Days';
+  }
+
+  String _lifeAreaLabel(String? id) {
+    if (id == null) return 'All Life Areas';
+    for (final area in _lifeAreas) {
+      if (area.id == id) return area.name;
+    }
+    return 'All Life Areas';
+  }
+
+  String _sourceLabel(String? source) {
+    for (final opt in _sourceOptions) {
+      if (opt.value == source) return opt.label;
+    }
+    return 'All Sources';
+  }
+
+  void _onPeriodSelected(AnalyticsPeriod period) {
+    setState(() => _selectedPeriod = period);
+    _loadSnapshot();
+    widget.onPeriodChanged?.call(period);
+  }
+
+  void _onLifeAreaSelected(String? id) {
+    setState(() => _selectedLifeAreaId = id);
+    _loadSnapshot();
+    widget.onLifeAreaChanged?.call(id);
+  }
+
+  void _onSourceSelected(String? source) {
+    setState(() => _selectedSource = source);
+    _loadSnapshot();
+    widget.onSourceChanged?.call(source);
+  }
+
+  void _onGranularitySelected(String gran) {
+    setState(() => _selectedGranularity = gran);
+    widget.onGranularityChanged?.call(gran);
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: Colors.transparent,
-    appBar: AppBar(
-      title: const Text('Analytics'),
-      actions: [
-        IconButton(onPressed: _load, icon: const Icon(Icons.refresh_outlined)),
-      ],
-    ),
-    body: Stack(
-      fit: StackFit.expand,
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    final horizontalPadding = isMobile
+        ? 16.0
+        : (screenWidth < 960 ? 24.0 : 32.0);
+    final topPadding = isMobile ? 18.0 : 26.0;
+
+    final activeSnapshot =
+        _snapshot ??
+        AnalyticsMockData.snapshot(
+          range: AnalyticsDateRange.forPeriod(_selectedPeriod),
+          lifeAreaId: _selectedLifeAreaId,
+          sourceType: _selectedSource,
+        );
+
+    final mainContent = SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        topPadding,
+        horizontalPadding,
+        32.0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── A & B: Heading + Supporting Copy ─────────────────────────
+          _AnalyticsHeading(isMobile: isMobile),
+
+          SizedBox(height: isMobile ? 16 : 20),
+
+          // ── Controls & Filters Foundation ────────────────────────────
+          _buildControlsRow(context),
+
+          // ── Wave 03: Top 4 KPI Summary Cards Row ─────────────────────
+          SizedBox(height: isMobile ? 18 : 22),
+          AnalyticsKpiSummaryRow(
+            snapshot: activeSnapshot,
+            periodSubtitle: _selectedPeriod.comparisonLabel,
+            onConsistencyTap: () {
+              setState(() => _showConsistencyDetail = true);
+            },
+          ),
+
+          // ── Wave 04: XP Trend Time-Series Section ─────────────────────
+          SizedBox(height: isMobile ? 18 : 22),
+          AnalyticsXpTrendCard(
+            snapshot: activeSnapshot,
+            periodSubtitle: _selectedPeriod.comparisonLabel,
+          ),
+
+          // ── Wave 09: This Week / Daily Activity Section ───────────────
+          SizedBox(height: isMobile ? 18 : 22),
+          AnalyticsDailyActivityCard(
+            snapshot: activeSnapshot,
+            isLoading: _isLoading,
+            periodSubtitle: _selectedPeriod.comparisonLabel,
+            lifeAreas: _lifeAreas,
+            selectedLifeAreaId: _selectedLifeAreaId,
+            onLifeAreaChanged: _onLifeAreaSelected,
+            selectedPeriod: _selectedPeriod,
+            onPeriodChanged: _onPeriodSelected,
+            onRetry: _loadSnapshot,
+          ),
+
+          // ── Focus Time Complete Subsystem Section ───────────────────
+          SizedBox(height: isMobile ? 18 : 22),
+          AnalyticsFocusTimeSection(
+            snapshot: activeSnapshot.safeFocusTime,
+            isLoading: _isLoading,
+            periodLabel: _periodLabel(_selectedPeriod),
+            periodSubtitle: _selectedPeriod.comparisonLabel,
+            fullSnapshot: activeSnapshot,
+            onViewAllInsightsTap: () => _openInsightsScreen(activeSnapshot),
+          ),
+
+          // ── Wave 05: XP Distribution Section ──────────────────────────
+          SizedBox(height: isMobile ? 18 : 22),
+          AnalyticsXpDistributionCard(
+            snapshot: activeSnapshot,
+            periodSubtitle: _selectedPeriod.comparisonLabel,
+            isLoading: _isLoading,
+            onSourceSelected: (source) {
+              // Bidirectional selection can optionally sync with filter or highlight
+            },
+          ),
+
+          // ── Wave 07: Life Areas Overview (Radar / Spider Chart + List) ──
+          SizedBox(height: isMobile ? 18 : 22),
+          AnalyticsLifeAreasOverviewCard(
+            snapshot: activeSnapshot,
+            isLoading: _isLoading,
+            periodSubtitle: _selectedPeriod.label,
+            initialFocusedLifeAreaId: _selectedLifeAreaId,
+          ),
+
+          // ── Wave 08: Top Skills (Ranked List + Detail) ────────────────
+          SizedBox(height: isMobile ? 18 : 22),
+          AnalyticsTopSkillsCard(
+            snapshot: activeSnapshot,
+            isLoading: _isLoading,
+            periodSubtitle: _selectedPeriod.comparisonLabel,
+            lifeAreas: _lifeAreas,
+            selectedLifeAreaId: _selectedLifeAreaId,
+            onLifeAreaChanged: _onLifeAreaSelected,
+            onRetry: _loadSnapshot,
+          ),
+
+          // ── Wave 06: XP Progress / Life Area Progression ──────────────
+          SizedBox(height: isMobile ? 18 : 22),
+          AnalyticsXpProgressCard(
+            ownerId: widget.ownerId,
+            database: widget.database,
+          ),
+        ],
+      ),
+    );
+
+    return Stack(
       children: [
-        FutureBuilder<List<({String id, String name})>>(
-          future: _areas,
-          builder: (context, areas) {
-            if (areas.hasError) {
-              return _state('Unable to load Analytics. Try again.');
-            }
-            if (!areas.hasData) {
-              return const KratosShimmer(child: AnalyticsPageSkeleton());
-            }
-            return FutureBuilder<AnalyticsSnapshot>(
-              future: _data,
-              builder: (context, result) {
-                if (result.hasError) {
-                  return _state('Analytics is temporarily unavailable.');
-                }
-                if (!result.hasData) {
-                  return const KratosShimmer(child: AnalyticsPageSkeleton());
-                }
-                final d = result.data!;
-                return RefreshIndicator(
-                  color: KratosTheme.acidLime,
-                  onRefresh: () async => _load(),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-                    children: [
-                      _filters(areas.data!),
-                      _section(
-                        'CATEGORIES',
-                        _chips([
-                          'All',
-                          'Goals',
-                          'Projects',
-                          'Tasks',
-                          'Habits & Focus',
-                        ]),
-                      ),
-                      _section('CURRENT STATE', _stateCards(d)),
-                      _section('GROWTH & MOMENTUM', _growth(d)),
-                      _section(
-                        'LIFE AREA PERFORMANCE',
-                        _chart(
-                          d.lifeAreas.map((a) => a.progress).toList(),
-                          KratosTheme.cyan,
-                          d.lifeAreas
-                              .map(
-                                (a) =>
-                                    '${a.name} · ${a.trendPct.toStringAsFixed(0)}% trend',
-                              )
-                              .toList(),
-                        ),
-                      ),
-                      _section(
-                        'ACTIVITY OVERVIEW',
-                        _chart(
-                          [
-                            d.createdTasks > 0 ? (d.completedTasks / d.createdTasks).clamp(0.0, 1.0) : 0.0,
-                            d.createdGoals > 0 ? (d.completedGoals / d.createdGoals).clamp(0.0, 1.0) : 0.0,
-                            d.createdProjects > 0 ? (d.completedProjects / d.createdProjects).clamp(0.0, 1.0) : 0.0,
-                            d.createdDecisions > 0 ? (d.completedDecisions / d.createdDecisions).clamp(0.0, 1.0) : 0.0,
-                          ],
-                          KratosTheme.acidLime,
-                          [
-                            'Tasks · ${d.createdTasks} / ${d.completedTasks}',
-                            'Goals · ${d.createdGoals} / ${d.completedGoals}',
-                            'Projects · ${d.createdProjects} / ${d.completedProjects}',
-                            'Decisions · ${d.createdDecisions} / ${d.completedDecisions}',
-                          ],
-                        ),
-                      ),
-                      _section('ACTIVITY HEATMAP', _heatmap(d)),
-                      _section(
-                        'WHERE YOUR XP COMES FROM',
-                        _chart(
-                          d.xpBySource.values
-                              .map((v) => d.totalXp > 0 ? (v / d.totalXp).clamp(0.0, 1.0) : 0.0)
-                              .toList(),
-                          KratosTheme.flameOrange,
-                          d.xpBySource.entries
-                              .map(
-                                (e) =>
-                                    '${e.key} · ${d.totalXp > 0 ? (e.value / d.totalXp * 100).round() : 0}%',
-                              )
-                              .toList(),
-                        ),
-                      ),
-                      _section(
-                        'XP BY LIFE AREA',
-                        _rows(
-                          d.lifeAreas.isEmpty
-                              ? ['No life area activity recorded']
-                              : d.lifeAreas
-                                  .map(
-                                    (a) =>
-                                        '${a.name} · ${a.xp} XP · ${a.trendPct.toStringAsFixed(0)}% trend',
-                                  )
-                                  .toList(),
-                        ),
-                      ),
-                      _section(
-                        'GOAL HEALTH',
-                        _rows(
-                          d.goalHealth.isEmpty
-                              ? ['No goals active in this period']
-                              : d.goalHealth
-                                  .map(
-                                    (g) =>
-                                        '${g.title} · ${(g.progress * 100).round()}% · ${g.status} · ${g.momentum}',
-                                  )
-                                  .toList(),
-                        ),
-                      ),
-                      _section(
-                        'PROJECT PERFORMANCE',
-                        _rows(
-                          d.projectPerformance.isEmpty
-                              ? ['No projects active in this period']
-                              : d.projectPerformance
-                                  .map(
-                                    (p) =>
-                                        '${p.title} · ${(p.progress * 100).round()}% · ${p.status} · ${p.xpEarned} XP',
-                                  )
-                                  .toList(),
-                        ),
-                      ),
-                      _section(
-                        'TASK PERFORMANCE',
-                        _chart(
-                          d.dailyGrowthSeries
-                              .take(14)
-                              .map((p) => p.completionRate)
-                              .toList(),
-                          KratosTheme.acidLime,
-                          [
-                            'Created · ${d.createdTasks}',
-                            'Completed · ${d.completedTasks}',
-                            'Completion Rate · ${d.completionRateDelta.current.round()}%',
-                            'Active Tasks · ${d.activeTasks}',
-                          ],
-                        ),
-                      ),
-                      _section(
-                        'DECISION ACTIVITY',
-                        _rows([
-                          'Decisions created · ${d.createdDecisions}',
-                          'Decisions resolved · ${d.completedDecisions}',
-                          'Activity over time · ${d.createdDecisions + d.completedDecisions} events',
-                          'XP contribution · ${d.xpBySource['Decisions'] ?? 0} XP',
-                        ]),
-                      ),
-                      _section(
-                        'ACTIVITY PATTERNS',
-                        _rows([
-                          'By day · ${d.activityByDayOfWeek.entries.map((e) => '${_dayName(e.key)}: ${e.value}').join(' · ')}',
-                          'Morning · ${d.activityByTimeOfDay['Morning'] ?? 0}',
-                          'Afternoon · ${d.activityByTimeOfDay['Afternoon'] ?? 0}',
-                          'Evening · ${d.activityByTimeOfDay['Evening'] ?? 0}',
-                          'Peak activity · ${_findPeakActivity(d)}',
-                        ]),
-                      ),
-                      _section(
-                        'ACTIVITY VS COMPLETION',
-                        _chart(
-                          d.dailyGrowthSeries
-                              .take(12)
-                              .map((p) => (p.totalActivity / 16).clamp(0.0, 1.0))
-                              .toList(),
-                          KratosTheme.cyan,
-                          [
-                            'Activity · ${d.activitiesStarted}',
-                            'Completion · ${d.completionRateDelta.current.round()}%',
-                            'XP · ${NumberFormat('#,###').format(d.totalXp)}',
-                            'Comparison only — no causality inferred',
-                          ],
-                        ),
-                      ),
-                      _section(
-                        'CONSISTENCY',
-                        _rows([
-                          'Current Streak · ${d.currentStreak}d',
-                          'Longest Streak · ${d.longestStreak}d',
-                          'Active Days · ${d.activeDaysCount}',
-                          'Consistency · ${d.consistencyDelta.current.round()}%',
-                          'Average Active Days / Week · ${(d.activeDaysCount / (d.range.dayCount > 0 ? d.range.dayCount : 1) * 7).toStringAsFixed(1)}',
-                        ]),
-                      ),
-                      _section(
-                        'MILESTONES',
-                        _timeline(
-                          d.milestones.isEmpty
-                              ? ['No milestones reached in this period']
-                              : d.milestones
-                                  .map((m) => '${m.title} · ${m.description}')
-                                  .toList(),
-                        ),
-                      ),
-                      _section(
-                        'RECENT ACTIVITY',
-                        _timeline(
-                          d.recentActivity.isEmpty
-                              ? ['No recent activity in this period']
-                              : d.recentActivity
-                                  .map((e) => '${e.title} · +${e.points} XP')
-                                  .toList(),
-                        ),
-                      ),
-                      _section(
-                        'INSIGHTS',
-                        _rows(
-                          d.insights.isEmpty
-                              ? ['Keep logging activity to unlock personalized insights']
-                              : d.insights
-                                  .map((i) => '${i.title} — ${i.description}')
-                                  .toList(),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
+        mainContent,
+        if (_showConsistencyDetail)
+          ConsistencyFloatingDetail(
+            snapshot: activeSnapshot,
+            periodLabel: _periodLabel(_selectedPeriod),
+            periodSubtitle: _selectedPeriod.comparisonLabel,
+            lifeAreaName: _lifeAreaLabel(_selectedLifeAreaId),
+            sourceName: _sourceLabel(_selectedSource),
+            onClose: () => setState(() => _showConsistencyDetail = false),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildControlsRow(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+
+        final dateControl = _AnalyticsDropdownPill<AnalyticsPeriod>(
+          icon: Icons.calendar_today_outlined,
+          label: _periodLabel(_selectedPeriod),
+          selectedValue: _selectedPeriod,
+          items: [
+            for (final opt in _periodOptions)
+              _DropdownItem(
+                value: opt.value,
+                label: opt.label,
+                icon: Icons.calendar_today_outlined,
+              ),
+          ],
+          onSelected: _onPeriodSelected,
+        );
+
+        final lifeAreaControl = _AnalyticsDropdownPill<String?>(
+          icon: Icons.track_changes_outlined,
+          label: _lifeAreaLabel(_selectedLifeAreaId),
+          selectedValue: _selectedLifeAreaId,
+          items: [
+            const _DropdownItem(
+              value: null,
+              label: 'All Life Areas',
+              icon: Icons.track_changes_outlined,
+            ),
+            for (final area in _lifeAreas)
+              _DropdownItem(
+                value: area.id,
+                label: area.name,
+                icon: Icons.adjust_rounded,
+              ),
+          ],
+          onSelected: _onLifeAreaSelected,
+        );
+
+        final sourceControl = _AnalyticsDropdownPill<String?>(
+          icon: Icons.bar_chart_rounded,
+          label: _sourceLabel(_selectedSource),
+          selectedValue: _selectedSource,
+          items: [
+            for (final opt in _sourceOptions)
+              _DropdownItem(value: opt.value, label: opt.label, icon: opt.icon),
+          ],
+          onSelected: _onSourceSelected,
+        );
+
+        final segmentedControl = _AnalyticsSegmentedControl(
+          selected: _selectedGranularity,
+          onChanged: _onGranularitySelected,
+          expand: false,
+        );
+
+        if (availableWidth < 500) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _AnalyticsSegmentedControl(
+                selected: _selectedGranularity,
+                onChanged: _onGranularitySelected,
+                expand: true,
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [dateControl, lifeAreaControl, sourceControl],
+              ),
+            ],
+          );
+        }
+
+        return Wrap(
+          spacing: 12,
+          runSpacing: 10,
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [dateControl, lifeAreaControl, sourceControl],
+            ),
+            segmentedControl,
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ANALYTICS HEADER ICON & TYPOGRAPHY
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// 3-bar analytical icon matching the master KRATOS visual reference.
+class _AnalyticsHeaderIcon extends StatelessWidget {
+  final Color color;
+  final double size;
+
+  const _AnalyticsHeaderIcon({required this.color, this.size = 28});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            width: size * 0.22,
+            height: size * 0.65,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(size * 0.08),
+            ),
+          ),
+          SizedBox(width: size * 0.12),
+          Container(
+            width: size * 0.22,
+            height: size,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(size * 0.08),
+            ),
+          ),
+          SizedBox(width: size * 0.12),
+          Container(
+            width: size * 0.22,
+            height: size * 0.45,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(size * 0.08),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnalyticsHeading extends StatelessWidget {
+  final bool isMobile;
+
+  const _AnalyticsHeading({required this.isMobile});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final titleColor = isDark ? Colors.white : KratosTheme.lightTextPrimary;
+    final subtitleColor = isDark
+        ? Colors.white.withValues(alpha: 0.60)
+        : KratosTheme.lightTextSecondary;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(top: isMobile ? 2 : 4),
+          child: _AnalyticsHeaderIcon(
+            color: titleColor,
+            size: isMobile ? 24 : 28,
+          ),
+        ),
+        SizedBox(width: isMobile ? 12 : 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Analytics',
+                style: TextStyle(
+                  fontSize: isMobile ? 22 : 26,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.4,
+                  color: titleColor,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                'Track your progress, understand your patterns, and optimize your growth.',
+                style: TextStyle(
+                  fontSize: isMobile ? 12.5 : 13.5,
+                  fontWeight: FontWeight.w400,
+                  color: subtitleColor,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
-    ),
-  );
+    );
+  }
+}
 
-  Widget _filters(List<({String id, String name})> areas) =>
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            KratosGlassCard(
-              padding: const EdgeInsets.all(4),
+// ─────────────────────────────────────────────────────────────────────────────
+// LIQUID GLASS FILTER DROPDOWN CONTROLS
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DropdownItem<T> {
+  final T value;
+  final String label;
+  final IconData? icon;
+
+  const _DropdownItem({required this.value, required this.label, this.icon});
+}
+
+class _AnalyticsDropdownPill<T> extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final T selectedValue;
+  final List<_DropdownItem<T>> items;
+  final ValueChanged<T> onSelected;
+
+  const _AnalyticsDropdownPill({
+    required this.icon,
+    required this.label,
+    required this.selectedValue,
+    required this.items,
+    required this.onSelected,
+  });
+
+  @override
+  State<_AnalyticsDropdownPill<T>> createState() =>
+      _AnalyticsDropdownPillState<T>();
+}
+
+class _AnalyticsDropdownPillState<T> extends State<_AnalyticsDropdownPill<T>> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = isDark ? KratosTheme.acidLime : KratosTheme.lightAcidLime;
+
+    final bgColor = isDark
+        ? (_isHovered ? const Color(0x22FFFFFF) : const Color(0x14FFFFFF))
+        : (_isHovered ? const Color(0xE6FFFFFF) : const Color(0xB3FFFFFF));
+
+    final borderColor = isDark
+        ? (_isHovered ? const Color(0x38FFFFFF) : const Color(0x24FFFFFF))
+        : (_isHovered ? const Color(0x330F172A) : const Color(0x1F0F172A));
+
+    final textColor = isDark ? Colors.white : KratosTheme.lightTextPrimary;
+    final iconColor = isDark
+        ? Colors.white.withValues(alpha: 0.75)
+        : KratosTheme.lightTextSecondary;
+    final chevronColor = isDark
+        ? Colors.white.withValues(alpha: 0.55)
+        : KratosTheme.lightTextSecondary;
+
+    return Theme(
+      data: theme.copyWith(
+        hoverColor: isDark ? const Color(0x1FFFFFFF) : const Color(0x0F0F172A),
+      ),
+      child: PopupMenuButton<T>(
+        tooltip: '',
+        offset: const Offset(0, 42),
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(
+            color: isDark ? const Color(0x26FFFFFF) : const Color(0x1F0F172A),
+            width: 1.0,
+          ),
+        ),
+        color: isDark ? const Color(0xFF141815) : Colors.white,
+        onSelected: widget.onSelected,
+        itemBuilder: (context) => [
+          for (final item in widget.items)
+            PopupMenuItem<T>(
+              value: item.value,
+              height: 38,
               child: Row(
                 children: [
-                  for (final item in [
-                    ('7D', AnalyticsPeriod.sevenDays),
-                    ('30D', AnalyticsPeriod.thirtyDays),
-                    ('90D', AnalyticsPeriod.ninetyDays),
-                    ('1Y', AnalyticsPeriod.oneYear),
-                  ])
-                    _range(item.$1, item.$2),
+                  if (item.icon != null) ...[
+                    Icon(
+                      item.icon,
+                      size: 15,
+                      color: item.value == widget.selectedValue
+                          ? accent
+                          : (isDark
+                                ? Colors.white60
+                                : KratosTheme.lightTextSecondary),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: Text(
+                      item.label,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: item.value == widget.selectedValue
+                            ? (isDark
+                                  ? Colors.white
+                                  : KratosTheme.lightTextPrimary)
+                            : (isDark
+                                  ? Colors.white70
+                                  : KratosTheme.lightTextSecondary),
+                        fontWeight: item.value == widget.selectedValue
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                  if (item.value == widget.selectedValue)
+                    Icon(Icons.check_rounded, size: 16, color: accent),
                 ],
               ),
             ),
-            const SizedBox(width: 12),
-            KratosDropdown<String?>(
-              value: _area,
-              hint: 'All Areas',
-              prefixIcon: Icons.public,
-              items: [
-                const KratosDropdownItem(value: null, label: 'All Areas'),
-                ...areas.map(
-                  (a) => KratosDropdownItem(value: a.id, label: a.name),
+        ],
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            height: 36,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor, width: 1.0),
+              boxShadow: [
+                if (isDark)
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  )
+                else
+                  const BoxShadow(
+                    color: Color(0x0A0F172A),
+                    blurRadius: 4,
+                    offset: Offset(0, 1),
+                  ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(widget.icon, color: iconColor, size: 15),
+                const SizedBox(width: 8),
+                Text(
+                  widget.label,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: chevronColor,
+                  size: 17,
                 ),
               ],
-              onChanged: (v) {
-                setState(() => _area = v);
-                _load();
-              },
             ),
-          ],
+          ),
         ),
-      );
-  Widget _range(String label, AnalyticsPeriod value) => Builder(
-    builder: (context) {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      return GestureDetector(
-        onTap: () {
-          setState(() => _period = value);
-          _load();
-        },
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TIME PERIOD / GRANULARITY SEGMENTED CONTROL
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AnalyticsSegmentedControl extends StatelessWidget {
+  final String selected;
+  final ValueChanged<String> onChanged;
+  final bool expand;
+
+  const _AnalyticsSegmentedControl({
+    required this.selected,
+    required this.onChanged,
+    this.expand = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final options = const ['Day', 'Week', 'Month', 'Year'];
+
+    final containerBg = isDark
+        ? const Color(0x14FFFFFF)
+        : const Color(0xB3FFFFFF);
+    final containerBorder = isDark
+        ? const Color(0x22FFFFFF)
+        : const Color(0x1F0F172A);
+
+    return Container(
+      height: 36,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: containerBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: containerBorder, width: 1.0),
+        boxShadow: [
+          if (isDark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            )
+          else
+            const BoxShadow(
+              color: Color(0x0A0F172A),
+              blurRadius: 4,
+              offset: Offset(0, 1),
+            ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          for (final opt in options)
+            if (expand)
+              Expanded(
+                child: _SegmentItem(
+                  label: opt,
+                  isSelected: opt == selected,
+                  isDark: isDark,
+                  onTap: () => onChanged(opt),
+                ),
+              )
+            else
+              _SegmentItem(
+                label: opt,
+                isSelected: opt == selected,
+                isDark: isDark,
+                onTap: () => onChanged(opt),
+              ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SegmentItem extends StatefulWidget {
+  final String label;
+  final bool isSelected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _SegmentItem({
+    required this.label,
+    required this.isSelected,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  State<_SegmentItem> createState() => _SegmentItemState();
+}
+
+class _SegmentItemState extends State<_SegmentItem> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeBg = widget.isDark ? const Color(0x2EFFFFFF) : Colors.white;
+
+    final activeTextColor = widget.isDark
+        ? Colors.white
+        : KratosTheme.lightTextPrimary;
+
+    final inactiveTextColor = widget.isDark
+        ? (_isHovered
+              ? Colors.white.withValues(alpha: 0.85)
+              : Colors.white.withValues(alpha: 0.60))
+        : (_isHovered
+              ? const Color(0xFF1E293B)
+              : KratosTheme.lightTextSecondary);
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          duration: const Duration(milliseconds: 140),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: _period == value ? KratosTheme.acidLime : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            color: widget.isSelected ? activeBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+            boxShadow: widget.isSelected
+                ? [
+                    if (widget.isDark)
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.20),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      )
+                    else
+                      const BoxShadow(
+                        color: Color(0x140F172A),
+                        blurRadius: 4,
+                        offset: Offset(0, 1),
+                      ),
+                  ]
+                : null,
           ),
           child: Text(
-            label,
+            widget.label,
             style: TextStyle(
-              color: _period == value
-                  ? Colors.black
-                  : (isDark ? Colors.white70 : KratosTheme.lightTextSecondary),
-              fontWeight: FontWeight.w800,
+              fontSize: 12.5,
+              fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w400,
+              color: widget.isSelected ? activeTextColor : inactiveTextColor,
             ),
           ),
         ),
-      );
-    },
-  );
-  Widget _chips(List<String> values) => Wrap(
-    spacing: 8,
-    children: [
-      for (final value in values)
-        ChoiceChip(
-          label: Text(value),
-          selected: value == 'All',
-          onSelected: (_) {},
-        ),
-    ],
-  );
-  Widget _stateCards(AnalyticsSnapshot d) => LayoutBuilder(
-    builder: (context, c) {
-      final columns = c.maxWidth > 720 ? 4 : 2;
-      return GridView.count(
-        crossAxisCount: columns,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: 1.55,
-        children: [
-          _card(
-            'Total XP',
-            '${NumberFormat('#,###').format(d.totalXp)} XP',
-            '${d.xpDelta.isPositive ? '↑' : '↓'} ${d.xpDelta.changePct.abs().toStringAsFixed(1)}% · vs previous period',
-            KratosTheme.acidLime,
-          ),
-          _card(
-            'XP Velocity',
-            '+${d.xpVelocityDelta.current.round()} / day',
-            '${d.xpVelocityDelta.isPositive ? '↑' : '↓'} ${d.xpVelocityDelta.changePct.abs().toStringAsFixed(1)}%',
-            KratosTheme.cyan,
-          ),
-          _card(
-            'Completion Rate',
-            '${d.completionRateDelta.current.round()}%',
-            '${d.completionRateDelta.isPositive ? '↑' : '↓'} ${d.completionRateDelta.changePct.abs().toStringAsFixed(1)}%',
-            const Color(0xFF38EF7D),
-          ),
-          _card(
-            'Consistency',
-            '${d.consistencyDelta.current.round()}%',
-            '${d.consistencyDelta.isPositive ? '↑' : '↓'} ${d.consistencyDelta.changePct.abs().toStringAsFixed(1)}%',
-            KratosTheme.flameOrange,
-          ),
-        ],
-      );
-    },
-  );
-  Widget _card(String title, String value, String delta, Color color) =>
-      Builder(
-        builder: (context) {
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-          return KratosGlassCard(
-            variant: KratosSurfaceVariant.elevated,
-            accentColor: color,
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  title.toUpperCase(),
-                  style: TextStyle(
-                    color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
-                    fontSize: 10,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  value,
-                  style: TextStyle(
-                    color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  delta,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      );
-  Widget _growth(AnalyticsSnapshot d) => KratosGlassCard(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          spacing: 8,
-          children: [
-            _tab('XP', _Metric.xp),
-            _tab('Activity', _Metric.activity),
-            _tab('Completion', _Metric.completion),
-          ],
-        ),
-        const SizedBox(height: 14),
-        Text(
-          _metric == _Metric.xp
-              ? '+${NumberFormat('#,###').format(d.totalXp)} XP'
-              : _metric == _Metric.activity
-              ? '${d.activitiesStarted} activities'
-              : '${d.completionRateDelta.current.round()}%',
-          style: const TextStyle(
-            color: KratosTheme.acidLime,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 190,
-          child: CustomPaint(
-            painter: _LinePainter(d.dailyGrowthSeries, _metric),
-            child: const SizedBox.expand(),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Builder(
-          builder: (context) {
-            final isDark = Theme.of(context).brightness == Brightness.dark;
-            final subColor = isDark ? Colors.white38 : KratosTheme.lightTextMuted;
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  DateFormat('MMM d').format(d.range.start),
-                  style: TextStyle(color: subColor, fontSize: 10),
-                ),
-                Text(
-                  'Previous period comparison',
-                  style: TextStyle(color: subColor, fontSize: 10),
-                ),
-                Text(
-                  DateFormat('MMM d')
-                      .format(d.range.end.subtract(const Duration(days: 1))),
-                  style: TextStyle(color: subColor, fontSize: 10),
-                ),
-              ],
-            );
-          },
-        ),
-      ],
-    ),
-  );
-  Widget _tab(String label, _Metric value) => ChoiceChip(
-    label: Text(label),
-    selected: _metric == value,
-    onSelected: (_) => setState(() => _metric = value),
-  );
-  Widget _chart(List<double> values, Color color, List<String> labels) =>
-      KratosGlassCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: 125,
-              child: CustomPaint(
-                painter: _BarsPainter(values, color),
-                child: const SizedBox.expand(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            _rows(labels),
-          ],
-        ),
-      );
-  Widget _heatmap(AnalyticsSnapshot d) => KratosGlassCard(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          children: [
-            for (final p in d.dailyGrowthSeries)
-              Tooltip(
-                message: '${p.xp} XP · ${p.totalActivity} activities',
-                child: Container(
-                  width: 13,
-                  height: 13,
-                  decoration: BoxDecoration(
-                    color: KratosTheme.acidLime.withValues(
-                      alpha: .18 + (p.xp / 650).clamp(.0, .65),
-                    ),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _rows([
-          'Active Days · ${d.activeDaysCount}',
-          'Best Streak · ${d.longestStreak}d',
-          'Current Streak · ${d.currentStreak}d',
-          'Average Daily XP · ${d.xpVelocityDelta.current.round()}',
-        ]),
-      ],
-    ),
-  );
-  Widget _rows(List<String> values) => Builder(
-    builder: (context) {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      return KratosGlassCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (final value in values)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.arrow_right,
-                      color: KratosTheme.acidLime,
-                      size: 15,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        value,
-                        style: TextStyle(
-                          color: isDark ? Colors.white70 : KratosTheme.lightTextSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      );
-    },
-  );
-  Widget _timeline(List<String> values) => Builder(
-    builder: (context) {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      return KratosGlassCard(
-        child: Column(
-          children: [
-            for (final value in values)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(
-                  Icons.bolt_outlined,
-                  color: KratosTheme.acidLime,
-                ),
-                title: Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
-                  ),
-                ),
-                subtitle: Text(
-                  'Recorded event',
-                  style: TextStyle(
-                    color: isDark ? Colors.white38 : KratosTheme.lightTextMuted,
-                    fontSize: 10,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      );
-    },
-  );
-
-  static String _dayName(int day) => switch (day) {
-    1 => 'Mon',
-    2 => 'Tue',
-    3 => 'Wed',
-    4 => 'Thu',
-    5 => 'Fri',
-    6 => 'Sat',
-    7 => 'Sun',
-    _ => '',
-  };
-
-  static String _findPeakActivity(AnalyticsSnapshot d) {
-    if (d.activityByDayOfWeek.isEmpty && d.activityByTimeOfDay.isEmpty) {
-      return 'No activity recorded';
-    }
-    var peakDay = 1;
-    var maxDayVal = -1;
-    for (final entry in d.activityByDayOfWeek.entries) {
-      if (entry.value > maxDayVal) {
-        maxDayVal = entry.value;
-        peakDay = entry.key;
-      }
-    }
-    var peakTime = 'Morning';
-    var maxTimeVal = -1;
-    for (final entry in d.activityByTimeOfDay.entries) {
-      if (entry.value > maxTimeVal) {
-        maxTimeVal = entry.value;
-        peakTime = entry.key;
-      }
-    }
-    if (maxDayVal <= 0 && maxTimeVal <= 0) return 'No activity recorded';
-    return '${_dayName(peakDay)} $peakTime';
-  }
-  Widget _section(String title, Widget child) => Builder(
-    builder: (context) {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      return Padding(
-        padding: const EdgeInsets.only(top: 26),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: isDark ? Colors.white54 : KratosTheme.lightTextSecondary,
-                fontSize: 11,
-                letterSpacing: 1.4,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            child,
-          ],
-        ),
-      );
-    },
-  );
-  Widget _state(String message) => Center(
-    child: KratosGlassCard(
-      child: Text(message, style: const TextStyle(color: Colors.white70)),
-    ),
-  );
-}
-
-class _LinePainter extends CustomPainter {
-  final List<DailyAnalyticsPoint> points;
-  final _Metric metric;
-  const _LinePainter(this.points, this.metric);
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (points.isEmpty) return;
-    final values = points
-        .map(
-          (p) => metric == _Metric.xp
-              ? p.xp.toDouble()
-              : metric == _Metric.activity
-              ? p.totalActivity.toDouble()
-              : p.completionRate * 100,
-        )
-        .toList();
-    final max = values.reduce(math.max).toDouble();
-    final min = values.reduce(math.min);
-    final span = math.max(1.0, max - min);
-    final path = Path();
-    for (var i = 0; i < values.length; i++) {
-      final x = values.length == 1 ? 0.0 : i / (values.length - 1) * size.width;
-      final y =
-          size.height - ((values[i] - min) / span * (size.height - 14)) - 7;
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-    final fill = Path.from(path)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-    canvas.drawPath(
-      fill,
-      Paint()..color = KratosTheme.acidLime.withValues(alpha: .08),
+      ),
     );
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = KratosTheme.acidLime
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5,
-    );
-    for (var i = 1; i < 4; i++) {
-      canvas.drawLine(
-        Offset(0, size.height * i / 4),
-        Offset(size.width, size.height * i / 4),
-        Paint()..color = Colors.white.withValues(alpha: .08),
-      );
-    }
   }
-
-  @override
-  bool shouldRepaint(covariant _LinePainter old) =>
-      old.points != points || old.metric != metric;
 }
-
-class _BarsPainter extends CustomPainter {
-  final List<double> values;
-  final Color color;
-  const _BarsPainter(this.values, this.color);
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (values.isEmpty) return;
-    final max = math.max(1.0, values.reduce(math.max));
-    final gap = size.width / values.length;
-    for (var i = 0; i < values.length; i++) {
-      final height = values[i] / max * (size.height - 8);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(
-            i * gap + gap * .18,
-            size.height - height,
-            gap * .64,
-            height,
-          ),
-          const Radius.circular(5),
-        ),
-        Paint()..color = color.withValues(alpha: .35 + i / values.length * .5),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _BarsPainter old) => old.values != values;
-}
-

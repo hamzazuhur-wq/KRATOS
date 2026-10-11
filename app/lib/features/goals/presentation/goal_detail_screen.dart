@@ -690,13 +690,9 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
 
   Widget _buildLifeAreaAndDevPointsSection(Goal goal) {
     if (goal.lifeAreaId == null) {
-      return Container(
+      return KratosGlassCard(
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF0F110F),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
+        borderRadius: BorderRadius.circular(16),
         child: const Row(
           children: [
             Icon(Icons.public_off, size: 18, color: Color(0xFF686D65)),
@@ -722,16 +718,9 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         final area = snapshot.data;
         if (area == null) return const SizedBox.shrink();
 
-        return Container(
+        return KratosGlassCard(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1,
-            ),
-          ),
+          borderRadius: BorderRadius.circular(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -863,16 +852,9 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                 .length;
             final progress = totalTasks > 0 ? completedTasks / totalTasks : 0.0;
 
-            return Container(
+            return KratosGlassCard(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  width: 1,
-                ),
-              ),
+              borderRadius: BorderRadius.circular(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1084,16 +1066,9 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
       builder: (context, snapshot) {
         final subGoals = snapshot.data ?? [];
 
-        return Container(
+        return KratosGlassCard(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1,
-            ),
-          ),
+          borderRadius: BorderRadius.circular(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1213,16 +1188,9 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
       builder: (context, snapshot) {
         final projects = snapshot.data ?? [];
 
-        return Container(
+        return KratosGlassCard(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1,
-            ),
-          ),
+          borderRadius: BorderRadius.circular(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1387,16 +1355,9 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
       builder: (context, snapshot) {
         final activities = snapshot.data ?? [];
 
-        return Container(
+        return KratosGlassCard(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1,
-            ),
-          ),
+          borderRadius: BorderRadius.circular(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1565,16 +1526,9 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
       builder: (context, snapshot) {
         final allSkills = snapshot.data ?? [];
 
-        return Container(
+        return KratosGlassCard(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1,
-            ),
-          ),
+          borderRadius: BorderRadius.circular(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1667,16 +1621,9 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
   }
 
   Widget _buildHighlightsSection(Goal goal) {
-    return Container(
+    return KratosGlassCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0D0F0D).withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-          width: 1,
-        ),
-      ),
+      borderRadius: BorderRadius.circular(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

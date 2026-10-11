@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../../../app/kratos_card_tokens.dart';
+import '../../../../app/kratos_theme.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../app/kratos_dropdown.dart';
+import '../../../../app/kratos_visuals.dart';
 import '../../domain/idea_models.dart';
 
 class IdeaCard extends StatelessWidget {
@@ -24,40 +27,25 @@ class IdeaCard extends StatelessWidget {
     final spaces = ideaDetail.spaces;
     final dateStr = DateFormat('MMM d, y • h:mm a').format(idea.updatedAt.toLocal());
 
-    return InkWell(
+    return KratosGlassCard(
+      variant: idea.isPinned ? KratosSurfaceVariant.active : KratosSurfaceVariant.interactive,
+      interactive: true,
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF141814),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: idea.isPinned
-                ? const Color(0xFFC6F135).withValues(alpha: 0.5)
-                : Colors.white.withValues(alpha: 0.08),
-            width: idea.isPinned ? 1.5 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
+      borderRadius: BorderRadius.circular(23),
+      padding: const EdgeInsets.all(16),
+      accentColor: idea.isPinned ? Theme.of(context).extension<KratosCardTokens>()?.accentColor ?? KratosTheme.electricLime : null,
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (idea.isPinned)
-                  const Padding(
-                    padding: EdgeInsets.only(right: 8, top: 2),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8, top: 2),
                     child: Icon(
                       Icons.push_pin,
-                      color: Color(0xFFC6F135),
+                      color: Theme.of(context).extension<KratosCardTokens>()?.accentColor ?? KratosTheme.classicAcidLime,
                       size: 16,
                     ),
                   ),
@@ -85,12 +73,12 @@ class IdeaCard extends StatelessWidget {
                     if (val == 'delete') onDelete();
                   },
                   itemBuilder: (context) => [
-                    const KratosPopupMenuItem(
+                    KratosPopupMenuItem(
                       value: 'spaces',
                       child: Row(
                         children: [
                           Icon(Icons.folder_outlined,
-                              color: Color(0xFFC6F135), size: 16),
+                              color: Theme.of(context).extension<KratosCardTokens>()?.accentColor ?? KratosTheme.classicAcidLime, size: 16),
                           SizedBox(width: 8),
                           Text(
                             'Manage Spaces',
@@ -148,25 +136,25 @@ class IdeaCard extends StatelessWidget {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFC6F135).withValues(alpha: 0.12),
+                            color: (Theme.of(context).extension<KratosCardTokens>()?.accentColor ?? KratosTheme.classicAcidLime).withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: const Color(0xFFC6F135).withValues(alpha: 0.25),
+                              color: (Theme.of(context).extension<KratosCardTokens>()?.accentColor ?? KratosTheme.classicAcidLime).withValues(alpha: 0.25),
                             ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.folder_outlined,
-                                color: Color(0xFFC6F135),
+                                color: Theme.of(context).extension<KratosCardTokens>()?.accentColor ?? KratosTheme.classicAcidLime,
                                 size: 12,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 s.name,
-                                style: const TextStyle(
-                                  color: Color(0xFFC6F135),
+                                style: TextStyle(
+                                  color: Theme.of(context).extension<KratosCardTokens>()?.accentColor ?? KratosTheme.classicAcidLime,
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -207,7 +195,8 @@ class IdeaCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
+    }
   }
-}
+
+

@@ -2,6 +2,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kratos_app/data/drift/app_database.dart';
+import 'package:kratos_app/app/kratos_text_prompt.dart';
 import 'package:kratos_app/domain/ids.dart';
 import 'package:kratos_app/features/skills/data/skills_repository.dart';
 import 'package:kratos_app/features/skills/presentation/skills_registry_screen.dart';
@@ -97,7 +98,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final groupField = find.descendant(
-      of: find.byType(AlertDialog),
+      of: find.byType(KratosTextPrompt),
       matching: find.byType(TextField),
     );
     expect(groupField, findsOneWidget);

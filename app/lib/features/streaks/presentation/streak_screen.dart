@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/kratos_visuals.dart';
 import '../../../data/drift/app_database.dart';
 import '../domain/streak_config.dart';
 import '../domain/streak_models.dart';
@@ -23,7 +24,7 @@ class StreakScreen extends StatelessWidget {
     final hasStreak = streakInfo.currentStreak > 0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -48,29 +49,13 @@ class StreakScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Main Streak Display Card
-              Container(
-                width: double.infinity,
+              KratosGlassCard(
+                borderRadius: BorderRadius.circular(24),
                 padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.04),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: hasStreak
-                        ? const Color(0xFFFF9500).withValues(alpha: 0.4)
-                        : Colors.white12,
-                    width: 1.2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          (hasStreak
-                                  ? const Color(0xFFFF9500)
-                                  : Colors.transparent)
-                              .withValues(alpha: 0.12),
-                      blurRadius: 28,
-                    ),
-                  ],
-                ),
+                accentColor: hasStreak ? const Color(0xFFFF9500) : null,
+                variant: hasStreak
+                    ? KratosSurfaceVariant.active
+                    : KratosSurfaceVariant.normal,
                 child: Column(
                   children: [
                     Container(
@@ -145,14 +130,9 @@ class StreakScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Streak Rules & Protection Info
-              Container(
-                width: double.infinity,
+              KratosGlassCard(
+                borderRadius: BorderRadius.circular(20),
                 padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.03),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white10),
-                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -204,13 +184,10 @@ class StreakScreen extends StatelessWidget {
     required IconData icon,
     required Color accentColor,
   }) {
-    return Container(
+    return KratosGlassCard(
+      borderRadius: BorderRadius.circular(20),
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
-      ),
+      accentColor: accentColor.withValues(alpha: 0.35),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

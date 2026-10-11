@@ -38,6 +38,18 @@ class MockAuthService implements AuthService {
   }
 
   @override
+  Future<void> signInAsDeveloper({String userId = 'usr_seed_dev_01'}) async {
+    _emit(const AuthAuthenticating());
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    _emit(AuthAuthenticated(KratosUser.devMock(
+      id: userId,
+      displayName: 'Developer Operative',
+      email: 'dev@kratos.local',
+      method: AuthMethod.developerMock,
+    )));
+  }
+
+  @override
   Future<void> signInWithPassword({
     required String email,
     required String password,

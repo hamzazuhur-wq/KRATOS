@@ -3,6 +3,7 @@
 // Palette: Deep Black #020302 / #050505, Primary Accent #EEFF08, Volcanic Undertone #260B06
 
 import 'package:flutter/material.dart';
+import 'kratos_card_tokens.dart';
 
 class KratosGlobalPageTransitionsBuilder extends PageTransitionsBuilder {
   const KratosGlobalPageTransitionsBuilder();
@@ -21,14 +22,14 @@ class KratosGlobalPageTransitionsBuilder extends PageTransitionsBuilder {
 }
 
 class KratosTheme {
-  // Primary Palette Tokens (Approved Original Direction)
-  static const Color deepBlack = Color(0xFF020302);
-  static const Color deepBlackAlt = Color(0xFF050505);
-  static const Color volcanic = Color(0xFF0D0F0D);
+  // Primary Palette Tokens (Visual Reference Specification)
+  static const Color deepBlack = Color(0xFF070908);
+  static const Color deepBlackAlt = Color(0xFF0D100E);
+  static const Color volcanic = Color(0xFF070908);
   static const Color volcanicRed = Color(0xFF260B06);
   static const Color volcanicGreen = Color(0xFF141814);
 
-  // Primary KRATOS Accent (Electric Acid Lime)
+  // Primary KRATOS Accent (Electric Acid Lime / Glow)
   static const Color electricLime = Color(0xFFEEFF08);
   static const Color acidLime = Color(0xFFEEFF08);
   static const Color classicAcidLime = Color(0xFFC6F135);
@@ -40,9 +41,9 @@ class KratosTheme {
   static const Color olive = Color(0xFF4C561D);
 
   // Glass & Surface Tokens
-  static const Color surfaceGlass = Color(0x14FFFFFF);
-  static const Color glassFill = Color(0x0DFFFFFF);
-  static const Color borderGlass = Color(0x1AFFFFFF);
+  static const Color surfaceGlass = Color(0x941B1E1B);
+  static const Color glassFill = Color(0x80141714);
+  static const Color borderGlass = Color(0x29FFFFFF);
 
   // Dark Theme Hierarchy
   static ThemeData get darkTheme {
@@ -71,11 +72,11 @@ class KratosTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: const Color(0xFF101311),
+        color: const Color(0x6B1B1E1B),
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0x1FFFFFFF), width: 1.0),
+          borderRadius: BorderRadius.circular(23),
+          side: const BorderSide(color: Color(0x38FFFFFF), width: 1.0),
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
@@ -108,11 +109,11 @@ class KratosTheme {
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: const Color(0xFF0F1210),
+        backgroundColor: const Color(0xD9141815),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0x2EFFFFFF), width: 1.0),
+          side: const BorderSide(color: Color(0x33FFFFFF), width: 1.0),
         ),
         titleTextStyle: const TextStyle(
           color: electricLime,
@@ -122,12 +123,12 @@ class KratosTheme {
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Color(0xFF0F1210),
-        modalBackgroundColor: Color(0xFF0F1210),
+        backgroundColor: Color(0xD9141815),
+        modalBackgroundColor: Color(0xD9141815),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          side: BorderSide(color: Color(0x26FFFFFF), width: 1.0),
+          side: BorderSide(color: Color(0x33FFFFFF), width: 1.0),
         ),
       ),
       datePickerTheme: DatePickerThemeData(
@@ -287,6 +288,7 @@ class KratosTheme {
               : const Color(0x26FFFFFF),
         ),
       ),
+      extensions: [KratosCardTokens.dark()],
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
           TargetPlatform.android: KratosGlobalPageTransitionsBuilder(),
@@ -300,16 +302,16 @@ class KratosTheme {
     );
   }
 
-  // Light Mode Tokens (Sophisticated Architectural Ceramic)
-  static const Color lightBackground = Color(0xFFF7F6F2);
-  static const Color lightSurface = Color(0xFFFAFAF7);
-  static const Color lightSurfaceGlass = Color(0xF4F4F3EF);
-  static const Color lightBorderGlass = Color(0x1F0F172A);
-  static const Color lightTextPrimary = Color(0xFF0F1115);
-  static const Color lightTextSecondary = Color(0xFF5A606A);
-  static const Color lightTextMuted = Color(0xFF8A92A0);
-  /// Accessible high-contrast KRATOS lime for light backgrounds
-  static const Color lightAcidLime = Color(0xFF658F00);
+  // Light Mode Tokens (Reference Specification: Warm off-white #E9E9E3, Accent #A8B800, Text #10130F)
+  static const Color lightBackground = Color(0xFFE9E9E3);
+  static const Color lightSurface = Color(0x8AFFFFFF);
+  static const Color lightSurfaceGlass = Color(0x66F2F4F8);
+  static const Color lightBorderGlass = Color(0xA6FFFFFF);
+  static const Color lightTextPrimary = Color(0xFF10130F);
+  static const Color lightTextSecondary = Color(0xFF646B62);
+  static const Color lightTextMuted = Color(0xFF686D65);
+  /// Accessible high-contrast KRATOS lime for light backgrounds (--lime-deep: #a8b800)
+  static const Color lightAcidLime = Color(0xFFA8B800);
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -337,11 +339,11 @@ class KratosTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: lightSurface,
+        color: const Color(0x5CFFFFFF),
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0x1F0F172A), width: 1.0),
+          borderRadius: BorderRadius.circular(23),
+          side: const BorderSide(color: Color(0xCCFFFFFF), width: 1.0),
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
@@ -374,11 +376,11 @@ class KratosTheme {
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xE6FFFFFF),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: lightBorderGlass, width: 1.0),
+          side: const BorderSide(color: Color(0x80FFFFFF), width: 1.0),
         ),
         titleTextStyle: const TextStyle(
           color: lightTextPrimary,
@@ -388,12 +390,12 @@ class KratosTheme {
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Colors.white,
-        modalBackgroundColor: Colors.white,
+        backgroundColor: Color(0xE6FFFFFF),
+        modalBackgroundColor: Color(0xE6FFFFFF),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          side: BorderSide(color: lightBorderGlass, width: 1.0),
+          side: BorderSide(color: Color(0x80FFFFFF), width: 1.0),
         ),
       ),
       datePickerTheme: DatePickerThemeData(
@@ -546,6 +548,7 @@ class KratosTheme {
               : const Color(0x260F172A),
         ),
       ),
+      extensions: [KratosCardTokens.light()],
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
           TargetPlatform.android: KratosGlobalPageTransitionsBuilder(),

@@ -1173,55 +1173,6 @@ class LifeAreasPageSkeleton extends StatelessWidget {
   }
 }
 
-/// Skeleton for [AnalyticsScreen].
-class AnalyticsPageSkeleton extends StatelessWidget {
-  const AnalyticsPageSkeleton({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-      children: [
-        // Filter bar
-        const SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              KratosBone.chip(width: 74),
-              KratosBone.chip(width: 74),
-              KratosBone.chip(width: 74),
-              KratosBone.chip(width: 80),
-            ],
-          ),
-        ),
-        const SizedBox(height: 18),
-        const KratosBone.text(width: 110, height: 12),
-        const SizedBox(height: 10),
-        // Metrics 2x2 grid
-        const Row(
-          children: [
-            Expanded(child: KratosBone.card(height: 70)),
-            SizedBox(width: 10),
-            Expanded(child: KratosBone.card(height: 70)),
-          ],
-        ),
-        const SizedBox(height: 10),
-        const Row(
-          children: [
-            Expanded(child: KratosBone.card(height: 70)),
-            SizedBox(width: 10),
-            Expanded(child: KratosBone.card(height: 70)),
-          ],
-        ),
-        const SizedBox(height: 20),
-        const KratosBone.text(width: 130, height: 12),
-        const SizedBox(height: 10),
-        const KratosBone.card(height: 140),
-      ],
-    );
-  }
-}
-
 /// Generic Detail Screen skeleton for Goal/Project/Activity detail views.
 class GenericDetailSkeleton extends StatelessWidget {
   const GenericDetailSkeleton({super.key});

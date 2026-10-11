@@ -186,7 +186,7 @@ class _QuickActionButton extends StatelessWidget {
       child: KratosGlassCard(
         dashboardGlass: true,
         accentColor: accentColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(23),
         padding: EdgeInsets.zero,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),

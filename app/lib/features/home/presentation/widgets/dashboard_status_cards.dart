@@ -134,13 +134,13 @@ class _StatusCard extends StatelessWidget {
       interactive: true,
       dashboardGlass: true,
       accentColor: color,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(23),
       padding: EdgeInsets.zero,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(23),
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
@@ -207,13 +207,13 @@ class DashboardNotificationsCard extends StatelessWidget {
           interactive: true,
           dashboardGlass: true,
           accentColor: const Color(0xFFFF2D55),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(23),
           padding: EdgeInsets.zero,
           child: Material(
             color: Colors.transparent,
             child: InkWell(
               onTap: () => Navigator.of(context).push(KratosPageRoute(page: NotificationsScreen(database: database, ownerId: ownerId))),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(23),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 child: Row(

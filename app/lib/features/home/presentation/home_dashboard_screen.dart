@@ -9,7 +9,7 @@ import '../../../app/kratos_motion.dart';
 import '../../../data/drift/app_database.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../profile/domain/profile_models.dart';
-import '../../progression/data/overall_progression_repository.dart';
+import '../../progression/domain/global_progression.dart';
 import '../data/home_dashboard_repository.dart';
 import '../domain/home_models.dart';
 import 'widgets/ending_today_section.dart';
@@ -42,15 +42,13 @@ class HomeDashboardScreen extends StatefulWidget {
 }
 
 class _ProgressionIdentityBlock extends StatelessWidget {
-  final AppDatabase database;
-  final String ownerId;
   final UserProfileData profile;
+  final int totalXp;
   final VoidCallback onEditSentence;
 
   const _ProgressionIdentityBlock({
-    required this.database,
-    required this.ownerId,
     required this.profile,
+    required this.totalXp,
     required this.onEditSentence,
   });
 
@@ -58,109 +56,92 @@ class _ProgressionIdentityBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasCaption = profile.caption?.trim().isNotEmpty ?? false;
-    return StreamBuilder<OverallProgressionSnapshot>(
-      stream: OverallProgressionRepository(database).watch(ownerId),
-      builder: (context, snapshot) {
-        final progression = snapshot.data;
-        if (progression == null) {
-          return KratosShimmer(
-            child: Container(
-              height: 112,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white10 : const Color(0x14000000),
-                borderRadius: BorderRadius.circular(18),
-              ),
-            ),
-          );
-        }
+    final global = GlobalProgressionDefinitions.resolve(totalXp);
+    final tier = global.currentLevel.name;
+    final tierColor = KratosTierSystem.getGlobalColor(tier);
 
-        final global = progression.global;
-        final tier = global.currentLevel.name;
-        final tierColor = KratosTierSystem.getGlobalColor(tier);
-        return KratosGlassCard(
-          dashboardGlass: true,
-          accentColor: tierColor,
-          borderRadius: BorderRadius.circular(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return KratosGlassCard(
+      dashboardGlass: true,
+      accentColor: tierColor,
+      borderRadius: BorderRadius.circular(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            profile.displayName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.2,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 9,
+            runSpacing: 6,
             children: [
               Text(
-                profile.displayName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                tier.toUpperCase(),
                 style: TextStyle(
-                  color: isDark ? Colors.white : KratosTheme.lightTextPrimary,
-                  fontSize: 20,
+                  color: tierColor,
+                  fontSize: 11,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 0.2,
+                  letterSpacing: 1.2,
                 ),
               ),
-              const SizedBox(height: 8),
-              Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 9,
-                runSpacing: 6,
-                children: [
-                  Text(
-                    tier.toUpperCase(),
-                    style: TextStyle(
-                      color: tierColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  Text(
-                    global.currentLevel.romanNumeral,
-                    style: TextStyle(
-                      color: tierColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  Text(
-                    '${NumberFormat('#,###').format(global.overallXp)} XP',
-                    style: TextStyle(
-                      color: isDark ? Colors.white70 : KratosTheme.lightTextSecondary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-              if (hasCaption) ...[
-                const SizedBox(height: 12),
-                InkWell(
-                  onTap: onEditSentence,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            profile.caption!,
-                            style: TextStyle(
-                              color: isDark ? Colors.white70 : KratosTheme.lightTextSecondary,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.edit_outlined,
-                          color: isDark ? Colors.white30 : KratosTheme.lightTextMuted,
-                          size: 14,
-                        ),
-                      ],
-                    ),
-                  ),
+              Text(
+                global.currentLevel.romanNumeral,
+                style: TextStyle(
+                  color: tierColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
                 ),
-              ],
+              ),
+              Text(
+                '${NumberFormat('#,###').format(global.overallXp)} XP',
+                style: TextStyle(
+                  color: isDark ? Colors.white70 : KratosTheme.lightTextSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ],
           ),
-        );
-      },
+          if (hasCaption) ...[
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: onEditSentence,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        profile.caption!,
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : KratosTheme.lightTextSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.edit_outlined,
+                      color: isDark ? Colors.white30 : KratosTheme.lightTextMuted,
+                      size: 14,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -313,9 +294,8 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                   // Progression identity uses the same aggregate source as
                                   // the global header and Levels surfaces.
                                   _ProgressionIdentityBlock(
-                                    database: widget.database,
-                                    ownerId: widget.ownerId,
                                     profile: data.profile,
+                                    totalXp: data.aggregateProgression.totalXp,
                                     onEditSentence: () =>
                                         _editPreferredSentence(data.profile),
                                   ),
